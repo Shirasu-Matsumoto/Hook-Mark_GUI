@@ -1,0 +1,9 @@
+# Directories
+.vscode
+build
+
+# Binary files
+*.exe
+*.dll
+*.pdb
+*.obj
