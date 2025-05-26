@@ -16,21 +16,6 @@ namespace hm {
         empty = 0, first = 1, second = 2,
     };
 
-    struct range {
-        int min;
-        int max;
-
-        range(int _min, int _max) : min(_min), max(_max) {}
-
-        bool operator==(const range &other) const {
-            return min == other.min && max == other.max;
-        }
-
-        bool operator!=(const range &other) const {
-            return !(*this == other);
-        }
-    };
-
     struct pos {
         pos(int x, int y) : x(x), y(y) {}
         pos() : x(0), y(0) {}
