@@ -1,5 +1,5 @@
-#ifndef __HOOKMARK_BASE_HPP__
-#define __HOOKMARK_BASE_HPP__
+#ifndef __HOOKMARK_BASE_BOOL_HPP__
+#define __HOOKMARK_BASE_BOOL_HPP__
 
 #include <vector>
 #include <array>
@@ -13,7 +13,7 @@
 
 namespace hm {
     enum piece : unsigned int {
-        empty, first, second,
+        empty = 0, first = 1, second = 2,
     };
 
     struct range {
@@ -58,7 +58,9 @@ namespace hm {
 
     class board_state {
         private:
-            signed_vector<signed_vector<unsigned int>> _board;
+            signed_vector<signed_vector<bool>> has_piece;
+            signed_vector<signed_vector<bool>> is_first;
+
             unsigned int _current_turn = 0;
 
             const std::vector<std::vector<std::vector<bool>>> hookmark = {
@@ -85,48 +87,44 @@ namespace hm {
                     {false, true, true}
                 }
             };
-            
+
+            void ensure_size(int x, int y) {
+                if (has_piece.need_resize(x)) {
+                    has_piece.resize(std::max(has_piece.positive_size(), static_cast<unsigned int>(std::max(0, x) + 1)),
+                                     std::max(has_piece.negative_size(), static_cast<unsigned int>(std::max(0, -x) + 1)));
+                    is_first.resize(has_piece.positive_size(), has_piece.negative_size());
+                }
+
+                if (has_piece[x].need_resize(y)) {
+                    has_piece[x].resize(std::max(has_piece[x].positive_size(), static_cast<unsigned int>(std::max(0, y) + 1)),
+                                        std::max(has_piece[x].negative_size(), static_cast<unsigned int>(std::max(0, -y) + 1)));
+                    is_first[x].resize(has_piece[x].positive_size(), has_piece[x].negative_size());
+                }
+            }
+
         public:
             board_state() {}
 
+            void progress(int x, int y) {
+                ensure_size(x, y);
+                if (has_piece[x][y]) {
+                    throw std::runtime_error("Piece already exists.");
+                }
+                _current_turn++;
+                has_piece[x][y] = true;
+                is_first[x][y] = (_current_turn % 2 == 1);
+            }
+
             void set(int x, int y, unsigned int p) {
-                _board[x][y] = p;
+                ensure_size(x, y);
+                has_piece[x][y] = (p != 0);
+                is_first[x][y] = (p == 1);
             }
 
             unsigned int get(int x, int y) const {
-                return _board[x][y];
-            }
-
-            void progress(int x, int y, unsigned int p) {
-                if (_board[x][y]) {
-                    throw std::runtime_error("Piece is already exists.");
-                }
-                if (_board.need_resize(x)) {
-                    _board.resize(std::max(_board.positive_size(), static_cast<unsigned int>(std::max(0, x) + 1)),
-                                std::max(_board.negative_size(), static_cast<unsigned int>(std::max(0, -x) + 1)));
-                }
-                if (_board[x].need_resize(y)) {
-                    _board[x].resize(std::max(_board[x].positive_size(), static_cast<unsigned int>(std::max(0, y) + 1)),
-                                    std::max(_board[x].negative_size(), static_cast<unsigned int>(std::max(0, -y) + 1)));
-                }
-                _current_turn++;
-                _board[x][y] = p;
-            }
-
-            void progress(int x, int y) {
-                if (_board[x][y]) {
-                    throw std::runtime_error("Piece is already exists.");
-                }
-                if (_board.need_resize(x)) {
-                    _board.resize(std::max(_board.positive_size(), static_cast<unsigned int>(std::max(0, x) + 1)),
-                                std::max(_board.negative_size(), static_cast<unsigned int>(std::max(0, -x) + 1)));
-                }
-                if (_board[x].need_resize(y)) {
-                    _board[x].resize(std::max(_board[x].positive_size(), static_cast<unsigned int>(std::max(0, y) + 1)),
-                                    std::max(_board[x].negative_size(), static_cast<unsigned int>(std::max(0, -y) + 1)));
-                }
-                _current_turn++;
-                _board[x][y] = (_current_turn % 2) + 1;
+                if (has_piece.need_resize(x) || has_piece[x].need_resize(y)) return 0;
+                if (!has_piece[x][y]) return 0;
+                return is_first[x][y] ? 1 : 2;
             }
 
             unsigned int current_turn() const {
@@ -138,7 +136,8 @@ namespace hm {
             }
 
             void clear() {
-                _board.clear();
+                has_piece.clear();
+                is_first.clear();
                 _current_turn = 0;
             }
 
@@ -148,7 +147,7 @@ namespace hm {
                     int mask_height = mask.size();
                     int mask_width = mask[0].size();
 
-                    auto x_range = _board.index_range();
+                    auto x_range = has_piece.index_range();
                     for (int x = x_range.min; x <= x_range.max - mask_width; ++x) {
                         for (int y = x_range.min; y <= x_range.max - mask_height; ++y) {
                             for (unsigned int player = 1; player <= 2; ++player) {
@@ -157,13 +156,19 @@ namespace hm {
                                     for (int dx = 0; dx < mask_width; ++dx) {
                                         if (!mask[dy][dx]) continue;
 
-                                        if (_board.need_resize(x + dx) ||
-                                            _board[x + dx].need_resize(y + dy)) {
+                                        if (has_piece.need_resize(x + dx) ||
+                                            has_piece[x + dx].need_resize(y + dy)) {
                                             match = false;
                                             break;
                                         }
 
-                                        if (_board[x + dx][y + dy] != player) {
+                                        if (!has_piece[x + dx][y + dy]) {
+                                            match = false;
+                                            break;
+                                        }
+
+                                        bool piece_is_first = is_first[x + dx][y + dy];
+                                        if ((player == 1 && !piece_is_first) || (player == 2 && piece_is_first)) {
                                             match = false;
                                             break;
                                         }
@@ -183,10 +188,16 @@ namespace hm {
 
             std::vector<unsigned int> to_flat_vector() const {
                 std::vector<unsigned int> result;
-                auto range = _board.index_range();
+                auto range = has_piece.index_range();
                 for (int i = range.min; i <= range.max; i++) {
-                    std::vector<unsigned int> temp = _board[i].to_vector();
-                    std::copy(temp.begin(), temp.end(), std::back_inserter(result));
+                    auto row_range = has_piece[i].index_range();
+                    for (int j = row_range.min; j <= row_range.max; j++) {
+                        if (!has_piece[i][j]) {
+                            result.push_back(0);
+                        } else {
+                            result.push_back(is_first[i][j] ? 1 : 2);
+                        }
+                    }
                 }
                 return result;
             }
