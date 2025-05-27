@@ -1,7 +1,6 @@
 #include <hookmark_gui_window.hpp>
 
 namespace hmgui {
-
     wc_main::wc_main() : wc_base() {}
 
     ATOM wc_main::register_class() {
@@ -56,4 +55,7 @@ namespace hmgui {
         }
     }
 
+    void window_main::draw_grid() {
+        
+    }
 }

@@ -18,6 +18,7 @@ namespace hmgui {
             void initialize() override;
             void create_window() override;
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
+            void draw_grid();
     };
 }
 
