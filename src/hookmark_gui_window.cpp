@@ -42,9 +42,25 @@ namespace hmgui {
 
     LRESULT CALLBACK window_main::handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) {
         switch (message) {
+            case WM_SYSKEYDOWN: {
+                switch (w_param) {
+                    case 'F': {
+                        PostMessageW(window_main::handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE, NULL), NULL);
+                        break;
+                    }
+                }
+                return 0;
+            }
             case WM_DESTROY: {
                 PostQuitMessage(0);
                 return 0;
+            }
+            case WM_COMMAND: {
+                switch (LOWORD(w_param)) {
+                    case ID_MENU_FILE: {
+                        // last insert
+                    }
+                }
             }
             case WM_PAINT: {
                 return 0;
@@ -55,7 +71,11 @@ namespace hmgui {
         }
     }
 
-    void window_main::draw_grid() {
-        
+    void menu_main::create_menu() {
+        handle_menu = CreateMenu();
+        if (handle_menu) {
+            AppendMenuW(handle_menu, MF_STRING, 1, L"ファイル(F)");
+            AppendMenuW(handle_menu, MF_STRING, 2, L"編集(E)");
+        }
     }
 }

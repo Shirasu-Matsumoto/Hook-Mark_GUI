@@ -58,6 +58,42 @@ namespace hmgui {
                 return window_class;
             }
     };
+
+    class menu_base {
+        public:
+            HMENU handle_menu;
+
+            menu_base() : handle_menu(nullptr) {}
+            virtual ~menu_base() {
+                if (handle_menu) {
+                    DestroyMenu(handle_menu);
+                }
+            }
+            virtual void create_menu() {
+                handle_menu = CreateMenu();
+            }
+            operator HMENU() {
+                return handle_menu;
+            }
+    };
+
+    class menu_item_base {
+        public:
+            HMENU handle_menu;
+
+            menu_item_base() : handle_menu(nullptr) {}
+            virtual ~menu_item_base() {
+                if (handle_menu) {
+                    DestroyMenu(handle_menu);
+                }
+            }
+            virtual void create_menu_item() {
+                handle_menu = CreatePopupMenu();
+            }
+            operator HMENU() {
+                return handle_menu;
+            }
+    };
 }
 
 #endif

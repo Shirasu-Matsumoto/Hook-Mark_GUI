@@ -1,0 +1,1 @@
+#define IDI_HOOKMARK_ICON 10000

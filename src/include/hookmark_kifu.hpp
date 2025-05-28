@@ -2,64 +2,13 @@
 #define __HOOKMARK_KIFU_HPP__
 
 #include <hookmark_base.hpp>
+#include <hookmark_kifu_base.hpp>
 
 namespace hm {
-    class kifu_base {
-        private:
-            std::vector<pos> _kifu;
-
-        public:
-            kifu_base() {}
-            virtual ~kifu_base() {}
-
-            virtual void add(int x, int y) {
-                _kifu.emplace_back(x, y);
-            }
-
-            virtual void clear() {
-                _kifu.clear();
-            }
-
-            virtual void kifu_save(const std::string &filename) const {}
-
-            virtual void kifu_load(const std::string &filename) {}
-
-            virtual bool operator==(const kifu_base &other) const {
-                return _kifu == other._kifu;
-            }
-
-            virtual bool operator!=(const kifu_base &other) const {
-                return !(*this == other);
-            }
-
-            virtual pos &operator[](unsigned int index) {
-                if (index >= _kifu.size()) {
-                    throw std::out_of_range("Index out of range");
-                }
-                return _kifu[index];
-            }
-
-            virtual const pos &operator[](unsigned int index) const {
-                if (index >= _kifu.size()) {
-                    throw std::out_of_range("Index out of range");
-                }
-                return _kifu[index];
-            }
-
-            virtual std::vector<pos> &data() {
-                return _kifu;
-            }
-
-            virtual const std::vector<pos> &data() const {
-                return _kifu;
-            }
-
-            virtual unsigned int size() const {
-                return _kifu.size();
-            }
-    };
-
     class kifu_ver1 : public kifu_base {
+        private:
+            std::string _config;
+
         public:
             kifu_ver1() : kifu_base() {}
 
@@ -69,7 +18,7 @@ namespace hm {
                     throw std::runtime_error("Failed to open file for writing");
                 }
 
-                ofs << "Hook-Mark Kifu File Version 1.0\n#Begin\n";
+                ofs << "Hook-Mark Kifu File Version 1.0\n#Config\n" << _config << "#Begin\n";
                 for (const auto &move : data()) {
                     ofs << "\t" << move.x << ", " << move.y << "\n";
                 }
@@ -85,39 +34,60 @@ namespace hm {
 
                 clear();
                 bool in_kifu = false;
+                bool in_config = false;
                 bool header_found = false;
                 std::string line;
+                _config.clear(); // 初期化
 
                 while (std::getline(ifs, line)) {
-                    size_t comment_pos = line.find('*');
+                    // コメント削除
+                    std::string trimmed_line = line;
+                    size_t comment_pos = trimmed_line.find('*');
                     if (comment_pos != std::string::npos) {
-                        line = line.substr(0, comment_pos);
+                        trimmed_line = line.substr(0, comment_pos);
                     }
-
-                    line.erase(0, line.find_first_not_of(" \t\r\n"));
-                    line.erase(line.find_last_not_of(" \t\r\n") + 1);
-
-                    if (line.empty()) {
-                        continue;
-                    }
+                    trimmed_line.erase(0, trimmed_line.find_first_not_of(" \t\r\n"));
+                    trimmed_line.erase(trimmed_line.find_last_not_of(" \t\r\n") + 1);
 
                     if (!header_found) {
+                        // ヘッダー行ではコメントもタブも許容しない
                         if (line == "Hook-Mark Kifu File Version 1.0") {
                             header_found = true;
                         }
                         continue;
                     }
 
-                    if (line == "#Begin") {
-                        in_kifu = true;
+                    // セクション判定
+                    if (trimmed_line == "#Config") {
+                        in_config = true;
                         continue;
                     }
 
-                    if (line == "#End") {
-                        break;
+                    if (trimmed_line == "#Begin") {
+                        in_kifu = true;
+                        in_config = false;
+                        continue;
+                    }
+
+                    if (trimmed_line == "#End") {
+                        in_kifu = false;
+                        in_config = false;
+                        continue;
+                    }
+
+                    if (in_config) {
+                        // コメント除去済みの line をそのまま（整形含めて）記録
+                        _config += line + "\n";
+                        continue;
+                    }
+
+                    // Config外では空行をスキップ
+                    if (trimmed_line.empty()) {
+                        continue;
                     }
 
                     if (in_kifu) {
+                        // 空白除去（スペース含む） → 座標として読み取る準備
                         line.erase(std::remove_if(line.begin(), line.end(), [](unsigned char c) {
                             return std::isspace(c);
                         }), line.end());
@@ -142,6 +112,15 @@ namespace hm {
                 }
 
                 ifs.close();
+            }
+
+
+            void set_config(const std::string &config_str) {
+                _config = config_str;
+            }
+
+            void add_config(const std::string &config_str) {
+                _config += config_str;
             }
     };
 }

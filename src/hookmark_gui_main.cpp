@@ -3,8 +3,10 @@
 
 hmgui::window_main main_window;
 hmgui::wc_main main_window_class;
+hmgui::menu_main main_menu;
 
 int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
+    main_menu.create_menu();
     main_window.initialize();
     main_window.show_window();
 
