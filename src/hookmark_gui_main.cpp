@@ -50,17 +50,15 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
     switch (message) {
         case WM_SYSKEYDOWN: {
             switch (w_param) {
-                case 'F': {
-                    SendMessageW(handle_window, WM_SYSCOMMAND, SC_KEYMENU, 'F');
-                }
-                case 'E': {
-                    SendMessageW(handle_window, WM_SYSCOMMAND, SC_KEYMENU, 'E');
-                }
-                case 'V': {
-                    SendMessageW(handle_window, WM_SYSCOMMAND, SC_KEYMENU, 'V');
-                }
-                case 'H': {
-                    SendMessageW(handle_window, WM_SYSCOMMAND, SC_KEYMENU, 'H');
+                case 'F':
+                case 'E':
+                case 'V':
+                case 'H':
+                case 'N':
+                case 'O':
+                case 'S':
+                case 'A': {
+                    SendMessageW(handle_window, WM_SYSCOMMAND, SC_KEYMENU, w_param);
                 }
                 
             }
