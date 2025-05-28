@@ -1,4 +1,4 @@
-#ifndef __HOOKMARK_KIFU_BASE_HPP_
+﻿#ifndef __HOOKMARK_KIFU_BASE_HPP_
 #define __HOOKMARK_KIFU_BASE_HPP_
 
 #include <hookmark_base.hpp>
@@ -55,7 +55,7 @@ namespace hm {
             }
 
             virtual unsigned int size() const {
-                return _kifu.size();
+                return static_cast<unsigned int>(_kifu.size());
             }
     };
 }

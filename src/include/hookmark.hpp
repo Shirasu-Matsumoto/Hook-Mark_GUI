@@ -1,4 +1,4 @@
-#ifndef __HOOKMARK_HPP__
+﻿#ifndef __HOOKMARK_HPP__
 #define __HOOKMARK_HPP__ 
 
 #include <signed_vector.hpp>

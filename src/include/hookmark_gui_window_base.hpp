@@ -1,4 +1,4 @@
-#ifndef __HOOKMARK_GUI_WINDOW_BASE_HPP__
+﻿#ifndef __HOOKMARK_GUI_WINDOW_BASE_HPP__
 #define __HOOKMARK_GUI_WINDOW_BASE_HPP__
 
 #include <hookmark.hpp>
@@ -77,21 +77,45 @@ namespace hmgui {
             }
     };
 
-    class menu_item_base {
+    class menu_item_popup {
         public:
             HMENU handle_menu;
 
-            menu_item_base() : handle_menu(nullptr) {}
-            virtual ~menu_item_base() {
+            menu_item_popup() {
+                create_menu_item();
+            }
+            ~menu_item_popup() {
                 if (handle_menu) {
                     DestroyMenu(handle_menu);
                 }
             }
-            virtual void create_menu_item() {
+            void create_menu_item() {
                 handle_menu = CreatePopupMenu();
             }
             operator HMENU() {
                 return handle_menu;
+            }
+            operator UINT_PTR() {
+                return reinterpret_cast<UINT_PTR>(handle_menu);
+            }
+    };
+
+    class menu_item {
+        public:
+            HMENU handle_menu;
+            UINT_PTR id;
+
+            menu_item() {
+                create_menu_item();
+            }
+            menu_item(UINT_PTR _id) : id(_id) {
+                create_menu_item();
+            }
+            void create_menu_item() {
+                handle_menu = CreateMenu();
+            }
+            operator UINT_PTR() {
+                return id;
             }
     };
 }

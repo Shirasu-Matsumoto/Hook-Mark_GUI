@@ -1,4 +1,4 @@
-#ifndef __SIGNED_VECTOR_HPP__
+﻿#ifndef __SIGNED_VECTOR_HPP__
 #define __SIGNED_VECTOR_HPP__
 
 #include <vector>
@@ -115,19 +115,19 @@ namespace hm {
             }
 
             range index_range() const noexcept {
-                return range(-_negative.size(), _positive.size());
+                return range(-static_cast<int>(_negative.size()), static_cast<int>(_positive.size()));
             }
 
             unsigned int positive_size() const noexcept {
-                return _positive.size();
+                return static_cast<unsigned int>(_positive.size());
             }
 
             unsigned int negative_size() const noexcept {
-                return _negative.size();
+                return static_cast<unsigned int>(_negative.size());
             }
 
             unsigned int size() const noexcept {
-                return _positive.size() + _negative.size() - 1;
+                return static_cast<unsigned int>(_positive.size()) + static_cast<unsigned int>(_negative.size()) - 1;
             }
 
             void clear() noexcept {
@@ -302,7 +302,7 @@ namespace hm {
             }
 
             range index_range() const noexcept {
-                return range(-_negative.size(), _positive.size());
+                return range(-static_cast<int>(_negative.size()) + 1, static_cast<int>(_positive.size()) - 1);
             }
 
             void clear() noexcept {
@@ -319,23 +319,23 @@ namespace hm {
             }
 
             unsigned int positive_size() const noexcept {
-                return _positive.size();
+                return static_cast<unsigned int>(_positive.size());
             }
 
             unsigned int negative_size() const noexcept {
-                return _negative.size();
+                return static_cast<unsigned int>(_negative.size());
             }
 
             unsigned int size() const noexcept {
-                return _positive.size() + _negative.size() - 1;
+                return static_cast<unsigned int>(_positive.size()) + static_cast<unsigned int>(_negative.size()) - 1;
             }
 
             int index_range_min() const noexcept {
-                return -_negative.size() + 1;
+                return -static_cast<int>(_negative.size()) + 1;
             }
 
             int index_range_max() const noexcept {
-                return _positive.size() - 1;
+                return static_cast<int>(_positive.size()) - 1;
             }
 
             bool operator==(const signed_vector &other) const noexcept {

@@ -1,1 +1,6 @@
+﻿#ifndef __HOOKMARK_RESOURCE_HPP_
+#define __HOOKMARK_RESOURCE_HPP_
+
 #define IDI_HOOKMARK_ICON 10000
+
+#endif

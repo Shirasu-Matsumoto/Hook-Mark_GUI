@@ -1,4 +1,4 @@
-#ifndef __HOOKMARK_BASE_BOOL_HPP__
+﻿#ifndef __HOOKMARK_BASE_BOOL_HPP__
 #define __HOOKMARK_BASE_BOOL_HPP__
 
 #include <vector>
@@ -129,8 +129,8 @@ namespace hm {
             unsigned int is_win() const {
                 for (int rotate_index = 0; rotate_index < 4; rotate_index++) {
                     const auto &mask = hookmark[rotate_index];
-                    int mask_height = mask.size();
-                    int mask_width = mask[0].size();
+                    int mask_height = static_cast<int>(mask.size());
+                    int mask_width = static_cast<int>(mask[0].size());
 
                     auto x_range = has_piece.index_range();
                     for (int x = x_range.min; x <= x_range.max - mask_width; ++x) {

@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 pushd %cd%
 cd %~dp0\build
 cmake ..\src

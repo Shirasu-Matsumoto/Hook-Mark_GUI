@@ -1,0 +1,3 @@
+﻿#include <hookmark_resource.hpp>
+
+IDI_HOOKMARK_ICON "hookmark.ico"
