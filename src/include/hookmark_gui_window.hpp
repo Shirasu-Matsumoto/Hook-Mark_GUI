@@ -3,6 +3,7 @@
 
 #include <hookmark_gui_window_base.hpp>
 #include <hookmark_gui_id.hpp>
+#include <hookmark_gui_d2d1_grid.hpp>
 
 namespace hmgui {
     class wc_main final : public wc_base {
@@ -19,7 +20,6 @@ namespace hmgui {
             void initialize() override;
             void create_window() override;
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
-            void draw_grid();
     };
 
     class menu_main final : public menu_base {

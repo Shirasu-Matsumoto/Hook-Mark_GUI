@@ -3,6 +3,8 @@
 
 #include <hookmark.hpp>
 #include <windows.h>
+#include <windowsx.h>
+#include <d2d1.h>
 
 namespace hmgui {
     class window_base {
