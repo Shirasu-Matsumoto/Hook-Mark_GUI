@@ -9,11 +9,8 @@ namespace hmgui {
             const D2D1_RECT_F grid_area = D2D1::RectF(10.0f, 10.0f, 490.0f, 490.0f);
             D2D1_POINT_2F scroll_offset = D2D1::Point2F(0.0f, 0.0f);
 
-            void draw(ID2D1RenderTarget* target, ID2D1Brush* brush, const RECT& clientRect) {
+            void draw(ID2D1RenderTarget *target, ID2D1Brush *brush, const RECT& clientRect) {
                 if (!target || !brush) return;
-
-                target->BeginDraw();
-
                 target->Clear(D2D1::ColorF(D2D1::ColorF::White));
 
                 for (float x = grid_area.left; x <= grid_area.right; x += 15.0f) {
@@ -31,8 +28,6 @@ namespace hmgui {
                         brush
                     );
                 }
-
-                target->EndDraw();
             }
 
             void scroll(float dx, float dy) {

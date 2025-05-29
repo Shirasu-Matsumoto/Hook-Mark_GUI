@@ -1,9 +1,9 @@
 ﻿#include <hookmark.hpp>
 #include <hookmark_gui_window.hpp>
 
-ID2D1Factory* d2d1_factory = nullptr;
-ID2D1HwndRenderTarget* d2d1_render_target = nullptr;
-ID2D1SolidColorBrush* pBrush = nullptr;
+ID2D1Factory *d2d1_factory = nullptr;
+ID2D1HwndRenderTarget *d2d1_render_target = nullptr;
+ID2D1SolidColorBrush *brush = nullptr;
 
 hmgui::window_main main_window;
 hmgui::wc_main main_window_class;
@@ -49,8 +49,46 @@ bool initialize_d2d() {
     hr = d2d1_factory->CreateHwndRenderTarget(props, handle_window_props, &d2d1_render_target);
     if (FAILED(hr)) return false;
 
-    hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Gray), &pBrush);
+    hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &brush);
     return SUCCEEDED(hr);
+}
+
+bool initialize_d2d_with_debug() {
+    if (d2d1_factory) return true;
+
+    MessageBoxW(NULL, L"Initializing D2D...\n", L"", MB_OK);
+
+    HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &d2d1_factory);
+    if (FAILED(hr)) {
+        MessageBoxW(NULL, L"Failed: D2D1CreateFactory\n", L"", MB_OK);
+        return false;
+    }
+
+    RECT rect;
+    if (!GetClientRect(main_window, &rect)) {
+        MessageBoxW(NULL, L"Failed: GetClientRect\n", L"", MB_OK);
+        return false;
+    }
+
+    D2D1_SIZE_U size = D2D1::SizeU(rect.right - rect.left, rect.bottom - rect.top);
+
+    D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties();
+    D2D1_HWND_RENDER_TARGET_PROPERTIES handle_window_props = D2D1::HwndRenderTargetProperties(main_window, size);
+
+    hr = d2d1_factory->CreateHwndRenderTarget(props, handle_window_props, &d2d1_render_target);
+    if (FAILED(hr)) {
+        MessageBoxW(NULL, L"Failed: CreateHwndRenderTarget\n", L"", MB_OK);
+        return false;
+    }
+
+    hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &brush);
+    if (FAILED(hr)) {
+        MessageBoxW(NULL, L"Failed: CreateSolidColorBrush\n", L"", MB_OK);
+        return false;
+    }
+
+    MessageBoxW(NULL, L"D2D initialized successfully.\n", L"", MB_OK);
+    return true;
 }
 
 void hmgui::menu_main::create_menu() {
@@ -81,7 +119,7 @@ void hmgui::menu_main::create_menu() {
 LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) {
     switch (message) {
         case WM_CREATE: {
-            initialize_d2d();
+            initialize_d2d_with_debug();
             SetTimer(main_window, timer_id, 16, NULL);
             return 0;
         }
@@ -115,6 +153,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
         }
         case WM_DESTROY: {
             KillTimer(main_window, timer_id);
+            brush->Release();
             PostQuitMessage(0);
             return 0;
         }
@@ -148,7 +187,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     break;
                 }
                 case ID_MENU_VIEW_BOARD_SEPARATE_WINDOW: {
-                    break;;
+                    break;
                 }
                 case ID_MENU_GAME_NEW: {
                     break;
@@ -163,8 +202,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
             POINT point = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
             ScreenToClient(main_window, &point);
 
-            if (PtInRect(&grid_area_rect, point))
-            {
+            if (PtInRect(&grid_area_rect, point)) {
                 short delta = GET_WHEEL_DELTA_WPARAM(w_param);
                 if (ctrl_down)
                     main_grid.scroll((float)-delta / 8, 0);
@@ -176,7 +214,6 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
             return 0;
         }
         case WM_MOUSEHWHEEL: {
-            // トラックパッドの左右スクロール
             short delta = GET_WHEEL_DELTA_WPARAM(w_param);
             main_grid.scroll((float)-delta / 8, 0);
             InvalidateRect(main_window, nullptr, FALSE);
@@ -184,20 +221,23 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
         }
         case WM_TIMER: {
             if (w_param == timer_id) {
-                if (!ctrl_down) return;
+                if (!ctrl_down) return 0;
                 if (key_held['H']) main_grid.scroll(-scroll_speed, 0);
                 if (key_held['L']) main_grid.scroll(scroll_speed, 0);
                 if (key_held['J']) main_grid.scroll(0, scroll_speed);
                 if (key_held['K']) main_grid.scroll(0, -scroll_speed);
                 InvalidateRect(main_window, nullptr, FALSE);
             }
+            return 0;
         }
         case WM_PAINT: {
             PAINTSTRUCT paint_struct;
-            BeginPaint(main_window, &paint_struct);
+            HDC handle_device_context = BeginPaint(main_window, &paint_struct);
             RECT rect;
             GetClientRect(main_window, &rect);
-            main_grid.draw(d2d1_render_target, pBrush, rect);
+            d2d1_render_target->BeginDraw();
+            main_grid.draw(d2d1_render_target, brush, rect);
+            d2d1_render_target->EndDraw();
             EndPaint(main_window, &paint_struct);
             return 0;
         }
@@ -215,7 +255,7 @@ int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
     SetMenu(main_window, main_menu);
 
     MSG message;
-    while (GetMessageW(&message, nullptr, 0, 0)) {
+    while (PeekMessageW(&message, nullptr, NULL, NULL, WM_NULL)) {
         TranslateMessage(&message);
         DispatchMessageW(&message);
     }
