@@ -1,5 +1,5 @@
-﻿#ifndef __HOOKMARK_BASE_BOOL_HPP__
-#define __HOOKMARK_BASE_BOOL_HPP__
+﻿#ifndef __HOOKMARK_BASE_HPP__
+#define __HOOKMARK_BASE_HPP__
 
 #include <vector>
 #include <array>

@@ -55,7 +55,7 @@ void hmgui::menu_main::create_menu() {
 LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) {
     switch (message) {
         case WM_CREATE: {
-            SetTimer(main_window, timer_id, 16, NULL);
+            SetTimer(handle_window, timer_id, 33, NULL);
             return 0;
         }
         case WM_KEYDOWN: {
@@ -86,7 +86,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
             return 0;
         }
         case WM_DESTROY: {
-            KillTimer(main_window, timer_id);
+            KillTimer(handle_window, timer_id);
             d2d1_brush->Release();
             PostQuitMessage(0);
             return 0;
@@ -134,45 +134,45 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
         }
         case WM_MOUSEWHEEL: {
             POINT point = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
-            ScreenToClient(main_window, &point);
+            ScreenToClient(handle_window, &point);
 
             if (PtInRect(&grid_area_rect, point)) {
                 short delta = GET_WHEEL_DELTA_WPARAM(w_param);
                 if (ctrl_down)
-                    main_window.grid_scroll((float)-delta / 8, 0);
+                    grid_scroll((float)-delta / 8, 0);
                 else
-                    main_window.grid_scroll(0, (float)-delta / 8);
+                    grid_scroll(0, (float)-delta / 8);
 
-                InvalidateRect(main_window, nullptr, FALSE);
+                InvalidateRect(handle_window, nullptr, FALSE);
             }
             return 0;
         }
         case WM_MOUSEHWHEEL: {
             short delta = GET_WHEEL_DELTA_WPARAM(w_param);
-            main_window.grid_scroll((float)-delta / 8, 0);
-            InvalidateRect(main_window, nullptr, FALSE);
+            grid_scroll((float)-delta / 8, 0);
+            InvalidateRect(handle_window, nullptr, FALSE);
             return 0;
         }
         case WM_TIMER: {
             if (w_param == timer_id) {
                 if (!ctrl_down) return 0;
-                if (key_held['H']) main_window.grid_scroll(-scroll_speed, 0);
-                if (key_held['L']) main_window.grid_scroll(scroll_speed, 0);
-                if (key_held['J']) main_window.grid_scroll(0, scroll_speed);
-                if (key_held['K']) main_window.grid_scroll(0, -scroll_speed);
-                InvalidateRect(main_window, nullptr, FALSE);
+                if (key_held['H']) grid_scroll(-scroll_speed, 0);
+                if (key_held['L']) grid_scroll(scroll_speed, 0);
+                if (key_held['J']) grid_scroll(0, scroll_speed);
+                if (key_held['K']) grid_scroll(0, -scroll_speed);
+                InvalidateRect(handle_window, nullptr, FALSE);
             }
             return 0;
         }
         case WM_PAINT: {
             PAINTSTRUCT paint_struct;
-            HDC handle_device_context = BeginPaint(main_window, &paint_struct);
+            HDC handle_device_context = BeginPaint(handle_window, &paint_struct);
             RECT rect;
-            GetClientRect(main_window, &rect);
+            GetClientRect(handle_window, &rect);
             d2d1_render_target->BeginDraw();
-            main_window.draw_grid();
+            draw_grid();
             d2d1_render_target->EndDraw();
-            HRESULT hr = EndPaint(main_window, &paint_struct);
+            HRESULT hr = EndPaint(handle_window, &paint_struct);
             return 0;
         }
         default: {
@@ -189,10 +189,14 @@ int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
     SetMenu(main_window, main_menu);
 
     MSG message;
-    while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE)) {
-        TranslateMessage(&message);
-        DispatchMessageW(&message);
-    }
+    while (true) {
+        while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE)) {
+            if (message.message == WM_QUIT) {
+                return static_cast<int>(message.wParam);
+            }
 
-    return static_cast<int>(message.wParam);
+            TranslateMessage(&message);
+            DispatchMessageW(&message);
+        }
+    }
 }

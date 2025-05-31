@@ -66,22 +66,57 @@ namespace hmgui {
         if (!d2d1_render_target || !d2d1_brush) return;
         d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
 
-        for (float x = grid_area_rectf.left; x <= grid_area_rectf.right; x += 15.0f) {
+        const float grid_spacing = 30.0f;
+
+        // 左端と右端の線を必ず描画
+        d2d1_render_target->DrawLine(
+            D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.top),
+            D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.bottom),
+            d2d1_brush
+        );
+        d2d1_render_target->DrawLine(
+            D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.top),
+            D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.bottom),
+            d2d1_brush
+        );
+
+        // 上端と下端の線を必ず描画
+        d2d1_render_target->DrawLine(
+            D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.top),
+            D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.top),
+            d2d1_brush
+        );
+        d2d1_render_target->DrawLine(
+            D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.bottom),
+            D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.bottom),
+            d2d1_brush
+        );
+
+        // 描画領域に合わせて開始位置を調整
+        float start_x = grid_area_rectf.left - fmodf(scroll_offset.x, grid_spacing);
+        float start_y = grid_area_rectf.top - fmodf(scroll_offset.y, grid_spacing);
+
+        // 垂直線の描画
+        for (float x = start_x; x <= grid_area_rectf.right; x += grid_spacing) {
+            if (x == grid_area_rectf.left || x == grid_area_rectf.right) continue; // 端の線はすでに描画済み
             d2d1_render_target->DrawLine(
-                D2D1::Point2F(x - scroll_offset.x, grid_area_rectf.top - scroll_offset.y),
-                D2D1::Point2F(x - scroll_offset.x, grid_area_rectf.bottom - scroll_offset.y),
+                D2D1::Point2F(x, grid_area_rectf.top),
+                D2D1::Point2F(x, grid_area_rectf.bottom),
                 d2d1_brush
             );
         }
 
-        for (float y = grid_area_rectf.top; y <= grid_area_rectf.bottom; y += 15.0f) {
+        // 水平線の描画
+        for (float y = start_y; y <= grid_area_rectf.bottom; y += grid_spacing) {
+            if (y == grid_area_rectf.top || y == grid_area_rectf.bottom) continue; // 端の線はすでに描画済み
             d2d1_render_target->DrawLine(
-                D2D1::Point2F(grid_area_rectf.left - scroll_offset.x, y - scroll_offset.y),
-                D2D1::Point2F(grid_area_rectf.right - scroll_offset.x, y - scroll_offset.y),
+                D2D1::Point2F(grid_area_rectf.left, y),
+                D2D1::Point2F(grid_area_rectf.right, y),
                 d2d1_brush
             );
         }
     }
+
 
     void window_main::grid_scroll(float dx, float dy) {
         scroll_offset.x += dx;
