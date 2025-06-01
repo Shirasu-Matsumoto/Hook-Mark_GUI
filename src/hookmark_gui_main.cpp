@@ -7,12 +7,14 @@ hmgui::menu_main main_menu;
 hmgui::menu_item_popup  main_menu_file,
                         main_menu_edit,
                         main_menu_view,
+                        main_menu_game,
                         main_menu_help;
 hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
                         main_menu_file_open(ID_MENU_FILE_OPEN),
                         main_menu_file_overwrite_save(ID_MENU_FILE_OVERWRITE_SAVE),
                         main_menu_file_save_as(ID_MENU_FILE_SAVE_AS),
                         main_menu_file_close(ID_MENU_FILE_CLOSE),
+                        main_menu_file_settings(ID_MENU_FILE_SETTINGS),
                         main_menu_file_exit(ID_MENU_FILE_EXIT),
                         main_menu_edit_move_forward(ID_MENU_EDIT_MOVE_FORWARD),
                         main_menu_edit_step_back(ID_MENU_EDIT_STEP_BACK),
@@ -30,60 +32,29 @@ bool key_held[256] = {};
 UINT_PTR timer_id = 1;
 static const int scroll_speed = 3;
 
-std::string utf16_to_utf8(const std::wstring& utf16_str) {
+std::string utf16_to_utf8(const std::wstring &utf16_str) {
     if (utf16_str.empty()) return std::string();
 
-    int utf8_len = WideCharToMultiByte(
-        CP_UTF8,              // UTF-8 code page
-        0,                    // flags
-        utf16_str.data(),     // input string
-        static_cast<int>(utf16_str.size()),
-        nullptr,              // no output buffer yet
-        0,
-        nullptr,
-        nullptr
-    );
+    int utf8_len = WideCharToMultiByte(CP_UTF8, 0, utf16_str.data(), static_cast<int>(utf16_str.size()), nullptr, 0, nullptr, nullptr);
     if (utf8_len <= 0) return std::string();  // error handling
 
     std::string utf8_str(utf8_len, 0);
-    WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        utf16_str.data(),
-        static_cast<int>(utf16_str.size()),
-        &utf8_str[0],
-        utf8_len,
-        nullptr,
-        nullptr
-    );
+    WideCharToMultiByte(CP_UTF8, 0, utf16_str.data(), static_cast<int>(utf16_str.size()), &utf8_str[0], utf8_len, nullptr, nullptr);
     return utf8_str;
 }
 
-std::wstring utf8_to_utf16(const std::string& utf8_str) {
+std::wstring utf8_to_utf16(const std::string &utf8_str) {
     if (utf8_str.empty()) return std::wstring();
 
-    int utf16_len = MultiByteToWideChar(
-        CP_UTF8,              // UTF-8 code page
-        0,                    // flags
-        utf8_str.data(),      // input string
-        static_cast<int>(utf8_str.size()),
-        nullptr,              // no output buffer yet
-        0                     // request required size
-    );
-    if (utf16_len <= 0) return std::wstring();  // error handling
+    int utf16_len = MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), static_cast<int>(utf8_str.size()), nullptr, 0);
+    if (utf16_len <= 0) return std::wstring();
 
     std::wstring utf16_str(utf16_len, 0);
-    MultiByteToWideChar(
-        CP_UTF8,
-        0,
-        utf8_str.data(),
-        static_cast<int>(utf8_str.size()),
-        &utf16_str[0],
-        utf16_len
-    );
+    MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), static_cast<int>(utf8_str.size()), &utf16_str[0], utf16_len);
     return utf16_str;
 }
 
+// unused
 void update_title() {
     if (current_kifu_path.empty()) {
         SetWindowTextW(main_window, L"Hook-Mark GUI");
@@ -101,6 +72,7 @@ void hmgui::menu_main::create_menu() {
         AppendMenuW(handle_menu, MF_POPUP, main_menu_file, L"ファイル(&F)");
         AppendMenuW(handle_menu, MF_POPUP, main_menu_edit, L"編集(&E)");
         AppendMenuW(handle_menu, MF_POPUP, main_menu_view, L"表示(&V)");
+        AppendMenuW(handle_menu, MF_POPUP, main_menu_game, L"対局(&G)");
         AppendMenuW(handle_menu, MF_POPUP, main_menu_help, L"ヘルプ(&H)");
 
         AppendMenuW(main_menu_file, MF_STRING, main_menu_file_create_new, L"新規作成(&N)");
@@ -108,6 +80,8 @@ void hmgui::menu_main::create_menu() {
         AppendMenuW(main_menu_file, MF_STRING, main_menu_file_overwrite_save, L"上書き保存(&S)");
         AppendMenuW(main_menu_file, MF_STRING, main_menu_file_save_as, L"名前を付けて保存(&A)");
         AppendMenuW(main_menu_file, MF_STRING, main_menu_file_close, L"閉じる");
+        AppendMenuW(main_menu_file, MF_SEPARATOR, 0, NULL);
+        AppendMenuW(main_menu_file, MF_STRING, main_menu_file_settings, L"設定(&S)");
         AppendMenuW(main_menu_file, MF_SEPARATOR, 0, NULL);
         AppendMenuW(main_menu_file, MF_STRING, main_menu_file_exit, L"終了");
 
@@ -118,6 +92,8 @@ void hmgui::menu_main::create_menu() {
         AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_kifu_info, L"棋譜情報を編集");
 
         AppendMenuW(main_menu_view, MF_STRING, main_menu_view_board_separate_window, L"盤面を別ウィンドウで表示");
+
+        AppendMenuW(main_menu_game, MF_STRING, main_menu_game_new, L"新規対局");
 
         AppendMenuW(main_menu_help, MF_STRING, main_menu_help_version, L"バージョン情報");
     }
@@ -181,7 +157,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     catch (std::exception e) {
                         MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
                     }
-                    update_title();
+                    // update_title();
                     break;
                 }
                 case ID_MENU_FILE_OVERWRITE_SAVE: {
@@ -205,13 +181,13 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     catch (std::exception e) {
                         MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
                     }
-                    update_title();
+                    // update_title();
                     break;
                 }
                 case ID_MENU_FILE_CLOSE: {
                     current_kifu_path.clear();
                     kifu.clear();
-                    update_title();
+                    // update_title();
                     break;
                 }
                 case ID_MENU_FILE_EXIT: {
