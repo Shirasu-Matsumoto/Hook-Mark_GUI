@@ -25,9 +25,12 @@ namespace hmgui {
             bool d2d1_initialize();
             void initialize() override;
             void create_window() override;
+            void show_file_load_dialog(std::wstring &result);
+            void show_file_save_dialog(std::wstring &result);
             void draw_grid();
             void grid_scroll(float dx, float dy);
             void set_grid_scroll(float x, float y);
+            void handle_exit();
             D2D1_POINT_2F get_grid_scroll() const;
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
     };

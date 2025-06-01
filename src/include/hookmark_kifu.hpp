@@ -14,11 +14,11 @@ namespace hm {
 
             void kifu_save(const std::string &filename) const override {
                 std::ofstream ofs(filename);
-                if (!ofs) {
+                if (ofs.fail()) {
                     throw std::runtime_error("Failed to open file for writing");
                 }
 
-                ofs << "Hook-Mark Kifu File Version 1.0\n#Config\n" << _config << "#Begin\n";
+                ofs << "Hook-Mark Kifu File Version 1.0\n#Config\n" << _config << "#End\n#Begin\n";
                 for (const auto &move : data()) {
                     ofs << "\t" << move.x << ", " << move.y << "\n";
                 }
@@ -28,7 +28,7 @@ namespace hm {
 
             void kifu_load(const std::string &filename) override {
                 std::ifstream ifs(filename);
-                if (!ifs) {
+                if (ifs.fail()) {
                     throw std::runtime_error("Failed to open file for reading");
                 }
 
@@ -114,6 +114,10 @@ namespace hm {
                 ifs.close();
             }
 
+            void clear() override {
+                data().clear();
+                _config.clear();
+            }
 
             void set_config(const std::string &config_str) {
                 _config = config_str;

@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <iostream>
+#include <format>
 #include <signed_vector.hpp>
 
 namespace hm {

@@ -60,6 +60,48 @@ namespace hmgui {
         ShowWindow(handle_window, SW_SHOW);
     }
 
+    void window_main::show_file_load_dialog(std::wstring &path) {
+        OPENFILENAMEW ofn;
+        wchar_t szFile[MAX_PATH] = {0};
+
+        ZeroMemory(&ofn, sizeof(ofn));
+        ofn.lStructSize = sizeof(ofn);
+        ofn.hwndOwner = handle_window;
+        ofn.lpstrFile = szFile;
+        ofn.nMaxFile = sizeof(szFile) / sizeof(wchar_t);
+        ofn.lpstrFilter = L"Hook-Mark棋譜ファイル (*.hmk)\0*.hmk\0すべてのファイル (*.*)\0*.*\0";
+        ofn.nFilterIndex = 1;
+        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+        if (GetOpenFileNameW(&ofn)) {
+            path = ofn.lpstrFile;
+        }
+        return;
+    }
+
+    void window_main::show_file_save_dialog(std::wstring &path) {
+        OPENFILENAMEW ofn;
+        wchar_t szFile[MAX_PATH] = {0};
+
+        ZeroMemory(&ofn, sizeof(ofn));
+        ofn.lStructSize = sizeof(ofn);
+        ofn.hwndOwner = handle_window;
+        ofn.lpstrFile = szFile;
+        ofn.nMaxFile = MAX_PATH;
+        ofn.lpstrFilter = L"Hook-Mark棋譜ファイル (*.hmk)\0*.hmk\0すべてのファイル (*.*)\0*.*\0\0"; // フィルタは必ず \0\0 終端
+        ofn.nFilterIndex = 1;
+        ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
+        ofn.lpstrDefExt = L"hmk"; // 拡張子を補完
+
+        if (GetSaveFileNameW(&ofn)) {
+            path = ofn.lpstrFile;
+        }
+    }
+
+    void window_main::handle_exit() {
+        PostQuitMessage(0);
+    }
+
     void window_main::draw_grid() {
         D2D1_POINT_2F scroll_offset = D2D1::Point2F(0.0f, 0.0f);
 
@@ -68,7 +110,6 @@ namespace hmgui {
 
         const float grid_spacing = 30.0f;
 
-        // 左端と右端の線を必ず描画
         d2d1_render_target->DrawLine(
             D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.top),
             D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.bottom),
@@ -80,7 +121,6 @@ namespace hmgui {
             d2d1_brush
         );
 
-        // 上端と下端の線を必ず描画
         d2d1_render_target->DrawLine(
             D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.top),
             D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.top),
@@ -92,29 +132,26 @@ namespace hmgui {
             d2d1_brush
         );
 
-        // 描画領域に合わせて開始位置を調整
-        float start_x = grid_area_rectf.left - fmodf(scroll_offset.x, grid_spacing);
-        float start_y = grid_area_rectf.top - fmodf(scroll_offset.y, grid_spacing);
+        // float start_x = grid_area_rectf.left - fmodf(scroll_offset.x, grid_spacing);
+        // float start_y = grid_area_rectf.top - fmodf(scroll_offset.y, grid_spacing);
 
-        // 垂直線の描画
-        for (float x = start_x; x <= grid_area_rectf.right; x += grid_spacing) {
-            if (x == grid_area_rectf.left || x == grid_area_rectf.right) continue; // 端の線はすでに描画済み
-            d2d1_render_target->DrawLine(
-                D2D1::Point2F(x, grid_area_rectf.top),
-                D2D1::Point2F(x, grid_area_rectf.bottom),
-                d2d1_brush
-            );
-        }
+        // for (float x = start_x; x <= grid_area_rectf.right; x += grid_spacing) {
+        //     if (x == grid_area_rectf.left || x == grid_area_rectf.right) continue; // 端の線はすでに描画済み
+        //     d2d1_render_target->DrawLine(
+        //         D2D1::Point2F(x, grid_area_rectf.top),
+        //         D2D1::Point2F(x, grid_area_rectf.bottom),
+        //         d2d1_brush
+        //     );
+        // }
 
-        // 水平線の描画
-        for (float y = start_y; y <= grid_area_rectf.bottom; y += grid_spacing) {
-            if (y == grid_area_rectf.top || y == grid_area_rectf.bottom) continue; // 端の線はすでに描画済み
-            d2d1_render_target->DrawLine(
-                D2D1::Point2F(grid_area_rectf.left, y),
-                D2D1::Point2F(grid_area_rectf.right, y),
-                d2d1_brush
-            );
-        }
+        // for (float y = start_y; y <= grid_area_rectf.bottom; y += grid_spacing) {
+        //     if (y == grid_area_rectf.top || y == grid_area_rectf.bottom) continue; // 端の線はすでに描画済み
+        //     d2d1_render_target->DrawLine(
+        //         D2D1::Point2F(grid_area_rectf.left, y),
+        //         D2D1::Point2F(grid_area_rectf.right, y),
+        //         d2d1_brush
+        //     );
+        // }
     }
 
 
