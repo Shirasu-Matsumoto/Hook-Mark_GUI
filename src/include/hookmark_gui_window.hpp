@@ -11,20 +11,44 @@ namespace hmgui {
             ATOM register_class() override;
     };
 
+    struct window_conf {
+        // main window
+        float window_pos_x;
+        float window_pos_y;
+        float margin;
+        float window_size_x;
+        float window_size_y;
+        float grid_spacing;
+        float grid_size_x;
+        float kifu_size_x;
+        float grid_and_kifu_size_y;
+        std::string open_file;
+
+        // new game window
+        std::string first_name;
+        std::string second_name;
+        float first_time;
+        float second_time;
+        float first_countdown;
+        float second_countdown;
+        bool lose_time_runs_out;
+    };
+
     class window_main final : public window_base {
         public:
             wc_main window_class;
+            hmgui::window_conf main_config;
 
             ID2D1Factory *d2d1_factory;
             ID2D1HwndRenderTarget *d2d1_render_target;
             ID2D1SolidColorBrush *d2d1_brush;
-            const D2D1_RECT_F grid_area_rectf = D2D1::RectF(10.0f, 10.0f, 490.0f, 490.0f);
+            D2D1_RECT_F grid_area_rectf;
             D2D1_POINT_2F scroll_offset = D2D1::Point2F(0.0f, 0.0f);
 
             window_main() : d2d1_factory(nullptr), d2d1_render_target(nullptr), d2d1_brush(nullptr) {}
             bool d2d1_initialize();
-            void initialize() override;
-            void create_window() override;
+            void initialize(window_conf &config);
+            void create_window();
             void show_file_load_dialog(std::wstring &result);
             void show_file_save_dialog(std::wstring &result);
             void draw_grid();

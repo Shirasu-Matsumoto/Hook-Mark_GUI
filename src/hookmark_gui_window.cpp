@@ -41,10 +41,12 @@ namespace hmgui {
         return SUCCEEDED(hr);
     }
 
-    void window_main::initialize() {
+    void window_main::initialize(window_conf &config) {
+        main_config = config;
         window_class.register_class();
         create_window();
         d2d1_initialize();
+        grid_area_rectf = D2D1::RectF(main_config.margin, main_config.margin, main_config.grid_size_x - main_config.margin / 2, main_config.grid_and_kifu_size_y - main_config.margin / 2);
     }
 
     void window_main::create_window() {
@@ -53,7 +55,7 @@ namespace hmgui {
             L"Hookmark_GUI_Main",
             L"Hookmark GUI",
             WS_OVERLAPPEDWINDOW,
-            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+            main_config.window_pos_x, main_config.window_pos_y, main_config.window_size_x, main_config.window_size_y,
             nullptr, nullptr, GetModuleHandle(nullptr), this
         );
         SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
@@ -108,7 +110,7 @@ namespace hmgui {
         if (!d2d1_render_target || !d2d1_brush) return;
         d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
 
-        const float grid_spacing = 30.0f;
+        const float grid_spacing = main_config.grid_spacing;
 
         d2d1_render_target->DrawLine(
             D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.top),
@@ -132,26 +134,24 @@ namespace hmgui {
             d2d1_brush
         );
 
-        // float start_x = grid_area_rectf.left - fmodf(scroll_offset.x, grid_spacing);
-        // float start_y = grid_area_rectf.top - fmodf(scroll_offset.y, grid_spacing);
+        float start_x = grid_area_rectf.left + grid_spacing - fmodf(scroll_offset.x, grid_spacing);
+        float start_y = grid_area_rectf.top + grid_spacing - fmodf(scroll_offset.y, grid_spacing);
 
-        // for (float x = start_x; x <= grid_area_rectf.right; x += grid_spacing) {
-        //     if (x == grid_area_rectf.left || x == grid_area_rectf.right) continue; // 端の線はすでに描画済み
-        //     d2d1_render_target->DrawLine(
-        //         D2D1::Point2F(x, grid_area_rectf.top),
-        //         D2D1::Point2F(x, grid_area_rectf.bottom),
-        //         d2d1_brush
-        //     );
-        // }
+        for (float x = start_x; x < grid_area_rectf.right; x += grid_spacing) {
+            d2d1_render_target->DrawLine(
+                D2D1::Point2F(x, grid_area_rectf.top),
+                D2D1::Point2F(x, grid_area_rectf.bottom),
+                d2d1_brush
+            );
+        }
 
-        // for (float y = start_y; y <= grid_area_rectf.bottom; y += grid_spacing) {
-        //     if (y == grid_area_rectf.top || y == grid_area_rectf.bottom) continue; // 端の線はすでに描画済み
-        //     d2d1_render_target->DrawLine(
-        //         D2D1::Point2F(grid_area_rectf.left, y),
-        //         D2D1::Point2F(grid_area_rectf.right, y),
-        //         d2d1_brush
-        //     );
-        // }
+        for (float y = start_y; y < grid_area_rectf.bottom; y += grid_spacing) {
+            d2d1_render_target->DrawLine(
+                D2D1::Point2F(grid_area_rectf.left, y),
+                D2D1::Point2F(grid_area_rectf.right, y),
+                d2d1_brush
+            );
+        }
     }
 
 

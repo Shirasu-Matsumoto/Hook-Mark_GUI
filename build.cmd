@@ -4,4 +4,3 @@ cd %~dp0\build
 cmake ..\src
 cmake --build .
 popd
-echo on
