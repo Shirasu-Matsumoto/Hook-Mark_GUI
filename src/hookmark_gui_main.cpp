@@ -31,7 +31,7 @@ hmgui::window_conf config;
 bool ctrl_down = false;
 bool key_held[256] = {};
 UINT_PTR timer_id = 1;
-static const int scroll_speed = 3;
+static const int scroll_speed = 8;
 
 std::string utf16_to_utf8(const std::wstring &utf16_str) {
     if (utf16_str.empty()) return std::string();
@@ -183,8 +183,7 @@ void hmgui::menu_main::create_menu() {
 LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) {
     switch (message) {
         case WM_CREATE: {
-            SetTimer(handle_window, timer_id, 33, NULL);
-            CW_USEDEFAULT;
+            timer_id = SetTimer(handle_window, timer_id, 33, NULL);
             return 0;
         }
         case WM_KEYDOWN: {
@@ -306,23 +305,25 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
 
             if (PtInRect(&grid_area_rect, point)) {
                 short delta = GET_WHEEL_DELTA_WPARAM(w_param);
-                if (ctrl_down)
+                if (ctrl_down) {
                     grid_scroll((float)-delta / 8, 0);
-                else
+                }
+                else {
                     grid_scroll(0, (float)-delta / 8);
-
+                }
                 InvalidateRect(handle_window, nullptr, FALSE);
             }
             return 0;
         }
         case WM_MOUSEHWHEEL: {
             short delta = GET_WHEEL_DELTA_WPARAM(w_param);
-            grid_scroll((float)-delta / 8, 0);
+            grid_scroll((float)delta / 8, 0);
             InvalidateRect(handle_window, nullptr, FALSE);
             return 0;
         }
         case WM_TIMER: {
             if (w_param == timer_id) {
+                MessageBoxW(NULL, L"たいまー", L"", MB_OK);
                 if (!ctrl_down) return 0;
                 if (key_held['H']) grid_scroll(-scroll_speed, 0);
                 if (key_held['L']) grid_scroll(scroll_speed, 0);
@@ -341,6 +342,38 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
             draw_grid();
             d2d1_render_target->EndDraw();
             HRESULT hr = EndPaint(handle_window, &paint_struct);
+            return 0;
+        }
+        case WM_DPICHANGED: {
+            UINT dpi_x = HIWORD(w_param);
+            UINT dpi_y = LOWORD(w_param);
+
+            RECT* suggested_rect = (RECT*)l_param;
+            SetWindowPos(handle_window,
+                        NULL,
+                        suggested_rect->left,
+                        suggested_rect->top,
+                        suggested_rect->right - suggested_rect->left,
+                        suggested_rect->bottom - suggested_rect->top,
+                        SWP_NOZORDER | SWP_NOACTIVATE);
+
+            if (d2d1_render_target) {
+                d2d1_render_target->SetDpi((FLOAT)dpi_x, (FLOAT)dpi_y);
+            }
+
+            InvalidateRect(handle_window, NULL, TRUE);
+            return 0;
+        }
+        case WM_SIZE: {
+            UINT width = LOWORD(l_param);
+            UINT height = HIWORD(l_param);
+            if (d2d1_render_target)
+            {
+                // サイズを変更
+                D2D1_SIZE_U size = D2D1::SizeU(width, height);
+                d2d1_render_target->Resize(size);
+            }
+            InvalidateRect(handle_window, nullptr, FALSE); // 再描画を要求
             return 0;
         }
         default: {
@@ -367,5 +400,6 @@ int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
             TranslateMessage(&message);
             DispatchMessageW(&message);
         }
+        Sleep(10);
     }
 }

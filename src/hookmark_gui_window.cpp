@@ -32,11 +32,19 @@ namespace hmgui {
         D2D1_SIZE_U size = D2D1::SizeU(rect.right - rect.left, rect.bottom - rect.top);
 
         D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties();
+
         D2D1_HWND_RENDER_TARGET_PROPERTIES handle_window_props = D2D1::HwndRenderTargetProperties(handle_window, size);
 
         hr = d2d1_factory->CreateHwndRenderTarget(props, handle_window_props, &d2d1_render_target);
         if (FAILED(hr)) return false;
 
+        FLOAT dpiX = 96.0f;
+        FLOAT dpiY = 96.0f;
+        d2d1_factory->GetDesktopDpi(&dpiX, &dpiY);
+        d2d1_render_target->SetDpi(dpiX, dpiY);
+
+        d2d1_render_target->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+        
         hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
         return SUCCEEDED(hr);
     }
@@ -105,8 +113,6 @@ namespace hmgui {
     }
 
     void window_main::draw_grid() {
-        D2D1_POINT_2F scroll_offset = D2D1::Point2F(0.0f, 0.0f);
-
         if (!d2d1_render_target || !d2d1_brush) return;
         d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
 
@@ -115,27 +121,37 @@ namespace hmgui {
         d2d1_render_target->DrawLine(
             D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.top),
             D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.bottom),
-            d2d1_brush
+            d2d1_brush,
+            3.0f
         );
         d2d1_render_target->DrawLine(
             D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.top),
             D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.bottom),
-            d2d1_brush
+            d2d1_brush,
+            3.0f
         );
 
         d2d1_render_target->DrawLine(
             D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.top),
             D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.top),
-            d2d1_brush
+            d2d1_brush,
+            3.0f
         );
         d2d1_render_target->DrawLine(
             D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.bottom),
             D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.bottom),
-            d2d1_brush
+            d2d1_brush,
+            3.0f
         );
 
-        float start_x = grid_area_rectf.left + grid_spacing - fmodf(scroll_offset.x, grid_spacing);
-        float start_y = grid_area_rectf.top + grid_spacing - fmodf(scroll_offset.y, grid_spacing);
+        float offset_x_mod = fmodf(scroll_offset.x, grid_spacing);
+        if (offset_x_mod < 0) offset_x_mod += grid_spacing;
+
+        float offset_y_mod = fmodf(scroll_offset.y, grid_spacing);
+        if (offset_y_mod < 0) offset_y_mod += grid_spacing;
+
+        float start_x = grid_area_rectf.left + grid_spacing - offset_x_mod;
+        float start_y = grid_area_rectf.top + grid_spacing - offset_y_mod;
 
         for (float x = start_x; x < grid_area_rectf.right; x += grid_spacing) {
             d2d1_render_target->DrawLine(
