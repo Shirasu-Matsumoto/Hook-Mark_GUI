@@ -38,14 +38,34 @@ namespace hmgui {
         hr = d2d1_factory->CreateHwndRenderTarget(props, handle_window_props, &d2d1_render_target);
         if (FAILED(hr)) return false;
 
-        FLOAT dpiX = 96.0f;
-        FLOAT dpiY = 96.0f;
-        d2d1_factory->GetDesktopDpi(&dpiX, &dpiY);
-        d2d1_render_target->SetDpi(dpiX, dpiY);
+        FLOAT dpi_x = 96.0f;
+        FLOAT dpi_y = 96.0f;
+        d2d1_factory->GetDesktopDpi(&dpi_x, &dpi_y);
+        d2d1_render_target->SetDpi(dpi_x, dpi_y);
 
         d2d1_render_target->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
         
         hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
+
+        hr = DWriteCreateFactory(
+            DWRITE_FACTORY_TYPE_SHARED,
+            __uuidof(IDWriteFactory),
+            reinterpret_cast<IUnknown**>(&d2d1_dwrite_factory)
+        );
+        if (FAILED(hr)) return false;
+
+        IDWriteTextFormat* text_format_default = nullptr;
+        hr = d2d1_dwrite_factory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_NORMAL,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            main_config.kifu_spacing * 0.8f,
+            L"ja-JP",
+            &text_format_default
+        );
+
         return SUCCEEDED(hr);
     }
 
@@ -54,7 +74,19 @@ namespace hmgui {
         window_class.register_class();
         create_window();
         d2d1_initialize();
-        grid_area_rectf = D2D1::RectF(main_config.margin, main_config.margin, main_config.grid_size_x - main_config.margin / 2, main_config.grid_and_kifu_size_y - main_config.margin / 2);
+        grid_area_rectf = D2D1::RectF(
+            main_config.margin,
+            main_config.margin,
+            main_config.grid_size_x - main_config.margin,
+            main_config.grid_and_kifu_size_y - main_config.margin
+        );
+        kifu_area_rectf = D2D1::RectF(
+            main_config.grid_size_x,
+            0,
+            main_config.grid_size_x + main_config.kifu_size_x,
+            main_config.grid_and_kifu_size_y
+        );
+
     }
 
     void window_main::create_window() {
@@ -101,7 +133,7 @@ namespace hmgui {
         ofn.lpstrFilter = L"Hook-Mark棋譜ファイル (*.hmk)\0*.hmk\0すべてのファイル (*.*)\0*.*\0\0"; // フィルタは必ず \0\0 終端
         ofn.nFilterIndex = 1;
         ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
-        ofn.lpstrDefExt = L"hmk"; // 拡張子を補完
+        ofn.lpstrDefExt = L"hmk";
 
         if (GetSaveFileNameW(&ofn)) {
             path = ofn.lpstrFile;
@@ -112,9 +144,15 @@ namespace hmgui {
         PostQuitMessage(0);
     }
 
-    void window_main::draw_grid() {
+    void window_main::redraw() {
         if (!d2d1_render_target || !d2d1_brush) return;
         d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
+        this->draw_grid();
+        this->draw_kifu();
+    }
+
+    void window_main::draw_grid() {
+        if (!d2d1_render_target || !d2d1_brush) return;
 
         const float grid_spacing = main_config.grid_spacing;
 
@@ -130,7 +168,6 @@ namespace hmgui {
             d2d1_brush,
             3.0f
         );
-
         d2d1_render_target->DrawLine(
             D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.top),
             D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.top),
@@ -170,6 +207,62 @@ namespace hmgui {
         }
     }
 
+    void window_main::draw_kifu() {
+        if (!d2d1_render_target || !d2d1_brush) return;
+
+        float kifu_spacing = main_config.kifu_spacing;
+
+        d2d1_render_target->DrawLine(
+            D2D1::Point2F(kifu_area_rectf.left, kifu_area_rectf.top),
+            D2D1::Point2F(kifu_area_rectf.left, kifu_area_rectf.bottom),
+            d2d1_brush,
+            3.0f
+        );
+        d2d1_render_target->DrawLine(
+            D2D1::Point2F(kifu_area_rectf.right, kifu_area_rectf.top),
+            D2D1::Point2F(kifu_area_rectf.right, kifu_area_rectf.bottom),
+            d2d1_brush,
+            3.0f
+        );
+        d2d1_render_target->DrawLine(
+            D2D1::Point2F(kifu_area_rectf.left, kifu_area_rectf.top),
+            D2D1::Point2F(kifu_area_rectf.right, kifu_area_rectf.bottom),
+            d2d1_brush,
+            3.0f
+        );
+        d2d1_render_target->DrawLine(
+            D2D1::Point2F(kifu_area_rectf.left, kifu_area_rectf.bottom),
+            D2D1::Point2F(kifu_area_rectf.right, kifu_area_rectf.bottom),
+            d2d1_brush,
+            3.0f
+        );
+
+        float offset_x_mod = fmodf(scroll_offset.x, kifu_spacing);
+        if (offset_x_mod < 0) offset_x_mod += kifu_spacing;
+
+        const auto &moves = current_kifu.data();
+        for (unsigned int i = 0; i < moves.size(); i++) {
+            std::wstring moveText = std::to_wstring(i + 1) + L": (" + std::to_wstring(moves[i].x) + L", " + std::to_wstring(moves[i].y) + L")";
+
+            float y = kifu_area_rectf.top + i * main_config.kifu_spacing - scroll_offset.y;
+
+            if (y + main_config.kifu_spacing < kifu_area_rectf.top || y > kifu_area_rectf.bottom) continue;
+
+            D2D1_RECT_F layout_rect = D2D1::RectF(
+                kifu_area_rectf.left,
+                y,
+                kifu_area_rectf.right,
+                y + main_config.kifu_spacing
+            );
+            d2d1_render_target->DrawTextW(
+                moveText.c_str(),
+                static_cast<UINT32>(moveText.size()),
+                text_format_default,
+                layout_rect,
+                d2d1_brush
+            );
+        }
+    }
 
     void window_main::grid_scroll(float dx, float dy) {
         scroll_offset.x += dx;

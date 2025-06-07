@@ -19,6 +19,7 @@ namespace hmgui {
         float window_size_x;
         float window_size_y;
         float grid_spacing;
+        float kifu_spacing;
         float grid_size_x;
         float kifu_size_x;
         float grid_and_kifu_size_y;
@@ -38,11 +39,16 @@ namespace hmgui {
         public:
             wc_main window_class;
             hmgui::window_conf main_config;
+            std::wstring current_kifu_path;
+            hm::kifu_ver1 current_kifu;
 
             ID2D1Factory *d2d1_factory;
             ID2D1HwndRenderTarget *d2d1_render_target;
             ID2D1SolidColorBrush *d2d1_brush;
+            IDWriteFactory *d2d1_dwrite_factory;
+            IDWriteTextFormat *text_format_default;
             D2D1_RECT_F grid_area_rectf;
+            D2D1_RECT_F kifu_area_rectf;
             D2D1_POINT_2F scroll_offset = D2D1::Point2F(0.0f, 0.0f);
 
             window_main() : d2d1_factory(nullptr), d2d1_render_target(nullptr), d2d1_brush(nullptr) {}
@@ -51,7 +57,9 @@ namespace hmgui {
             void create_window();
             void show_file_load_dialog(std::wstring &result);
             void show_file_save_dialog(std::wstring &result);
+            void redraw();
             void draw_grid();
+            void draw_kifu();
             void grid_scroll(float dx, float dy);
             void set_grid_scroll(float x, float y);
             void handle_exit();

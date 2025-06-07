@@ -24,8 +24,6 @@ hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
                         main_menu_game_new(ID_MENU_GAME_NEW),
                         main_menu_help_version(ID_MENU_HELP_VERSION);
 RECT grid_area_rect = {10, 10, 490, 490};
-hm::kifu_ver1 kifu;
-std::wstring current_kifu_path;
 hmgui::window_conf config;
 
 bool ctrl_down = false;
@@ -57,10 +55,10 @@ std::wstring utf8_to_utf16(const std::string &utf8_str) {
 
 // unused
 void update_title() {
-    if (current_kifu_path.empty()) {
+    if (main_window.current_kifu_path.empty()) {
         SetWindowTextW(main_window, L"Hook-Mark GUI");
     } else {
-        std::filesystem::path path(current_kifu_path);
+        std::filesystem::path path(main_window.current_kifu_path);
         std::wstring filename = path.filename().wstring();
         std::wstring title = L"Hook-Mark GUI - " + filename;
         SetWindowTextW(main_window, title.c_str());
@@ -145,6 +143,7 @@ void import_config() {
     if (um_config.count("first_countdown")) config.first_countdown = to_float(um_config.at("first_countdown"));
     if (um_config.count("second_countdown")) config.second_countdown = to_float(um_config.at("second_countdown"));
     if (um_config.count("lose_time_runs_out")) config.lose_time_runs_out = to_bool(um_config.at("lose_time_runs_out"));
+    if (um_config.count("kifu_spacing")) config.kifu_spacing = to_float(um_config.at("kifu_spacing"));
 }
 
 void hmgui::menu_main::create_menu() {
@@ -226,14 +225,14 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                 }
                 case ID_MENU_FILE_OPEN: {
                     std::wstring result;
-                    main_window.show_file_load_dialog(result);
+                    show_file_load_dialog(result);
                     current_kifu_path = result;
                     std::string filepath = utf16_to_utf8(result);
                     if (filepath.empty()) {
                         break;
                     }
                     try {
-                        kifu.kifu_load(filepath);
+                        current_kifu.kifu_load(filepath);
                     }
                     catch (std::exception e) {
                         MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
@@ -245,19 +244,19 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     if (current_kifu_path.empty()) {
                         break;
                     }
-                    kifu.kifu_save(utf16_to_utf8(current_kifu_path));
+                    current_kifu.kifu_save(utf16_to_utf8(current_kifu_path));
                     break;
                 }
                 case ID_MENU_FILE_SAVE_AS: {
                     std::wstring result;
-                    main_window.show_file_save_dialog(result);
+                    show_file_save_dialog(result);
                     current_kifu_path = result;
                     std::string filepath = utf16_to_utf8(result);
                     if (filepath.empty()) {
                         break;
                     }
                     try {
-                        kifu.kifu_save(filepath);
+                        current_kifu.kifu_save(filepath);
                     }
                     catch (std::exception e) {
                         MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
@@ -267,7 +266,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                 }
                 case ID_MENU_FILE_CLOSE: {
                     current_kifu_path.clear();
-                    kifu.clear();
+                    current_kifu.clear();
                     // update_title();
                     break;
                 }
@@ -323,7 +322,6 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
         }
         case WM_TIMER: {
             if (w_param == timer_id) {
-                MessageBoxW(NULL, L"たいまー", L"", MB_OK);
                 if (!ctrl_down) return 0;
                 if (key_held['H']) grid_scroll(-scroll_speed, 0);
                 if (key_held['L']) grid_scroll(scroll_speed, 0);

@@ -5,7 +5,8 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <d2d1.h>
-#include <math.h>
+#include <dwrite.h>
+#include <cmath>
 
 namespace hmgui {
     class window_base {
