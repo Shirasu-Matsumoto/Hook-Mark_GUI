@@ -23,7 +23,6 @@ hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
                         main_menu_view_board_separate_window(ID_MENU_VIEW_BOARD_SEPARATE_WINDOW),
                         main_menu_game_new(ID_MENU_GAME_NEW),
                         main_menu_help_version(ID_MENU_HELP_VERSION);
-RECT grid_area_rect = {10, 10, 490, 490};
 hmgui::window_conf config;
 
 bool ctrl_down = false;
@@ -234,9 +233,10 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     try {
                         current_kifu.kifu_load(filepath);
                     }
-                    catch (std::exception e) {
+                    catch (const std::exception &e) {
                         MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
                     }
+                    InvalidateRect(handle_window, nullptr, FALSE);
                     // update_title();
                     break;
                 }
@@ -312,12 +312,31 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                 }
                 InvalidateRect(handle_window, nullptr, FALSE);
             }
+            else if (PtInRect(&kifu_area_rect, point)) {
+                short delta = GET_WHEEL_DELTA_WPARAM(w_param);
+                if (ctrl_down) {
+                    kifu_scroll((float)-delta / 8, 0);
+                }
+                else {
+                    kifu_scroll(0, (float)-delta / 8);
+                }
+                InvalidateRect(handle_window, nullptr, FALSE);
+            }
             return 0;
         }
         case WM_MOUSEHWHEEL: {
-            short delta = GET_WHEEL_DELTA_WPARAM(w_param);
-            grid_scroll((float)delta / 8, 0);
-            InvalidateRect(handle_window, nullptr, FALSE);
+            POINT point = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+            ScreenToClient(handle_window, &point);
+
+            if (PtInRect(&grid_area_rect, point)) {
+                short delta = GET_WHEEL_DELTA_WPARAM(w_param);
+                grid_scroll((float)delta / 8, 0);
+                InvalidateRect(handle_window, nullptr, FALSE);
+            }
+            
+            return 0;
+        }
+        case WM_LBUTTONDOWN: {
             return 0;
         }
         case WM_TIMER: {
@@ -337,7 +356,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
             RECT rect;
             GetClientRect(handle_window, &rect);
             d2d1_render_target->BeginDraw();
-            draw_grid();
+            redraw();
             d2d1_render_target->EndDraw();
             HRESULT hr = EndPaint(handle_window, &paint_struct);
             return 0;
@@ -367,11 +386,10 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
             UINT height = HIWORD(l_param);
             if (d2d1_render_target)
             {
-                // サイズを変更
                 D2D1_SIZE_U size = D2D1::SizeU(width, height);
                 d2d1_render_target->Resize(size);
             }
-            InvalidateRect(handle_window, nullptr, FALSE); // 再描画を要求
+            InvalidateRect(handle_window, nullptr, FALSE);
             return 0;
         }
         default: {

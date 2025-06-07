@@ -40,6 +40,7 @@ namespace hmgui {
             wc_main window_class;
             hmgui::window_conf main_config;
             std::wstring current_kifu_path;
+            hm::board_state board;
             hm::kifu_ver1 current_kifu;
 
             ID2D1Factory *d2d1_factory;
@@ -47,9 +48,13 @@ namespace hmgui {
             ID2D1SolidColorBrush *d2d1_brush;
             IDWriteFactory *d2d1_dwrite_factory;
             IDWriteTextFormat *text_format_default;
+            IDWriteTextFormat *text_format_label;
+            RECT grid_area_rect;
             D2D1_RECT_F grid_area_rectf;
+            RECT kifu_area_rect;
             D2D1_RECT_F kifu_area_rectf;
-            D2D1_POINT_2F scroll_offset = D2D1::Point2F(0.0f, 0.0f);
+            D2D1_POINT_2F grid_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
+            D2D1_POINT_2F kifu_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
 
             window_main() : d2d1_factory(nullptr), d2d1_render_target(nullptr), d2d1_brush(nullptr) {}
             bool d2d1_initialize();
@@ -62,8 +67,11 @@ namespace hmgui {
             void draw_kifu();
             void grid_scroll(float dx, float dy);
             void set_grid_scroll(float x, float y);
-            void handle_exit();
             D2D1_POINT_2F get_grid_scroll() const;
+            void kifu_scroll(float dx, float dy);
+            void set_kifu_scroll(float x, float y);
+            D2D1_POINT_2F get_kifu_scroll() const;
+            void handle_exit();
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
     };
 
@@ -89,8 +97,6 @@ namespace hmgui {
             ID2D1Factory *d2d1_factory;
             ID2D1HwndRenderTarget *d2d1_render_target;
             ID2D1SolidColorBrush *d2d1_brush;
-            const D2D1_RECT_F grid_area_rectf = D2D1::RectF(10.0f, 10.0f, 490.0f, 490.0f);
-            D2D1_POINT_2F scroll_offset = D2D1::Point2F(0.0f, 0.0f);
 
             window_new_game() : d2d1_factory(nullptr), d2d1_render_target(nullptr), d2d1_brush(nullptr) {}
             bool d2d1_initialize();
