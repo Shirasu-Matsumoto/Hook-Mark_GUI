@@ -228,6 +228,28 @@ namespace hmgui {
             );
         }
 
+        float axis_x = grid_area_rectf.left + (0) * grid_spacing - grid_scroll_offset.x;
+        if (axis_x >= grid_area_rectf.left && axis_x <= grid_area_rectf.right) {
+            d2d1_render_target->DrawLine(
+                D2D1::Point2F(axis_x, grid_area_rectf.top),
+                D2D1::Point2F(axis_x, grid_area_rectf.bottom),
+                d2d1_brush,
+                3.0f
+            );
+        }
+
+        float adjust_y = main_config.margin * 3.5f;
+
+        float axis_y = grid_area_rectf.bottom - (0) * grid_spacing - grid_scroll_offset.y - adjust_y;
+        if (axis_y >= grid_area_rectf.top && axis_y <= grid_area_rectf.bottom) {
+            d2d1_render_target->DrawLine(
+                D2D1::Point2F(grid_area_rectf.left, axis_y),
+                D2D1::Point2F(grid_area_rectf.right, axis_y),
+                d2d1_brush,
+                3.0f
+            );
+        }
+
         d2d1_render_target->PushAxisAlignedClip(
             grid_area_rectf,
             D2D1_ANTIALIAS_MODE_PER_PRIMITIVE
@@ -237,43 +259,44 @@ namespace hmgui {
         auto &is_first = board.is_first();
         auto x_range = has_piece.index_range();
         for (int x = x_range.min; x <= x_range.max; ++x) {
-            if (has_piece.need_resize(x)) continue;
-            auto y_range = has_piece[x].index_range();
-            for (int y = y_range.min; y <= y_range.max; ++y) {
-                if (has_piece[x].need_resize(y)) continue;
-                if (!has_piece[x][y]) continue;
+        if (has_piece.need_resize(x)) continue;
+        auto y_range = has_piece[x].index_range();
+        for (int y = y_range.min; y <= y_range.max; ++y) {
+            if (has_piece[x].need_resize(y)) continue;
+            if (!has_piece[x][y]) continue;
 
-                float cx = grid_area_rectf.left + (x + 0.5f) * grid_spacing - grid_scroll_offset.x;
-                float cy = grid_area_rectf.bottom - (y + 0.5f) * grid_spacing - grid_scroll_offset.y;
-                float r = grid_spacing * 0.4f;
+            // セルの中央に石を描画する
+            float cx = grid_area_rectf.left + (x + 0.5f) * grid_spacing - grid_scroll_offset.x;
+            float cy = grid_area_rectf.bottom - (y + 0.5f) * grid_spacing - grid_scroll_offset.y - adjust_y;
+            float r = grid_spacing * 0.4f;
 
-                if (cx + r < grid_area_rectf.left || cx - r > grid_area_rectf.right ||
-                    cy + r < grid_area_rectf.top  || cy - r > grid_area_rectf.bottom)
-                    continue;
+            if (cx + r < grid_area_rectf.left || cx - r > grid_area_rectf.right ||
+                cy + r < grid_area_rectf.top  || cy - r > grid_area_rectf.bottom)
+                continue;
 
-                if (is_first[x][y]) {
-                    d2d1_render_target->DrawEllipse(
-                        D2D1::Ellipse(D2D1::Point2F(cx, cy), r, r),
-                        d2d1_brush,
-                        3.0f
-                    );
-                } else {
-                    float offset = r * 0.7f;
-                    d2d1_render_target->DrawLine(
-                        D2D1::Point2F(cx - offset, cy - offset),
-                        D2D1::Point2F(cx + offset, cy + offset),
-                        d2d1_brush,
-                        3.0f
-                    );
-                    d2d1_render_target->DrawLine(
-                        D2D1::Point2F(cx - offset, cy + offset),
-                        D2D1::Point2F(cx + offset, cy - offset),
-                        d2d1_brush,
-                        3.0f
-                    );
-                }
+            if (is_first[x][y]) {
+                d2d1_render_target->DrawEllipse(
+                    D2D1::Ellipse(D2D1::Point2F(cx, cy), r, r),
+                    d2d1_brush,
+                    3.0f
+                );
+            } else {
+                float offset = r * 0.7f;
+                d2d1_render_target->DrawLine(
+                    D2D1::Point2F(cx - offset, cy - offset),
+                    D2D1::Point2F(cx + offset, cy + offset),
+                    d2d1_brush,
+                    3.0f
+                );
+                d2d1_render_target->DrawLine(
+                    D2D1::Point2F(cx - offset, cy + offset),
+                    D2D1::Point2F(cx + offset, cy - offset),
+                    d2d1_brush,
+                    3.0f
+                );
             }
         }
+    }
 
         float grid_width  = grid_area_rectf.right - grid_area_rectf.left;
         float grid_height = grid_area_rectf.bottom - grid_area_rectf.top;
