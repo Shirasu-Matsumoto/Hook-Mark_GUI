@@ -1,2 +1,2 @@
 @echo off
-start build\Debug\Hook-Mark_GUI
+start build\Debug\Hook-Mark_GUI.exe

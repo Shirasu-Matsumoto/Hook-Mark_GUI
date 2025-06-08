@@ -6,6 +6,8 @@
 #include <windowsx.h>
 #include <d2d1.h>
 #include <dwrite.h>
+#include <wrl/client.h>
+#include <versionhelpers.h>
 #include <cmath>
 
 namespace hmgui {
@@ -30,11 +32,6 @@ namespace hmgui {
                     DestroyWindow(handle_window);
                     PostQuitMessage(0);
                     handle_window = nullptr;
-                }
-            }
-            void call_function(void (*function)()) {
-                if (function) {
-                    function();
                 }
             }
             virtual LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) {

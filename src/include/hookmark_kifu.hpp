@@ -37,10 +37,9 @@ namespace hm {
                 bool in_config = false;
                 bool header_found = false;
                 std::string line;
-                _config.clear(); // 初期化
+                _config.clear();
 
                 while (std::getline(ifs, line)) {
-                    // コメント削除
                     std::string trimmed_line = line;
                     size_t comment_pos = trimmed_line.find('*');
                     if (comment_pos != std::string::npos) {
@@ -50,14 +49,12 @@ namespace hm {
                     trimmed_line.erase(trimmed_line.find_last_not_of(" \t\r\n") + 1);
 
                     if (!header_found) {
-                        // ヘッダー行ではコメントもタブも許容しない
                         if (line == "Hook-Mark Kifu File Version 1.0") {
                             header_found = true;
                         }
                         continue;
                     }
 
-                    // セクション判定
                     if (trimmed_line == "#Config") {
                         in_config = true;
                         continue;
@@ -76,18 +73,15 @@ namespace hm {
                     }
 
                     if (in_config) {
-                        // コメント除去済みの line をそのまま（整形含めて）記録
                         _config += line + "\n";
                         continue;
                     }
 
-                    // Config外では空行をスキップ
                     if (trimmed_line.empty()) {
                         continue;
                     }
 
                     if (in_kifu) {
-                        // 空白除去（スペース含む） → 座標として読み取る準備
                         line.erase(std::remove_if(line.begin(), line.end(), [](unsigned char c) {
                             return std::isspace(c);
                         }), line.end());

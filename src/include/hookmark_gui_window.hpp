@@ -12,7 +12,6 @@ namespace hmgui {
     };
 
     struct window_conf {
-        // main window
         float window_pos_x;
         float window_pos_y;
         float margin;
@@ -25,7 +24,6 @@ namespace hmgui {
         float grid_and_kifu_size_y;
         std::string open_file;
 
-        // new game window
         std::string first_name;
         std::string second_name;
         float first_time;
@@ -55,10 +53,13 @@ namespace hmgui {
             D2D1_RECT_F kifu_area_rectf;
             D2D1_POINT_2F grid_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             D2D1_POINT_2F kifu_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
+            std::vector<float> label_width;
+            std::vector<float> label_height;
 
             window_main() : d2d1_factory(nullptr), d2d1_render_target(nullptr), d2d1_brush(nullptr) {}
             bool d2d1_initialize();
             void initialize(window_conf &config);
+            void add_label_size(int i);
             void create_window();
             void show_file_load_dialog(std::wstring &result);
             void show_file_save_dialog(std::wstring &result);

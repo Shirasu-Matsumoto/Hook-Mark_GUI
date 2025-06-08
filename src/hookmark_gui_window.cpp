@@ -38,9 +38,13 @@ namespace hmgui {
         hr = d2d1_factory->CreateHwndRenderTarget(props, handle_window_props, &d2d1_render_target);
         if (FAILED(hr)) return false;
 
-        FLOAT dpi_x = 96.0f;
-        FLOAT dpi_y = 96.0f;
-        d2d1_factory->GetDesktopDpi(&dpi_x, &dpi_y);
+        UINT dpi = 96;
+        if (IsWindows10OrGreater()) {
+            dpi = GetDpiForWindow(handle_window);
+        }
+
+        FLOAT dpi_x = static_cast<FLOAT>(dpi);
+        FLOAT dpi_y = static_cast<FLOAT>(dpi);
         d2d1_render_target->SetDpi(dpi_x, dpi_y);
 
         d2d1_render_target->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
@@ -72,12 +76,49 @@ namespace hmgui {
             DWRITE_FONT_WEIGHT_NORMAL,
             DWRITE_FONT_STYLE_NORMAL,
             DWRITE_FONT_STRETCH_NORMAL,
-            10.0f,  // 小さなフォントサイズ
+            10.0f,
             L"ja-JP",
             &text_format_label
         );
 
+        for (int i = 1; i < 6; i++) {
+            add_label_size(i);
+        }
+
         return SUCCEEDED(hr);
+    }
+
+    void window_main::add_label_size(int i) {
+        if (label_width.size() <= i) {
+            label_width.resize(i + 1, 0.0f);
+            label_height.resize(i + 1, 0.0f);
+        }
+        else if (label_width[i] != 0.0f) {
+            return;
+        }
+
+        std::wstring txt(i, L'0');
+        Microsoft::WRL::ComPtr<IDWriteTextLayout> temp_layout;
+
+        HRESULT hr = d2d1_dwrite_factory->CreateTextLayout(
+            txt.c_str(),
+            static_cast<UINT32>(txt.size()),
+            text_format_label,
+            1000.0f,
+            1000.0f,
+            temp_layout.GetAddressOf()
+        );
+        
+        float text_width = 0.0f, text_height = 0.0f;
+        if (SUCCEEDED(hr)) {
+            DWRITE_TEXT_METRICS metrics;
+            temp_layout->GetMetrics(&metrics);
+            text_width = metrics.width;
+            text_height = metrics.height;
+        }
+
+        label_width[i] = text_width;
+        label_height[i] = text_height;
     }
 
     void window_main::initialize(window_conf &config) {
@@ -250,6 +291,26 @@ namespace hmgui {
             );
         }
 
+        float axis_x1 = grid_area_rectf.left + (1) * grid_spacing - grid_scroll_offset.x;
+        if (axis_x1 >= grid_area_rectf.left && axis_x1 <= grid_area_rectf.right) {
+            d2d1_render_target->DrawLine(
+                D2D1::Point2F(axis_x1, grid_area_rectf.top),
+                D2D1::Point2F(axis_x1, grid_area_rectf.bottom),
+                d2d1_brush,
+                3.0f
+            );
+        }
+
+        float axis_y1 = grid_area_rectf.bottom - (1) * grid_spacing - grid_scroll_offset.y - adjust_y;
+        if (axis_y1 >= grid_area_rectf.top && axis_y1 <= grid_area_rectf.bottom) {
+            d2d1_render_target->DrawLine(
+                D2D1::Point2F(grid_area_rectf.left, axis_y1),
+                D2D1::Point2F(grid_area_rectf.right, axis_y1),
+                d2d1_brush,
+                3.0f
+            );
+        }
+
         d2d1_render_target->PushAxisAlignedClip(
             grid_area_rectf,
             D2D1_ANTIALIAS_MODE_PER_PRIMITIVE
@@ -259,44 +320,43 @@ namespace hmgui {
         auto &is_first = board.is_first();
         auto x_range = has_piece.index_range();
         for (int x = x_range.min; x <= x_range.max; ++x) {
-        if (has_piece.need_resize(x)) continue;
-        auto y_range = has_piece[x].index_range();
-        for (int y = y_range.min; y <= y_range.max; ++y) {
-            if (has_piece[x].need_resize(y)) continue;
-            if (!has_piece[x][y]) continue;
+            if (has_piece.need_resize(x)) continue;
+            auto y_range = has_piece[x].index_range();
+            for (int y = y_range.min; y <= y_range.max; ++y) {
+                if (has_piece[x].need_resize(y)) continue;
+                if (!has_piece[x][y]) continue;
 
-            // セルの中央に石を描画する
-            float cx = grid_area_rectf.left + (x + 0.5f) * grid_spacing - grid_scroll_offset.x;
-            float cy = grid_area_rectf.bottom - (y + 0.5f) * grid_spacing - grid_scroll_offset.y - adjust_y;
-            float r = grid_spacing * 0.4f;
+                float cx = grid_area_rectf.left + (x + 0.5f) * grid_spacing - grid_scroll_offset.x;
+                float cy = grid_area_rectf.bottom - (y + 0.5f) * grid_spacing - grid_scroll_offset.y - adjust_y;
+                float r = grid_spacing * 0.4f;
 
-            if (cx + r < grid_area_rectf.left || cx - r > grid_area_rectf.right ||
-                cy + r < grid_area_rectf.top  || cy - r > grid_area_rectf.bottom)
-                continue;
+                if (cx + r < grid_area_rectf.left || cx - r > grid_area_rectf.right ||
+                    cy + r < grid_area_rectf.top  || cy - r > grid_area_rectf.bottom)
+                    continue;
 
-            if (is_first[x][y]) {
-                d2d1_render_target->DrawEllipse(
-                    D2D1::Ellipse(D2D1::Point2F(cx, cy), r, r),
-                    d2d1_brush,
-                    3.0f
-                );
-            } else {
-                float offset = r * 0.7f;
-                d2d1_render_target->DrawLine(
-                    D2D1::Point2F(cx - offset, cy - offset),
-                    D2D1::Point2F(cx + offset, cy + offset),
-                    d2d1_brush,
-                    3.0f
-                );
-                d2d1_render_target->DrawLine(
-                    D2D1::Point2F(cx - offset, cy + offset),
-                    D2D1::Point2F(cx + offset, cy - offset),
-                    d2d1_brush,
-                    3.0f
-                );
+                if (is_first[x][y]) {
+                    d2d1_render_target->DrawEllipse(
+                        D2D1::Ellipse(D2D1::Point2F(cx, cy), r, r),
+                        d2d1_brush,
+                        3.0f
+                    );
+                } else {
+                    float offset = r * 0.7f;
+                    d2d1_render_target->DrawLine(
+                        D2D1::Point2F(cx - offset, cy - offset),
+                        D2D1::Point2F(cx + offset, cy + offset),
+                        d2d1_brush,
+                        3.0f
+                    );
+                    d2d1_render_target->DrawLine(
+                        D2D1::Point2F(cx - offset, cy + offset),
+                        D2D1::Point2F(cx + offset, cy - offset),
+                        d2d1_brush,
+                        3.0f
+                    );
+                }
             }
         }
-    }
 
         float grid_width  = grid_area_rectf.right - grid_area_rectf.left;
         float grid_height = grid_area_rectf.bottom - grid_area_rectf.top;
@@ -305,13 +365,19 @@ namespace hmgui {
         int visible_x_max = static_cast<int>(std::floor((grid_scroll_offset.x + grid_width) / grid_spacing - 0.5f)) + 1;
         for (int x = visible_x_min; x <= visible_x_max; ++x) {
             float cx = grid_area_rectf.left + (x + 0.5f) * grid_spacing - grid_scroll_offset.x;
+            std::wstring txt = std::to_wstring(x);
+
+            add_label_size(static_cast<int>(txt.size()));
+            
+            float new_left = cx - label_width[txt.size()] / 2;
+            
             D2D1_RECT_F layout = D2D1::RectF(
-                cx - grid_spacing / 2,
-                grid_area_rectf.bottom - grid_spacing / 2,
-                cx + grid_spacing / 2,
+                new_left,
+                grid_area_rectf.bottom - grid_spacing / 3,
+                new_left + grid_spacing,
                 grid_area_rectf.bottom
             );
-            std::wstring txt = std::to_wstring(x);
+
             d2d1_render_target->DrawText(
                 txt.c_str(),
                 static_cast<UINT32>(txt.size()),
@@ -325,13 +391,16 @@ namespace hmgui {
         int visible_y_max = static_cast<int>(std::floor((grid_height - grid_scroll_offset.y) / grid_spacing - 0.5f)) + 1;
         for (int y = visible_y_min; y <= visible_y_max; ++y) {
             float cy = grid_area_rectf.bottom - (y + 0.5f) * grid_spacing - grid_scroll_offset.y;
-            D2D1_RECT_F layout = D2D1::RectF(
-                grid_area_rectf.left,
-                cy - grid_spacing / 2,
-                grid_area_rectf.left + grid_spacing / 2,
-                cy + grid_spacing / 2
-            );
+            
             std::wstring txt = std::to_wstring(y);
+            float y_offset = grid_spacing / 2 - label_height[txt.size()] / 2;
+            D2D1_RECT_F layout = D2D1::RectF(
+                grid_area_rectf.left + grid_spacing / 8,
+                (cy - grid_spacing / 2) - y_offset,
+                grid_area_rectf.left + grid_spacing / 2,
+                (cy + grid_spacing / 2) - y_offset
+            );
+            
             d2d1_render_target->DrawText(
                 txt.c_str(),
                 static_cast<UINT32>(txt.size()),
@@ -424,16 +493,14 @@ namespace hmgui {
         kifu_scroll_offset.x += dx;
         kifu_scroll_offset.y += dy;
 
-        // --- スクロール制限を追加 ---
         const auto &moves = current_kifu.data();
         float total_height = static_cast<float>(moves.size()) * main_config.kifu_spacing;
         float view_height = kifu_area_rectf.bottom - kifu_area_rectf.top;
 
-        // 下限（上端）
         if (kifu_scroll_offset.y < 0.0f) {
             kifu_scroll_offset.y = 0.0f;
         }
-        // 上限（下端）
+
         if (total_height > view_height) {
             float max_offset = total_height - view_height;
             if (kifu_scroll_offset.y > max_offset) {

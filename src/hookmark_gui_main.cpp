@@ -52,14 +52,13 @@ std::wstring utf8_to_utf16(const std::string &utf8_str) {
     return utf16_str;
 }
 
-// unused
 void update_title() {
     if (main_window.current_kifu_path.empty()) {
         SetWindowTextW(main_window, L"Hook-Mark GUI");
     } else {
         std::filesystem::path path(main_window.current_kifu_path);
         std::wstring filename = path.filename().wstring();
-        std::wstring title = L"Hook-Mark GUI - " + filename;
+        std::wstring title = L"Hook-Mark GUI - " + filename + L"\0";
         SetWindowTextW(main_window, title.c_str());
     }
 }
@@ -237,7 +236,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                         MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
                     }
                     InvalidateRect(handle_window, nullptr, FALSE);
-                    // update_title();
+                    update_title();
                     break;
                 }
                 case ID_MENU_FILE_OVERWRITE_SAVE: {
@@ -261,13 +260,13 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     catch (std::exception e) {
                         MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
                     }
-                    // update_title();
+                    update_title();
                     break;
                 }
                 case ID_MENU_FILE_CLOSE: {
                     current_kifu_path.clear();
                     current_kifu.clear();
-                    // update_title();
+                    update_title();
                     break;
                 }
                 case ID_MENU_FILE_EXIT: {
@@ -405,6 +404,10 @@ int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
     main_window.initialize(config);
     main_window.show_window();
     SetMenu(main_window, main_menu);
+
+    main_window.board.progress(1, 1);
+    main_window.board.progress(-1, -1);
+    main_window.board.progress(1, -1);
 
     MSG message;
     while (true) {

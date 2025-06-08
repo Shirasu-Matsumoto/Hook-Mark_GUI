@@ -163,7 +163,7 @@ namespace hm {
                 }
 
                 if (!found) {
-                    return { range(0, 0), range(0, 0) }; // 盤面が空の場合
+                    return { range(0, 0), range(0, 0) };
                 }
 
                 return { range(min_x, max_x), range(min_y, max_y) };
