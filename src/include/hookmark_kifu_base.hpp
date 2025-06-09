@@ -1,5 +1,5 @@
-﻿#ifndef __HOOKMARK_KIFU_BASE_HPP_
-#define __HOOKMARK_KIFU_BASE_HPP_
+﻿#ifndef __HOOKMARK_KIFU_BASE_HPP__
+#define __HOOKMARK_KIFU_BASE_HPP__
 
 #include <hookmark_base.hpp>
 

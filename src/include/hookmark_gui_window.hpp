@@ -36,7 +36,7 @@ namespace hmgui {
     class window_main final : public window_base {
         public:
             wc_main window_class;
-            hmgui::window_conf main_config;
+            window_conf main_config;
             std::wstring current_kifu_path;
             hm::board_state board;
             hm::kifu_ver1 current_kifu;
@@ -56,9 +56,9 @@ namespace hmgui {
             std::vector<float> label_width;
             std::vector<float> label_height;
 
-            window_main() : d2d1_factory(nullptr), d2d1_render_target(nullptr), d2d1_brush(nullptr) {}
-            bool d2d1_initialize();
-            void initialize(window_conf &config);
+            window_main() {}
+            bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
+            void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void add_label_size(int i);
             void create_window();
             void show_file_load_dialog(std::wstring &result);
@@ -85,24 +85,28 @@ namespace hmgui {
             void create_menu() override;
     };
 
-    class wc_new_game final : public wc_base {
+    class wc_newgame final : public wc_base {
         public:
-            wc_new_game();
+            wc_newgame();
             ATOM register_class() override;
     };
 
-    class window_new_game final : public window_base {
+    class window_newgame final : public window_base {
         public:
-            wc_new_game window_class;
+            wc_newgame window_class;
+            window_conf newgame_config;
 
             ID2D1Factory *d2d1_factory;
+            IDWriteFactory *d2d1_dwrite_factory;
             ID2D1HwndRenderTarget *d2d1_render_target;
             ID2D1SolidColorBrush *d2d1_brush;
 
-            window_new_game() : d2d1_factory(nullptr), d2d1_render_target(nullptr), d2d1_brush(nullptr) {}
-            bool d2d1_initialize();
-            void initialize() override;
+            window_newgame() {}
+            bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
+            void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void create_window() override;
+            void handle_exit();
+            void release();
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
     };
 }

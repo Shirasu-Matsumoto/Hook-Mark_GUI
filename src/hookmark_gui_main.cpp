@@ -3,6 +3,8 @@
 
 hmgui::window_main main_window;
 hmgui::wc_main main_window_class;
+hmgui::window_newgame newgame_window;
+hmgui::wc_newgame newgame_window_class;
 hmgui::menu_main main_menu;
 hmgui::menu_item_popup  main_menu_file,
                         main_menu_edit,
@@ -24,6 +26,9 @@ hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
                         main_menu_game_new(ID_MENU_GAME_NEW),
                         main_menu_help_version(ID_MENU_HELP_VERSION);
 hmgui::window_conf config;
+
+ID2D1Factory *grobal_d2d1_factory;
+IDWriteFactory *grobal_d2d1_dwrite_factory;
 
 bool ctrl_down = false;
 bool key_held[256] = {};
@@ -72,7 +77,7 @@ float to_float(const std::string &str) {
     }
 }
 
-bool to_bool(const std::string& str) {
+bool to_bool(const std::string &str) {
     return (str == "1" || str == "true" || str == "TRUE");
 }
 
@@ -267,6 +272,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     current_kifu_path.clear();
                     current_kifu.clear();
                     update_title();
+                    InvalidateRect(handle_window, nullptr, FALSE);
                     break;
                 }
                 case ID_MENU_FILE_EXIT: {
@@ -289,6 +295,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     break;
                 }
                 case ID_MENU_GAME_NEW: {
+                    newgame_window.show_window();
                     break;
                 }
                 case ID_MENU_HELP_VERSION: {
@@ -392,16 +399,35 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
             return 0;
         }
         default: {
-            return DefWindowProc(handle_window, message, w_param, l_param);
+            return DefWindowProcW(handle_window, message, w_param, l_param);
         }
     }
-    return DefWindowProc(handle_window, message, w_param, l_param);
+    return DefWindowProcW(handle_window, message, w_param, l_param);
+}
+
+LRESULT CALLBACK hmgui::window_newgame::handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) {
+    switch (message) {
+        case WM_CLOSE: {
+            handle_exit();
+            return 0;
+        }
+        default: {
+            return DefWindowProcW(handle_window, message, w_param, l_param);
+        }
+    }
+    return DefWindowProcW(handle_window, message, w_param, l_param);
 }
 
 int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
     import_config();
     main_menu.create_menu();
-    main_window.initialize(config);
+    HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &grobal_d2d1_factory);
+    if (FAILED(hr)) return false;
+    hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&grobal_d2d1_dwrite_factory));
+    if (FAILED(hr)) return false;
+
+    main_window.initialize(config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
+    newgame_window.initialize(config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
     main_window.show_window();
     SetMenu(main_window, main_menu);
 

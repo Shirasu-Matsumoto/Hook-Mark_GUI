@@ -20,11 +20,11 @@ namespace hmgui {
         return RegisterClassExW(&window_class);
     }
 
-    bool window_main::d2d1_initialize() {
-        if (d2d1_factory) return true;
-
-        HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &d2d1_factory);
-        if (FAILED(hr)) return false;
+    bool window_main::d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
+        d2d1_factory = i_d2d1_factory;
+        d2d1_factory->AddRef();
+        d2d1_dwrite_factory = i_d2d1_dwrite_factory;
+        d2d1_dwrite_factory->AddRef();
 
         RECT rect;
         GetClientRect(handle_window, &rect);
@@ -35,7 +35,7 @@ namespace hmgui {
 
         D2D1_HWND_RENDER_TARGET_PROPERTIES handle_window_props = D2D1::HwndRenderTargetProperties(handle_window, size);
 
-        hr = d2d1_factory->CreateHwndRenderTarget(props, handle_window_props, &d2d1_render_target);
+        HRESULT hr = d2d1_factory->CreateHwndRenderTarget(props, handle_window_props, &d2d1_render_target);
         if (FAILED(hr)) return false;
 
         UINT dpi = 96;
@@ -51,11 +51,6 @@ namespace hmgui {
         
         hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
 
-        hr = DWriteCreateFactory(
-            DWRITE_FACTORY_TYPE_SHARED,
-            __uuidof(IDWriteFactory),
-            reinterpret_cast<IUnknown**>(&d2d1_dwrite_factory)
-        );
         if (FAILED(hr)) return false;
 
         hr = d2d1_dwrite_factory->CreateTextFormat(
@@ -121,11 +116,11 @@ namespace hmgui {
         label_height[i] = text_height;
     }
 
-    void window_main::initialize(window_conf &config) {
+    void window_main::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
         main_config = config;
         window_class.register_class();
         create_window();
-        d2d1_initialize();
+        d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
         grid_area_rectf = D2D1::RectF(
             main_config.margin,
             main_config.margin,
@@ -163,7 +158,6 @@ namespace hmgui {
             nullptr, nullptr, GetModuleHandle(nullptr), this
         );
         SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-        ShowWindow(handle_window, SW_SHOW);
     }
 
     void window_main::show_file_load_dialog(std::wstring &path) {
@@ -175,7 +169,7 @@ namespace hmgui {
         ofn.hwndOwner = handle_window;
         ofn.lpstrFile = szFile;
         ofn.nMaxFile = sizeof(szFile) / sizeof(wchar_t);
-        ofn.lpstrFilter = L"Hook-Mark棋譜ファイル (*.hmk)\0*.hmk\0すべてのファイル (*.*)\0*.*\0";
+        ofn.lpstrFilter = L"Hook-Mark棋譜ファイル (*.hmk, *.hmkif)\0*.hmk;*.hmkif\0すべてのファイル (*.*)\0*.*\0";
         ofn.nFilterIndex = 1;
         ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
@@ -194,7 +188,7 @@ namespace hmgui {
         ofn.hwndOwner = handle_window;
         ofn.lpstrFile = szFile;
         ofn.nMaxFile = MAX_PATH;
-        ofn.lpstrFilter = L"Hook-Mark棋譜ファイル (*.hmk)\0*.hmk\0すべてのファイル (*.*)\0*.*\0";
+        ofn.lpstrFilter = L"Hook-Mark棋譜ファイル (*.hmk, *.hmkif)\0*.hmk;*.hmkif\0すべてのファイル (*.*)\0*.*\0";
         ofn.nFilterIndex = 1;
         ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
         ofn.lpstrDefExt = L"hmk";
@@ -206,6 +200,10 @@ namespace hmgui {
 
     void window_main::handle_exit() {
         PostQuitMessage(0);
+        d2d1_render_target->Release();
+        d2d1_brush->Release();
+        d2d1_dwrite_factory->Release();
+        d2d1_factory->Release();
     }
 
     void window_main::redraw() {
@@ -518,5 +516,88 @@ namespace hmgui {
 
     D2D1_POINT_2F window_main::get_kifu_scroll() const {
         return kifu_scroll_offset;
+    }
+
+    wc_newgame::wc_newgame() : wc_base() {}
+
+    ATOM wc_newgame::register_class() {
+        window_class = {
+            sizeof(WNDCLASSEXW),
+            CS_HREDRAW | CS_VREDRAW,
+            window_proc,
+            0, 0,
+            GetModuleHandle(nullptr),
+            LoadIconW(nullptr, MAKEINTRESOURCEW(32512)),
+            LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
+            (HBRUSH)(COLOR_WINDOW + 1),
+            nullptr,
+            L"Hookmark_GUI_NewGame",
+            LoadIconW(nullptr, MAKEINTRESOURCEW(32512))
+        };
+        return RegisterClassExW(&window_class);
+    }
+
+    void window_newgame::create_window() {
+        handle_window = CreateWindowExW(
+            0,
+            L"Hookmark_GUI_NewGame",
+            L"Hook-Mark GUI - New game",
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+            CW_USEDEFAULT, CW_USEDEFAULT,
+            600, 600,
+            NULL, NULL, GetModuleHandle(nullptr), NULL
+        );
+        SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+    }
+
+    void window_newgame::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
+        newgame_config = config;
+        window_class.register_class();
+        create_window();
+        d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
+    }
+
+    bool window_newgame::d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
+        d2d1_factory = i_d2d1_factory;
+        d2d1_factory->AddRef();
+        d2d1_dwrite_factory = i_d2d1_dwrite_factory;
+        d2d1_dwrite_factory->AddRef();
+
+        RECT rect;
+        GetClientRect(handle_window, &rect);
+
+        D2D1_SIZE_U size = D2D1::SizeU(rect.right - rect.left, rect.bottom - rect.top);
+
+        D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties();
+
+        D2D1_HWND_RENDER_TARGET_PROPERTIES handle_window_props = D2D1::HwndRenderTargetProperties(handle_window, size);
+
+        HRESULT hr = d2d1_factory->CreateHwndRenderTarget(props, handle_window_props, &d2d1_render_target);
+        if (FAILED(hr)) return false;
+
+        UINT dpi = 96;
+        if (IsWindows10OrGreater()) {
+            dpi = GetDpiForWindow(handle_window);
+        }
+
+        FLOAT dpi_x = static_cast<FLOAT>(dpi);
+        FLOAT dpi_y = static_cast<FLOAT>(dpi);
+        d2d1_render_target->SetDpi(dpi_x, dpi_y);
+
+        d2d1_render_target->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+        
+        hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
+
+        if (FAILED(hr)) return false;
+
+        return true;
+    }
+
+    void window_newgame::handle_exit() {
+        show_window(SW_HIDE);
+    }
+
+    void window_newgame::release() {
+        DestroyWindow(handle_window);
     }
 }
