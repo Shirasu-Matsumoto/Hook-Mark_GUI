@@ -47,10 +47,13 @@ namespace hmgui {
             IDWriteFactory *d2d1_dwrite_factory;
             IDWriteTextFormat *text_format_default;
             IDWriteTextFormat *text_format_label;
+            RECT window_area_rect;
             RECT grid_area_rect;
             D2D1_RECT_F grid_area_rectf;
             RECT kifu_area_rect;
             D2D1_RECT_F kifu_area_rectf;
+            RECT config_area_rect;
+            D2D1_RECT_F config_area_rectf;
             D2D1_POINT_2F grid_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             D2D1_POINT_2F kifu_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             std::vector<float> label_width;
@@ -64,6 +67,7 @@ namespace hmgui {
             void show_file_load_dialog(std::wstring &result);
             void show_file_save_dialog(std::wstring &result);
             void redraw();
+            void draw_config();
             void draw_grid();
             void draw_kifu();
             void grid_scroll(float dx, float dy);

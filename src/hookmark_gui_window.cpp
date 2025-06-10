@@ -48,7 +48,7 @@ namespace hmgui {
         d2d1_render_target->SetDpi(dpi_x, dpi_y);
 
         d2d1_render_target->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-        
+
         hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
 
         if (FAILED(hr)) return false;
@@ -103,7 +103,7 @@ namespace hmgui {
             1000.0f,
             temp_layout.GetAddressOf()
         );
-        
+
         float text_width = 0.0f, text_height = 0.0f;
         if (SUCCEEDED(hr)) {
             DWRITE_TEXT_METRICS metrics;
@@ -118,32 +118,46 @@ namespace hmgui {
 
     void window_main::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
         main_config = config;
+        grid_scroll_offset = D2D1::Point2F(-(main_config.grid_size_x - main_config.margin * 2) / 2 + main_config.grid_spacing / 2, (main_config.grid_and_kifu_size_y - main_config.margin * 2) / 2 - main_config.grid_spacing / 2);
         window_class.register_class();
         create_window();
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
         grid_area_rectf = D2D1::RectF(
             main_config.margin,
             main_config.margin,
-            main_config.grid_size_x - main_config.margin / 2,
-            main_config.grid_and_kifu_size_y - main_config.margin / 2
+            main_config.grid_size_x - main_config.margin,
+            main_config.grid_and_kifu_size_y - main_config.margin
         );
         kifu_area_rectf = D2D1::RectF(
-            main_config.grid_size_x + main_config.margin / 2,
+            main_config.grid_size_x + main_config.margin,
             main_config.margin,
-            main_config.grid_size_x + main_config.kifu_size_x,
-            main_config.grid_and_kifu_size_y - main_config.margin / 2
+            main_config.grid_size_x + main_config.kifu_size_x - main_config.margin,
+            main_config.grid_and_kifu_size_y - main_config.margin
         );
+        config_area_rectf = D2D1::RectF(
+            main_config.grid_size_x + main_config.kifu_size_x + main_config.margin,
+            main_config.margin,
+            main_config.margin,
+            main_config.grid_and_kifu_size_y - main_config.margin
+        );
+        GetWindowRect(handle_window, &window_area_rect);
         grid_area_rect = {
             static_cast<long>(main_config.margin),
             static_cast<long>(main_config.margin),
-            static_cast<long>(main_config.grid_size_x - main_config.margin / 2),
-            static_cast<long>(main_config.grid_and_kifu_size_y - main_config.margin / 2)
+            static_cast<long>(main_config.grid_size_x - main_config.margin),
+            static_cast<long>(main_config.grid_and_kifu_size_y - main_config.margin)
         };
         kifu_area_rect = {
-            static_cast<long>(main_config.grid_size_x + main_config.margin / 2),
+            static_cast<long>(main_config.grid_size_x + main_config.margin),
             static_cast<long>(main_config.margin),
-            static_cast<long>(main_config.grid_size_x + main_config.kifu_size_x),
-            static_cast<long>(main_config.grid_and_kifu_size_y - main_config.margin / 2)
+            static_cast<long>(main_config.grid_size_x + main_config.kifu_size_x - main_config.margin),
+            static_cast<long>(main_config.grid_and_kifu_size_y - main_config.margin)
+        };
+        config_area_rect = {
+            static_cast<long>(main_config.grid_size_x + main_config.kifu_size_x + main_config.margin),
+            static_cast<long>(main_config.margin),
+            static_cast<long>(main_config.margin),
+            static_cast<long>(main_config.grid_and_kifu_size_y - main_config.margin)
         };
     }
 
@@ -215,32 +229,13 @@ namespace hmgui {
 
     void window_main::draw_grid() {
         if (!d2d1_render_target || !d2d1_brush) return;
-        
+
         const float grid_spacing = main_config.grid_spacing;
 
-        d2d1_render_target->DrawLine(
-            D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.top),
-            D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.bottom),
+        d2d1_render_target->DrawRectangle(
+            grid_area_rectf,
             d2d1_brush,
-            3.0f
-        );
-        d2d1_render_target->DrawLine(
-            D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.top),
-            D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.bottom),
-            d2d1_brush,
-            3.0f
-        );
-        d2d1_render_target->DrawLine(
-            D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.top),
-            D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.top),
-            d2d1_brush,
-            3.0f
-        );
-        d2d1_render_target->DrawLine(
-            D2D1::Point2F(grid_area_rectf.left, grid_area_rectf.bottom),
-            D2D1::Point2F(grid_area_rectf.right, grid_area_rectf.bottom),
-            d2d1_brush,
-            3.0f
+            2.0f
         );
 
         float offset_x_mod = fmodf(grid_scroll_offset.x, grid_spacing);
@@ -248,7 +243,7 @@ namespace hmgui {
         float offset_y_mod = fmodf(grid_scroll_offset.y, grid_spacing);
         if (offset_y_mod < 0) offset_y_mod += grid_spacing;
         float start_x = grid_area_rectf.left + grid_spacing - offset_x_mod;
-        float start_y = grid_area_rectf.top + grid_spacing - offset_y_mod;
+        float start_y = grid_area_rectf.bottom - offset_y_mod;
 
         for (float x = start_x; x < grid_area_rectf.right; x += grid_spacing) {
             d2d1_render_target->DrawLine(
@@ -258,7 +253,7 @@ namespace hmgui {
                 1.0f
             );
         }
-        for (float y = start_y; y < grid_area_rectf.bottom; y += grid_spacing) {
+        for (float y = start_y; y >= grid_area_rectf.top; y -= grid_spacing) {
             d2d1_render_target->DrawLine(
                 D2D1::Point2F(grid_area_rectf.left, y),
                 D2D1::Point2F(grid_area_rectf.right, y),
@@ -273,19 +268,17 @@ namespace hmgui {
                 D2D1::Point2F(axis_x, grid_area_rectf.top),
                 D2D1::Point2F(axis_x, grid_area_rectf.bottom),
                 d2d1_brush,
-                3.0f
+                2.0f
             );
         }
 
-        float adjust_y = main_config.margin * 3.5f;
-
-        float axis_y = grid_area_rectf.bottom - (0) * grid_spacing - grid_scroll_offset.y - adjust_y;
+        float axis_y = grid_area_rectf.bottom - (0) * grid_spacing - grid_scroll_offset.y;
         if (axis_y >= grid_area_rectf.top && axis_y <= grid_area_rectf.bottom) {
             d2d1_render_target->DrawLine(
                 D2D1::Point2F(grid_area_rectf.left, axis_y),
                 D2D1::Point2F(grid_area_rectf.right, axis_y),
                 d2d1_brush,
-                3.0f
+                2.0f
             );
         }
 
@@ -295,17 +288,17 @@ namespace hmgui {
                 D2D1::Point2F(axis_x1, grid_area_rectf.top),
                 D2D1::Point2F(axis_x1, grid_area_rectf.bottom),
                 d2d1_brush,
-                3.0f
+                2.0f
             );
         }
 
-        float axis_y1 = grid_area_rectf.bottom - (1) * grid_spacing - grid_scroll_offset.y - adjust_y;
+        float axis_y1 = grid_area_rectf.bottom - (1) * grid_spacing - grid_scroll_offset.y;
         if (axis_y1 >= grid_area_rectf.top && axis_y1 <= grid_area_rectf.bottom) {
             d2d1_render_target->DrawLine(
                 D2D1::Point2F(grid_area_rectf.left, axis_y1),
                 D2D1::Point2F(grid_area_rectf.right, axis_y1),
                 d2d1_brush,
-                3.0f
+                2.0f
             );
         }
 
@@ -325,7 +318,7 @@ namespace hmgui {
                 if (!has_piece[x][y]) continue;
 
                 float cx = grid_area_rectf.left + (x + 0.5f) * grid_spacing - grid_scroll_offset.x;
-                float cy = grid_area_rectf.bottom - (y + 0.5f) * grid_spacing - grid_scroll_offset.y - adjust_y;
+                float cy = grid_area_rectf.bottom - (y + 0.5f) * grid_spacing - grid_scroll_offset.y;
                 float r = grid_spacing * 0.4f;
 
                 if (cx + r < grid_area_rectf.left || cx - r > grid_area_rectf.right ||
@@ -336,7 +329,7 @@ namespace hmgui {
                     d2d1_render_target->DrawEllipse(
                         D2D1::Ellipse(D2D1::Point2F(cx, cy), r, r),
                         d2d1_brush,
-                        3.0f
+                        2.0f
                     );
                 } else {
                     float offset = r * 0.7f;
@@ -344,13 +337,13 @@ namespace hmgui {
                         D2D1::Point2F(cx - offset, cy - offset),
                         D2D1::Point2F(cx + offset, cy + offset),
                         d2d1_brush,
-                        3.0f
+                        2.0f
                     );
                     d2d1_render_target->DrawLine(
                         D2D1::Point2F(cx - offset, cy + offset),
                         D2D1::Point2F(cx + offset, cy - offset),
                         d2d1_brush,
-                        3.0f
+                        2.0f
                     );
                 }
             }
@@ -366,12 +359,12 @@ namespace hmgui {
             std::wstring txt = std::to_wstring(x);
 
             add_label_size(static_cast<int>(txt.size()));
-            
+
             float new_left = cx - label_width[txt.size()] / 2;
-            
+
             D2D1_RECT_F layout = D2D1::RectF(
                 new_left,
-                grid_area_rectf.bottom - grid_spacing / 3,
+                grid_area_rectf.bottom - 17,
                 new_left + grid_spacing,
                 grid_area_rectf.bottom
             );
@@ -387,18 +380,17 @@ namespace hmgui {
 
         int visible_y_min = static_cast<int>(std::ceil(-0.5f - grid_scroll_offset.y / grid_spacing)) - 1;
         int visible_y_max = static_cast<int>(std::floor((grid_height - grid_scroll_offset.y) / grid_spacing - 0.5f)) + 1;
-        for (int y = visible_y_min; y <= visible_y_max; ++y) {
+        for (int y = visible_y_max; y >= visible_y_min; --y) {
             float cy = grid_area_rectf.bottom - (y + 0.5f) * grid_spacing - grid_scroll_offset.y;
-            
+
             std::wstring txt = std::to_wstring(y);
-            float y_offset = grid_spacing / 2 - label_height[txt.size()] / 2;
             D2D1_RECT_F layout = D2D1::RectF(
-                grid_area_rectf.left + grid_spacing / 8,
-                (cy - grid_spacing / 2) - y_offset,
+                grid_area_rectf.left + 7,
+                cy - label_height[txt.size()] / 2,
                 grid_area_rectf.left + grid_spacing / 2,
-                (cy + grid_spacing / 2) - y_offset
+                cy - label_height[txt.size()] / 2
             );
-            
+
             d2d1_render_target->DrawText(
                 txt.c_str(),
                 static_cast<UINT32>(txt.size()),
@@ -416,29 +408,10 @@ namespace hmgui {
 
         float kifu_spacing = main_config.kifu_spacing;
 
-        d2d1_render_target->DrawLine(
-            D2D1::Point2F(kifu_area_rectf.left, kifu_area_rectf.top),
-            D2D1::Point2F(kifu_area_rectf.left, kifu_area_rectf.bottom),
+        d2d1_render_target->DrawRectangle(
+            kifu_area_rectf,
             d2d1_brush,
-            3.0f
-        );
-        d2d1_render_target->DrawLine(
-            D2D1::Point2F(kifu_area_rectf.right, kifu_area_rectf.top),
-            D2D1::Point2F(kifu_area_rectf.right, kifu_area_rectf.bottom),
-            d2d1_brush,
-            3.0f
-        );
-        d2d1_render_target->DrawLine(
-            D2D1::Point2F(kifu_area_rectf.left, kifu_area_rectf.top),
-            D2D1::Point2F(kifu_area_rectf.right, kifu_area_rectf.top),
-            d2d1_brush,
-            3.0f
-        );
-        d2d1_render_target->DrawLine(
-            D2D1::Point2F(kifu_area_rectf.left, kifu_area_rectf.bottom),
-            D2D1::Point2F(kifu_area_rectf.right, kifu_area_rectf.bottom),
-            d2d1_brush,
-            3.0f
+            2.0f
         );
 
         d2d1_render_target->PushAxisAlignedClip(
@@ -469,6 +442,23 @@ namespace hmgui {
                 d2d1_brush
             );
         }
+
+        d2d1_render_target->PopAxisAlignedClip();
+    }
+
+    void window_main::draw_config() {
+        if (!d2d1_render_target || !d2d1_brush) return;
+
+        d2d1_render_target->PushAxisAlignedClip(
+            config_area_rectf,
+            D2D1_ANTIALIAS_MODE_PER_PRIMITIVE
+        );
+
+        d2d1_render_target->DrawRectangle(
+            config_area_rectf,
+            d2d1_brush,
+            2.0f
+        );
 
         d2d1_render_target->PopAxisAlignedClip();
     }
@@ -585,7 +575,7 @@ namespace hmgui {
         d2d1_render_target->SetDpi(dpi_x, dpi_y);
 
         d2d1_render_target->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-        
+
         hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
 
         if (FAILED(hr)) return false;
