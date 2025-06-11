@@ -28,6 +28,9 @@ namespace hm {
             std::vector<T> _negative;
 
         public:
+            class iterator;
+            class const_iterator;
+
             signed_vector(unsigned int init_positive_size = 0, unsigned int init_negative_size = 0) noexcept {
                 _positive.resize(init_positive_size);
                 _negative.resize(init_negative_size);
@@ -178,52 +181,52 @@ namespace hm {
                 return result;
             }
 
-            typename std::vector<T>::iterator negative_begin() noexcept {
+            std::vector<T>::iterator negative_begin() noexcept {
                 return _negative.begin();
             }
 
-            typename std::vector<T>::iterator negative_end() noexcept {
+            std::vector<T>::iterator negative_end() noexcept {
                 return _negative.end();
             }
 
-            typename std::vector<T>::iterator positive_begin() noexcept {
+            std::vector<T>::iterator positive_begin() noexcept {
                 return _positive.begin();
             }
 
-            typename std::vector<T>::iterator positive_end() noexcept {
+            std::vector<T>::iterator positive_end() noexcept {
                 return _positive.end();
             }
 
-            typename std::vector<T>::iterator begin() noexcept {
-                return _negative.end() - 1;
+            iterator begin() noexcept {
+                return iterator(this, index_range_min());
             }
 
-            typename std::vector<T>::iterator end() noexcept {
-                return _positive.end();
+            iterator end() noexcept {
+                return iterator(this, index_range_max() + 1);
             }
 
-            typename std::vector<T>::const_iterator negative_begin() const noexcept {
+            std::vector<T>::const_iterator negative_begin() const noexcept {
                 return _negative.begin();
             }
 
-            typename std::vector<T>::const_iterator negative_end() const noexcept {
+            std::vector<T>::const_iterator negative_end() const noexcept {
                 return _negative.end();
             }
 
-            typename std::vector<T>::const_iterator positive_begin() const noexcept {
+            std::vector<T>::const_iterator positive_begin() const noexcept {
                 return _positive.begin();
             }
 
-            typename std::vector<T>::const_iterator positive_end() const noexcept {
+            std::vector<T>::const_iterator positive_end() const noexcept {
                 return _positive.end();
             }
 
-            typename std::vector<T>::const_iterator begin() const noexcept {
-                return _negative.end();
+            const_iterator begin() const noexcept {
+                return const_iterator(this, index_range_min());
             }
 
-            typename std::vector<T>::const_iterator end() const noexcept {
-                return _positive.end();
+            const_iterator end() const noexcept {
+                return const_iterator(this, index_range_max() + 1);
             }
 
             int index_range_min() const noexcept {
@@ -241,6 +244,198 @@ namespace hm {
             bool operator!=(const signed_vector &other) const noexcept {
                 return !(*this == other);
             }
+
+            class iterator {
+                private:
+                    signed_vector<T> *_vector;
+                    int _index;
+
+                public:
+                    using iterator_category = std::random_access_iterator_tag;
+                    using value_type = T;
+                    using difference_type = std::ptrdiff_t;
+                    using pointer = T*;
+                    using reference = T&;
+
+                    iterator(signed_vector<T> *vec, int index)
+                        : _vector(vec), _index(index) {}
+
+                    reference operator*() const {
+                        return _vector->at(_index);
+                    }
+
+                    pointer operator->() const {
+                        return &(_vector->at(_index));
+                    }
+
+                    iterator &operator++() {
+                        ++_index;
+                        return *this;
+                    }
+
+                    iterator operator++(int) {
+                        iterator tmp = *this;
+                        ++(*this);
+                        return tmp;
+                    }
+
+                    iterator &operator--() {
+                        --_index;
+                        return *this;
+                    }
+
+                    iterator operator--(int) {
+                        iterator tmp = *this;
+                        --(*this);
+                        return tmp;
+                    }
+
+                    iterator &operator+=(difference_type n) {
+                        _index += static_cast<int>(n);
+                        return *this;
+                    }
+
+                    iterator &operator-=(difference_type n) {
+                        _index -= static_cast<int>(n);
+                        return *this;
+                    }
+
+                    iterator operator+(difference_type n) const {
+                        return iterator(_vector, _index + static_cast<int>(n));
+                    }
+
+                    iterator operator-(difference_type n) const {
+                        return iterator(_vector, _index - static_cast<int>(n));
+                    }
+
+                    difference_type operator-(const iterator &other) const {
+                        return static_cast<difference_type>(_index - other._index);
+                    }
+
+                    reference operator[](difference_type n) const {
+                        return _vector->at(_index + static_cast<int>(n));
+                    }
+
+                    bool operator==(const iterator &other) const {
+                        return _index == other._index && _vector == other._vector;
+                    }
+
+                    bool operator!=(const iterator &other) const {
+                        return !(*this == other);
+                    }
+
+                    bool operator<(const iterator &other) const {
+                        return _index < other._index;
+                    }
+
+                    bool operator>(const iterator &other) const {
+                        return _index > other._index;
+                    }
+
+                    bool operator<=(const iterator &other) const {
+                        return _index <= other._index;
+                    }
+
+                    bool operator>=(const iterator &other) const {
+                        return _index >= other._index;
+                    }
+            };
+
+            class const_iterator {
+                private:
+                    const signed_vector<T> *_vec;
+                    int _index;
+
+                public:
+                    using iterator_category = std::random_access_iterator_tag;
+                    using value_type = T;
+                    using difference_type = std::ptrdiff_t;
+                    using pointer = const T*;
+                    using reference = const T&;
+
+                    const_iterator(const signed_vector<T> *vec, int index)
+                        : _vec(vec), _index(index) {}
+
+                    reference operator*() const {
+                        return _vec->at(_index);
+                    }
+
+                    const_iterator &operator++() {
+                        ++_index;
+                        return *this;
+                    }
+
+                    const_iterator operator++(int) {
+                        const_iterator tmp = *this;
+                        ++(*this);
+                        return tmp;
+                    }
+
+                    const_iterator &operator--() {
+                        --_index;
+                        return *this;
+                    }
+
+                    const_iterator operator--(int) {
+                        const_iterator tmp = *this;
+                        --(*this);
+                        return tmp;
+                    }
+
+                    const_iterator &operator+=(difference_type n) {
+                        _index += static_cast<int>(n);
+                        return *this;
+                    }
+
+                    const_iterator &operator-=(difference_type n) {
+                        _index -= static_cast<int>(n);
+                        return *this;
+                    }
+
+                    const_iterator operator+(difference_type n) const {
+                        return const_iterator(_vec, _index + static_cast<int>(n));
+                    }
+
+                    const_iterator operator-(difference_type n) const {
+                        return const_iterator(_vec, _index - static_cast<int>(n));
+                    }
+
+                    difference_type operator-(const const_iterator &other) const {
+                        return static_cast<difference_type>(_index - other._index);
+                    }
+
+                    reference operator[](difference_type n) const {
+                        return _vec->at(_index + static_cast<int>(n));
+                    }
+
+                    bool operator==(const const_iterator &other) const {
+                        return _index == other._index && _vec == other._vec;
+                    }
+
+                    bool operator!=(const const_iterator &other) const {
+                        return !(*this == other);
+                    }
+
+                    bool operator<(const const_iterator &other) const {
+                        return _index < other._index;
+                    }
+
+                    bool operator>(const const_iterator &other) const {
+                        return _index > other._index;
+                    }
+
+                    bool operator<=(const const_iterator &other) const {
+                        return _index <= other._index;
+                    }
+
+                    bool operator>=(const const_iterator &other) const {
+                        return _index >= other._index;
+                    }
+
+                    int index() const noexcept {
+                        return _index;
+                    }
+            };
     };
 
     template <>
@@ -252,6 +447,8 @@ namespace hm {
         public:
             using reference = std::vector<bool>::reference;
             using const_reference = bool;
+            class iterator;
+            class const_iterator;
 
             signed_vector(unsigned int init_positive_size = 0, unsigned int init_negative_size = 0) noexcept {
                 _positive.resize(init_positive_size);
@@ -330,6 +527,54 @@ namespace hm {
                 return static_cast<unsigned int>(_positive.size()) + static_cast<unsigned int>(_negative.size()) - 1;
             }
 
+            std::vector<bool>::iterator negative_begin() noexcept {
+                return _negative.begin();
+            }
+
+            std::vector<bool>::iterator negative_end() noexcept {
+                return _negative.end();
+            }
+
+            std::vector<bool>::iterator positive_begin() noexcept {
+                return _positive.begin();
+            }
+
+            std::vector<bool>::iterator positive_end() noexcept {
+                return _positive.end();
+            }
+
+            iterator begin() noexcept {
+                return iterator(this, index_range_min());
+            }
+
+            iterator end() noexcept {
+                return iterator(this, index_range_max() + 1);
+            }
+
+            std::vector<bool>::const_iterator negative_begin() const noexcept {
+                return _negative.begin();
+            }
+
+            std::vector<bool>::const_iterator negative_end() const noexcept {
+                return _negative.end();
+            }
+
+            std::vector<bool>::const_iterator positive_begin() const noexcept {
+                return _positive.begin();
+            }
+
+            std::vector<bool>::const_iterator positive_end() const noexcept {
+                return _positive.end();
+            }
+
+            const_iterator begin() const noexcept {
+                return const_iterator(this, index_range_min());
+            }
+
+            const_iterator end() const noexcept {
+                return const_iterator(this, index_range_max() + 1);
+            }
+
             int index_range_min() const noexcept {
                 return -static_cast<int>(_negative.size()) + 1;
             }
@@ -360,6 +605,194 @@ namespace hm {
 
                 return result;
             }
+
+            class iterator {
+                private:
+                    signed_vector<bool> *_vector;
+                    int _index;
+
+                public:
+                    using iterator_category = std::random_access_iterator_tag;
+                    using value_type = bool;
+                    using difference_type = std::ptrdiff_t;
+                    using pointer = void;
+                    using reference = bool;
+
+                    iterator(signed_vector<bool> *vec, int index)
+                        : _vector(vec), _index(index) {}
+
+                    reference operator*() const {
+                        return _vector->at(_index);
+                    }
+
+                    iterator &operator++() {
+                        ++_index;
+                        return *this;
+                    }
+
+                    iterator operator++(int) {
+                        iterator tmp = *this;
+                        ++(*this);
+                        return tmp;
+                    }
+
+                    iterator &operator--() {
+                        --_index;
+                        return *this;
+                    }
+
+                    iterator operator--(int) {
+                        iterator tmp = *this;
+                        --(*this);
+                        return tmp;
+                    }
+
+                    iterator &operator+=(difference_type n) {
+                        _index += static_cast<int>(n);
+                        return *this;
+                    }
+
+                    iterator &operator-=(difference_type n) {
+                        _index -= static_cast<int>(n);
+                        return *this;
+                    }
+
+                    iterator operator+(difference_type n) const {
+                        return iterator(_vector, _index + static_cast<int>(n));
+                    }
+
+                    iterator operator-(difference_type n) const {
+                        return iterator(_vector, _index - static_cast<int>(n));
+                    }
+
+                    difference_type operator-(const iterator &other) const {
+                        return static_cast<difference_type>(_index - other._index);
+                    }
+
+                    reference operator[](difference_type n) const {
+                        return _vector->at(_index + static_cast<int>(n));
+                    }
+
+                    bool operator==(const iterator &other) const {
+                        return _index == other._index && _vector == other._vector;
+                    }
+
+                    bool operator!=(const iterator &other) const {
+                        return !(*this == other);
+                    }
+
+                    bool operator<(const iterator &other) const {
+                        return _index < other._index;
+                    }
+
+                    bool operator>(const iterator &other) const {
+                        return _index > other._index;
+                    }
+
+                    bool operator<=(const iterator &other) const {
+                        return _index <= other._index;
+                    }
+
+                    bool operator>=(const iterator &other) const {
+                        return _index >= other._index;
+                    }
+            };
+
+            class const_iterator {
+                private:
+                    const signed_vector<bool> *_vec;
+                    int _index;
+
+                public:
+                    using iterator_category = std::random_access_iterator_tag;
+                    using value_type = bool;
+                    using difference_type = std::ptrdiff_t;
+                    using pointer = const bool*;
+                    using reference = const bool&;
+
+                    const_iterator(const signed_vector<bool> *vec, int index)
+                        : _vec(vec), _index(index) {}
+
+                    reference operator*() const {
+                        return _vec->at(_index);
+                    }
+
+                    const_iterator &operator++() {
+                        ++_index;
+                        return *this;
+                    }
+
+                    const_iterator operator++(int) {
+                        const_iterator tmp = *this;
+                        ++(*this);
+                        return tmp;
+                    }
+
+                    const_iterator &operator--() {
+                        --_index;
+                        return *this;
+                    }
+
+                    const_iterator operator--(int) {
+                        const_iterator tmp = *this;
+                        --(*this);
+                        return tmp;
+                    }
+
+                    const_iterator &operator+=(difference_type n) {
+                        _index += static_cast<int>(n);
+                        return *this;
+                    }
+
+                    const_iterator &operator-=(difference_type n) {
+                        _index -= static_cast<int>(n);
+                        return *this;
+                    }
+
+                    const_iterator operator+(difference_type n) const {
+                        return const_iterator(_vec, _index + static_cast<int>(n));
+                    }
+
+                    const_iterator operator-(difference_type n) const {
+                        return const_iterator(_vec, _index - static_cast<int>(n));
+                    }
+
+                    difference_type operator-(const const_iterator &other) const {
+                        return static_cast<difference_type>(_index - other._index);
+                    }
+
+                    reference operator[](difference_type n) const {
+                        return _vec->at(_index + static_cast<int>(n));
+                    }
+
+                    bool operator==(const const_iterator &other) const {
+                        return _index == other._index && _vec == other._vec;
+                    }
+
+                    bool operator!=(const const_iterator &other) const {
+                        return !(*this == other);
+                    }
+
+                    bool operator<(const const_iterator &other) const {
+                        return _index < other._index;
+                    }
+
+                    bool operator>(const const_iterator &other) const {
+                        return _index > other._index;
+                    }
+
+                    bool operator<=(const const_iterator &other) const {
+                        return _index <= other._index;
+                    }
+
+                    bool operator>=(const const_iterator &other) const {
+                        return _index >= other._index;
+                    }
+
+                    int index() const noexcept {
+                        return _index;
+                    }
+            };
     };
 }
 

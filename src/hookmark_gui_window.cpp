@@ -48,6 +48,7 @@ namespace hmgui {
         d2d1_render_target->SetDpi(dpi_x, dpi_y);
 
         d2d1_render_target->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+        d2d1_render_target->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
 
         hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
 
@@ -225,6 +226,7 @@ namespace hmgui {
         d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
         this->draw_grid();
         this->draw_kifu();
+        this->draw_config();
     }
 
     void window_main::draw_grid() {
