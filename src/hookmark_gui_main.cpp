@@ -100,20 +100,8 @@ void import_config_single(const std::string &filepath, std::unordered_map<std::s
         value.erase(0, value.find_first_not_of(" \t\""));
         value.erase(value.find_last_not_of(" \t\"") + 1);
 
-        if (config.find(key) == config.end()) {
-            config[key] = value;
-        }
+        config[key] = value;
     }
-}
-
-void debug(const std::wstring &str) {
-    MessageBoxW(NULL, str.c_str(), L"DEBUG", MB_OK | MB_ICONINFORMATION);
-    return;
-}
-
-void debug(float value) {
-    MessageBoxW(NULL, std::to_wstring(value).c_str(), L"DEBUG", MB_OK | MB_ICONINFORMATION);
-    return;
 }
 
 void import_config() {
@@ -123,12 +111,13 @@ void import_config() {
     std::filesystem::path dir = exe_path.parent_path();
     std::string init_path = (dir / "config" / "init.cfg").string();
     std::string default_path = (dir / "config" / "default.cfg").string();
-    if (!std::filesystem::exists(init_path) || !std::filesystem::exists(default_path)) {
-        return;
-    }
     std::unordered_map<std::string, std::string> um_config;
-    import_config_single(default_path, um_config);
-    import_config_single(init_path, um_config);
+    if (std::filesystem::exists(default_path)) {
+        import_config_single(default_path, um_config);
+    }
+    if (std::filesystem::exists(init_path)) {
+        import_config_single(init_path, um_config);
+    }
     if (um_config.count("window_pos_x")) config.window_pos_x = to_float(um_config.at("window_pos_x"));
     if (um_config.count("window_pos_y")) config.window_pos_y = to_float(um_config.at("window_pos_y"));
     if (um_config.count("margin")) config.margin = to_float(um_config.at("margin"));
@@ -139,6 +128,7 @@ void import_config() {
     if (um_config.count("kifu_size_x")) config.kifu_size_x = to_float(um_config.at("kifu_size_x"));
     if (um_config.count("grid_and_kifu_size_y")) config.grid_and_kifu_size_y = to_float(um_config.at("grid_and_kifu_size_y"));
     if (um_config.count("open_file")) config.open_file = um_config.at("open_file");
+    if (um_config.count("label_size")) config.label_size = to_float(um_config.at("label_size"));
     if (um_config.count("first_name")) config.first_name = um_config.at("first_name");
     if (um_config.count("second_name")) config.second_name = um_config.at("second_name");
     if (um_config.count("first_time")) config.first_time = to_float(um_config.at("first_time"));
@@ -339,7 +329,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                 grid_scroll((float)delta / 8, 0);
                 InvalidateRect(handle_window, nullptr, FALSE);
             }
-            
+
             return 0;
         }
         case WM_LBUTTONDOWN: {
@@ -388,6 +378,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
             return 0;
         }
         case WM_SIZE: {
+            update_rect();
             UINT width = LOWORD(l_param);
             UINT height = HIWORD(l_param);
             if (d2d1_render_target)

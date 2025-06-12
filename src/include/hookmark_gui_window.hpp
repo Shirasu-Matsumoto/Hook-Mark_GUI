@@ -23,6 +23,7 @@ namespace hmgui {
         float kifu_size_x;
         float grid_and_kifu_size_y;
         std::string open_file;
+        float label_size;
 
         std::string first_name;
         std::string second_name;
@@ -45,9 +46,10 @@ namespace hmgui {
             ID2D1HwndRenderTarget *d2d1_render_target;
             ID2D1SolidColorBrush *d2d1_brush;
             IDWriteFactory *d2d1_dwrite_factory;
-            IDWriteTextFormat *text_format_default;
+            IDWriteTextFormat *text_format_kifu;
             IDWriteTextFormat *text_format_label;
             RECT window_area_rect;
+            D2D1_RECT_F window_area_rectf;
             RECT grid_area_rect;
             D2D1_RECT_F grid_area_rectf;
             RECT kifu_area_rect;
@@ -62,6 +64,7 @@ namespace hmgui {
             window_main() {}
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
+            void update_rect();
             void add_label_size(int i);
             void create_window();
             void show_file_load_dialog(std::wstring &result);

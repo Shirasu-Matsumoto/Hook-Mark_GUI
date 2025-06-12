@@ -19,4 +19,5 @@ add_executable(Hook-Mark_GUI WIN32
 target_link_libraries(Hook-Mark_GUI
     d2d1.lib
     dwrite.lib
+    dwmapi.lib
 )

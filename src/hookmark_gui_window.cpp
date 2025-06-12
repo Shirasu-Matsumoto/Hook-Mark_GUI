@@ -62,7 +62,7 @@ namespace hmgui {
             DWRITE_FONT_STRETCH_NORMAL,
             main_config.kifu_spacing * 0.8f,
             L"ja-JP",
-            &text_format_default
+            &text_format_kifu
         );
         if (FAILED(hr)) return false;
 
@@ -72,7 +72,7 @@ namespace hmgui {
             DWRITE_FONT_WEIGHT_NORMAL,
             DWRITE_FONT_STYLE_NORMAL,
             DWRITE_FONT_STRETCH_NORMAL,
-            10.0f,
+            main_config.label_size,
             L"ja-JP",
             &text_format_label
         );
@@ -117,12 +117,22 @@ namespace hmgui {
         label_height[i] = text_height;
     }
 
-    void window_main::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
-        main_config = config;
-        grid_scroll_offset = D2D1::Point2F(-(main_config.grid_size_x - main_config.margin * 2) / 2 + main_config.grid_spacing / 2, (main_config.grid_and_kifu_size_y - main_config.margin * 2) / 2 - main_config.grid_spacing / 2);
-        window_class.register_class();
-        create_window();
-        d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
+    void window_main::update_rect() {
+        BOOL isCompositionEnabled = FALSE;
+        HRESULT hr = DwmIsCompositionEnabled(&isCompositionEnabled);
+        if (SUCCEEDED(hr) && isCompositionEnabled) {
+            RECT ext_rect = {};
+            hr = DwmGetWindowAttribute(handle_window, DWMWA_EXTENDED_FRAME_BOUNDS, &ext_rect, sizeof(ext_rect));
+            if (SUCCEEDED(hr)) {
+                window_area_rect = ext_rect;
+            } else {
+                GetWindowRect(handle_window, &window_area_rect);
+            }
+        } else {
+            GetWindowRect(handle_window, &window_area_rect);
+        }
+        window_area_rect.right -= 2;
+        window_area_rectf = rect_to_rectf(window_area_rect);
         grid_area_rectf = D2D1::RectF(
             main_config.margin,
             main_config.margin,
@@ -138,28 +148,21 @@ namespace hmgui {
         config_area_rectf = D2D1::RectF(
             main_config.grid_size_x + main_config.kifu_size_x + main_config.margin,
             main_config.margin,
-            main_config.margin,
+            window_area_rectf.right - window_area_rectf.left - main_config.margin,
             main_config.grid_and_kifu_size_y - main_config.margin
         );
-        GetWindowRect(handle_window, &window_area_rect);
-        grid_area_rect = {
-            static_cast<long>(main_config.margin),
-            static_cast<long>(main_config.margin),
-            static_cast<long>(main_config.grid_size_x - main_config.margin),
-            static_cast<long>(main_config.grid_and_kifu_size_y - main_config.margin)
-        };
-        kifu_area_rect = {
-            static_cast<long>(main_config.grid_size_x + main_config.margin),
-            static_cast<long>(main_config.margin),
-            static_cast<long>(main_config.grid_size_x + main_config.kifu_size_x - main_config.margin),
-            static_cast<long>(main_config.grid_and_kifu_size_y - main_config.margin)
-        };
-        config_area_rect = {
-            static_cast<long>(main_config.grid_size_x + main_config.kifu_size_x + main_config.margin),
-            static_cast<long>(main_config.margin),
-            static_cast<long>(main_config.margin),
-            static_cast<long>(main_config.grid_and_kifu_size_y - main_config.margin)
-        };
+        grid_area_rect = rectf_to_rect(grid_area_rectf);
+        kifu_area_rect = rectf_to_rect(kifu_area_rectf);
+        config_area_rect = rectf_to_rect(config_area_rectf);
+    }
+
+    void window_main::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
+        main_config = config;
+        grid_scroll_offset = D2D1::Point2F(-(main_config.grid_size_x - main_config.margin * 2) / 2 + main_config.grid_spacing / 2, (main_config.grid_and_kifu_size_y - main_config.margin * 2) / 2 - main_config.grid_spacing / 2);
+        window_class.register_class();
+        create_window();
+        d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
+        update_rect();
     }
 
     void window_main::create_window() {
@@ -172,6 +175,8 @@ namespace hmgui {
             static_cast<int>(main_config.window_size_x), static_cast<int>(main_config.window_size_y),
             nullptr, nullptr, GetModuleHandle(nullptr), this
         );
+        DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;
+        DwmSetWindowAttribute(handle_window, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
         SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     }
 
@@ -389,7 +394,7 @@ namespace hmgui {
             D2D1_RECT_F layout = D2D1::RectF(
                 grid_area_rectf.left + 7,
                 cy - label_height[txt.size()] / 2,
-                grid_area_rectf.left + grid_spacing / 2,
+                grid_area_rectf.left + grid_spacing * 10,
                 cy - label_height[txt.size()] / 2
             );
 
@@ -439,7 +444,7 @@ namespace hmgui {
             d2d1_render_target->DrawText(
                 move_text.c_str(),
                 static_cast<UINT32>(move_text.size()),
-                text_format_default,
+                text_format_kifu,
                 layout_rect,
                 d2d1_brush
             );
@@ -451,15 +456,15 @@ namespace hmgui {
     void window_main::draw_config() {
         if (!d2d1_render_target || !d2d1_brush) return;
 
-        d2d1_render_target->PushAxisAlignedClip(
-            config_area_rectf,
-            D2D1_ANTIALIAS_MODE_PER_PRIMITIVE
-        );
-
         d2d1_render_target->DrawRectangle(
             config_area_rectf,
             d2d1_brush,
             2.0f
+        );
+
+        d2d1_render_target->PushAxisAlignedClip(
+            config_area_rectf,
+            D2D1_ANTIALIAS_MODE_PER_PRIMITIVE
         );
 
         d2d1_render_target->PopAxisAlignedClip();
