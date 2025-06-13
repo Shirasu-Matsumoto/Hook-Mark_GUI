@@ -181,19 +181,19 @@ namespace hm {
                 return result;
             }
 
-            std::vector<T>::iterator negative_begin() noexcept {
+            typename std::vector<T>::iterator negative_begin() noexcept {
                 return _negative.begin();
             }
 
-            std::vector<T>::iterator negative_end() noexcept {
+            typename std::vector<T>::iterator negative_end() noexcept {
                 return _negative.end();
             }
 
-            std::vector<T>::iterator positive_begin() noexcept {
+            typename std::vector<T>::iterator positive_begin() noexcept {
                 return _positive.begin();
             }
 
-            std::vector<T>::iterator positive_end() noexcept {
+            typename std::vector<T>::iterator positive_end() noexcept {
                 return _positive.end();
             }
 
@@ -205,19 +205,19 @@ namespace hm {
                 return iterator(this, index_range_max() + 1);
             }
 
-            std::vector<T>::const_iterator negative_begin() const noexcept {
+            typename std::vector<T>::const_iterator negative_begin() const noexcept {
                 return _negative.begin();
             }
 
-            std::vector<T>::const_iterator negative_end() const noexcept {
+            typename std::vector<T>::const_iterator negative_end() const noexcept {
                 return _negative.end();
             }
 
-            std::vector<T>::const_iterator positive_begin() const noexcept {
+            typename std::vector<T>::const_iterator positive_begin() const noexcept {
                 return _positive.begin();
             }
 
-            std::vector<T>::const_iterator positive_end() const noexcept {
+            typename std::vector<T>::const_iterator positive_end() const noexcept {
                 return _positive.end();
             }
 
@@ -527,19 +527,19 @@ namespace hm {
                 return static_cast<unsigned int>(_positive.size()) + static_cast<unsigned int>(_negative.size()) - 1;
             }
 
-            std::vector<bool>::iterator negative_begin() noexcept {
+            typename std::vector<bool>::iterator negative_begin() noexcept {
                 return _negative.begin();
             }
 
-            std::vector<bool>::iterator negative_end() noexcept {
+            typename std::vector<bool>::iterator negative_end() noexcept {
                 return _negative.end();
             }
 
-            std::vector<bool>::iterator positive_begin() noexcept {
+            typename std::vector<bool>::iterator positive_begin() noexcept {
                 return _positive.begin();
             }
 
-            std::vector<bool>::iterator positive_end() noexcept {
+            typename std::vector<bool>::iterator positive_end() noexcept {
                 return _positive.end();
             }
 
@@ -551,19 +551,19 @@ namespace hm {
                 return iterator(this, index_range_max() + 1);
             }
 
-            std::vector<bool>::const_iterator negative_begin() const noexcept {
+            typename std::vector<bool>::const_iterator negative_begin() const noexcept {
                 return _negative.begin();
             }
 
-            std::vector<bool>::const_iterator negative_end() const noexcept {
+            typename std::vector<bool>::const_iterator negative_end() const noexcept {
                 return _negative.end();
             }
 
-            std::vector<bool>::const_iterator positive_begin() const noexcept {
+            typename std::vector<bool>::const_iterator positive_begin() const noexcept {
                 return _positive.begin();
             }
 
-            std::vector<bool>::const_iterator positive_end() const noexcept {
+            typename std::vector<bool>::const_iterator positive_end() const noexcept {
                 return _positive.end();
             }
 

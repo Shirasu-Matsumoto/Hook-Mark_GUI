@@ -2,6 +2,7 @@
 project(Hook-Mark_GUI)
 set(CMAKE_CXX_STANDARD 23)
 
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 if (MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
