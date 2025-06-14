@@ -55,15 +55,19 @@ namespace hmgui {
             D2D1_RECT_F window_area_rectf;
             RECT grid_area_rect;
             D2D1_RECT_F grid_area_rectf;
+            D2D1_RECT_F grid_area_clip_rectf;
             RECT kifu_area_rect;
             D2D1_RECT_F kifu_area_rectf;
+            D2D1_RECT_F kifu_area_clip_rectf;
             RECT config_area_rect;
             D2D1_RECT_F config_area_rectf;
+            D2D1_RECT_F config_area_clip_rectf;
             D2D1_POINT_2F grid_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             D2D1_POINT_2F kifu_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             D2D1_POINT_2F config_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             std::vector<float> label_width;
             std::vector<float> label_height;
+            unsigned int kifu_current_turn = 0;
 
             enum class resize_region {
                 none,
@@ -75,6 +79,11 @@ namespace hmgui {
             POINT resize_start = { 0, 0 };
             float initial_grid_size = 0.0f;
             float initial_kifu_size = 0.0f;
+
+            D2D1_COLOR_F red_color = D2D1::ColorF(D2D1::ColorF::Red);
+            D2D1_COLOR_F blue_color = D2D1::ColorF(D2D1::ColorF::Blue);
+            D2D1_COLOR_F black_color = D2D1::ColorF(D2D1::ColorF::Black);
+            D2D1_COLOR_F kifu_bg_color = D2D1::ColorF(D2D1::ColorF::Aqua);
 
             window_main() {}
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
@@ -127,12 +136,14 @@ namespace hmgui {
             IDWriteFactory *d2d1_dwrite_factory;
             ID2D1HwndRenderTarget *d2d1_render_target;
             ID2D1SolidColorBrush *d2d1_brush;
+            IDWriteTextFormat *text_format_default;
 
             window_newgame() {}
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window);
             void create_window(HWND handle_parent_window);
             void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT);
+            void redraw();
             void handle_exit();
             void release();
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;

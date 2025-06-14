@@ -16,27 +16,10 @@
 #include <wrl/client.h>
 #include <versionhelpers.h>
 #include <dwmapi.h>
+#include <shobjidl.h>
 #include <cmath>
 
 namespace hmgui {
-    inline D2D1_RECT_F rect_to_rectf(RECT rect) {
-        return D2D1::RectF(
-            static_cast<float>(rect.left),
-            static_cast<float>(rect.top),
-            static_cast<float>(rect.right),
-            static_cast<float>(rect.bottom)
-        );
-    }
-
-    inline RECT rectf_to_rect(D2D1_RECT_F rectf) {
-        return {
-            static_cast<long>(rectf.left),
-            static_cast<long>(rectf.top),
-            static_cast<long>(rectf.right),
-            static_cast<long>(rectf.bottom)
-        };
-    }
-
     class window_base {
         public:
             HWND handle_window;

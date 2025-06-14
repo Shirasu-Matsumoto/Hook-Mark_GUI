@@ -170,6 +170,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
         case WM_DESTROY: {
             KillTimer(handle_window, timer_id);
             d2d1_brush->Release();
+            newgame_window.release();
             handle_exit();
             return 0;
         }
@@ -192,7 +193,8 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     catch (const std::exception &e) {
                         MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
                     }
-                    hm::kifuver1_to_board(current_kifu, board);
+                    kifu_current_turn = current_kifu.size() - 1;
+                    hm::kifuver1_to_board(current_kifu, board, current_kifu.size() - 1);
                     InvalidateRect(handle_window, nullptr, FALSE);
                     update_title();
                     break;
@@ -302,6 +304,17 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
         }
         case WM_LBUTTONDOWN: {
             POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+            if (PtInRect(&kifu_area_rect, pt)) {
+                float relative_y = pt.y - kifu_area_rect.top + kifu_scroll_offset.y;
+                unsigned int clicked_turn = static_cast<unsigned int>(relative_y / main_config.kifu_spacing);
+                if (clicked_turn < current_kifu.size()) {
+                    kifu_current_turn = clicked_turn;
+                    hm::kifuver1_to_board(current_kifu, board, clicked_turn);
+                    InvalidateRect(handle_window, nullptr, FALSE);
+                    return 0;
+                }
+            }
+
             const int tol = 5;
             float boundary1 = main_config.grid_size_x;
             float boundary2 = main_config.grid_size_x + main_config.kifu_size_x;
@@ -384,12 +397,10 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
         case WM_PAINT: {
             PAINTSTRUCT paint_struct;
             HDC handle_device_context = BeginPaint(handle_window, &paint_struct);
-            RECT rect;
-            GetClientRect(handle_window, &rect);
             d2d1_render_target->BeginDraw();
             redraw();
             d2d1_render_target->EndDraw();
-            HRESULT hr = EndPaint(handle_window, &paint_struct);
+            EndPaint(handle_window, &paint_struct);
             return 0;
         }
         case WM_DPICHANGED: {
@@ -437,6 +448,15 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
 
 LRESULT CALLBACK hmgui::window_newgame::handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) {
     switch (message) {
+        case WM_PAINT: {
+            PAINTSTRUCT ps;
+            HDC handle_device_context = BeginPaint(handle_window, &ps);
+            d2d1_render_target->BeginDraw();
+            redraw();
+            d2d1_render_target->EndDraw();
+            EndPaint(handle_window, &ps);
+            return 0;
+        }
         case WM_CLOSE: {
             handle_exit();
             return 0;
@@ -461,10 +481,6 @@ int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
     main_window.show_window();
     newgame_window.show_window(SW_HIDE);
     SetMenu(main_window, main_menu);
-
-    // main_window.board.progress(1, 1);
-    // main_window.board.progress(-1, -1);
-    // main_window.board.progress(1, -1);
 
     MSG message;
     while (true) {
