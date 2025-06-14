@@ -1,7 +1,6 @@
 ﻿#ifndef __HOOKMARK_KIFU_HPP__
 #define __HOOKMARK_KIFU_HPP__
 
-#include <hookmark_base.hpp>
 #include <hookmark_kifu_base.hpp>
 
 namespace hm {
@@ -18,7 +17,7 @@ namespace hm {
                     throw std::runtime_error("Failed to open file for writing");
                 }
 
-                ofs << "Hook-Mark Kifu File Version 1.0\n#Config\n" << _config << "#End\n#Begin\n";
+                ofs << "Hook-Mark Kifu File Version 1.0\n#Config\n" << _config << "\n#End\n#Begin\n";
                 for (const auto &move : data()) {
                     ofs << "\t" << move.x << ", " << move.y << "\n";
                 }
@@ -101,6 +100,10 @@ namespace hm {
                     }
                 }
 
+                if (!_config.empty() && _config.back() == '\n') {
+                    _config.pop_back();
+                }
+
                 if (!header_found) {
                     throw std::runtime_error("Header not found: Invalid kifu file format");
                 }
@@ -111,6 +114,10 @@ namespace hm {
             void clear() override {
                 data().clear();
                 _config.clear();
+            }
+
+            std::string config() {
+                return _config;
             }
 
             void set_config(const std::string &config_str) {

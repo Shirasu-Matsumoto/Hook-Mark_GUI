@@ -15,12 +15,14 @@ namespace hmgui {
         float window_pos_x;
         float window_pos_y;
         float margin;
+        float padding;
         float window_size_x;
         float window_size_y;
         float grid_spacing;
         float kifu_spacing;
         float grid_size_x;
         float kifu_size_x;
+        float kifu_turn_size_x;
         float grid_and_kifu_size_y;
         std::string open_file;
         float label_size;
@@ -48,6 +50,7 @@ namespace hmgui {
             IDWriteFactory *d2d1_dwrite_factory;
             IDWriteTextFormat *text_format_kifu;
             IDWriteTextFormat *text_format_label;
+            IDWriteTextFormat *text_format_config;
             RECT window_area_rect;
             D2D1_RECT_F window_area_rectf;
             RECT grid_area_rect;
@@ -58,8 +61,20 @@ namespace hmgui {
             D2D1_RECT_F config_area_rectf;
             D2D1_POINT_2F grid_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             D2D1_POINT_2F kifu_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
+            D2D1_POINT_2F config_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             std::vector<float> label_width;
             std::vector<float> label_height;
+
+            enum class resize_region {
+                none,
+                grid_kifu,
+                kifu_config
+            };
+            resize_region cr_resize_region = resize_region::none;
+            bool is_resizing = false;
+            POINT resize_start = { 0, 0 };
+            float initial_grid_size = 0.0f;
+            float initial_kifu_size = 0.0f;
 
             window_main() {}
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
@@ -72,13 +87,18 @@ namespace hmgui {
             void redraw();
             void draw_config();
             void draw_grid();
+            void draw_kifu_single(const hm::pos &move, unsigned int turn);
             void draw_kifu();
+            void draw_board();
             void grid_scroll(float dx, float dy);
             void set_grid_scroll(float x, float y);
             D2D1_POINT_2F get_grid_scroll() const;
             void kifu_scroll(float dx, float dy);
             void set_kifu_scroll(float x, float y);
             D2D1_POINT_2F get_kifu_scroll() const;
+            void config_scroll(float dx, float dy);
+            void set_config_scroll(float x, float y);
+            D2D1_POINT_2F get_config_scroll() const;
             void handle_exit();
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
     };
@@ -110,8 +130,9 @@ namespace hmgui {
 
             window_newgame() {}
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
-            void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
-            void create_window() override;
+            void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window);
+            void create_window(HWND handle_parent_window);
+            void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT);
             void handle_exit();
             void release();
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;

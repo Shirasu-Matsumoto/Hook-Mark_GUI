@@ -1,6 +1,13 @@
 ﻿#ifndef __HOOKMARK_GUI_WINDOW_BASE_HPP__
 #define __HOOKMARK_GUI_WINDOW_BASE_HPP__
 
+#if _WIN32_WINNT < 0x0A00
+#ifdef _WIN32_WINNT
+#undef _WIN32_WINNT
+#endif
+#define _WIN32_WINNT 0x0A00
+#endif
+
 #include <hookmark.hpp>
 #include <windows.h>
 #include <windowsx.h>
@@ -40,13 +47,13 @@ namespace hmgui {
             }
             virtual void initialize() { return; }
             virtual void create_window() { return; }
-            void show_window(int show_command = SW_SHOW) {
+            virtual void show_window(int show_command = SW_SHOW) {
                 if (handle_window) {
                     ShowWindow(handle_window, show_command);
                     UpdateWindow(handle_window);
                 }
             }
-            void destroy_window() {
+            virtual void destroy_window() {
                 if (handle_window) {
                     DestroyWindow(handle_window);
                     PostQuitMessage(0);
@@ -109,7 +116,7 @@ namespace hmgui {
                     DestroyMenu(handle_menu);
                 }
             }
-            void create_menu_item() {
+            virtual void create_menu_item() {
                 handle_menu = CreatePopupMenu();
             }
             operator HMENU() {
@@ -131,7 +138,7 @@ namespace hmgui {
             menu_item(UINT_PTR _id) : id(_id) {
                 create_menu_item();
             }
-            void create_menu_item() {
+            virtual void create_menu_item() {
                 handle_menu = CreateMenu();
             }
             operator UINT_PTR() {

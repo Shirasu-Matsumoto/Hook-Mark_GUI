@@ -713,7 +713,7 @@ namespace hm {
                     const_iterator(const signed_vector<bool> *vec, int index)
                         : _vec(vec), _index(index) {}
 
-                    reference operator*() const {
+                    bool operator*() const {
                         return _vec->at(_index);
                     }
 
@@ -761,7 +761,7 @@ namespace hm {
                         return static_cast<difference_type>(_index - other._index);
                     }
 
-                    reference operator[](difference_type n) const {
+                    bool operator[](difference_type n) const {
                         return _vec->at(_index + static_cast<int>(n));
                     }
 

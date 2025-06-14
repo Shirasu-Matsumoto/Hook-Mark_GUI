@@ -1,7 +1,10 @@
 ﻿#ifndef __HOOKMARK_KIFU_BASE_HPP__
 #define __HOOKMARK_KIFU_BASE_HPP__
 
-#include <hookmark_base.hpp>
+#include <vector>
+#include <fstream>
+#include <string>
+#include <stdexcept>
 
 namespace hm {
     class kifu_base {
@@ -23,6 +26,13 @@ namespace hm {
             virtual void kifu_save(const std::string &filename) const {}
 
             virtual void kifu_load(const std::string &filename) {}
+
+            virtual pos &at(unsigned int index) {
+                if (index >= _kifu.size()) {
+                    throw std::out_of_range("Index out of range");
+                }
+                return _kifu[index];
+            }
 
             virtual bool operator==(const kifu_base &other) const {
                 return _kifu == other._kifu;
@@ -57,8 +67,11 @@ namespace hm {
             virtual unsigned int size() const {
                 return static_cast<unsigned int>(_kifu.size());
             }
+
+            operator std::vector<pos>() const {
+                return _kifu;
+            }
     };
 }
 
 #endif
-

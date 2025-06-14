@@ -22,6 +22,7 @@ hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
                         main_menu_edit_step_back(ID_MENU_EDIT_STEP_BACK),
                         main_menu_edit_comment(ID_MENU_EDIT_COMMENT),
                         main_menu_edit_kifu_info(ID_MENU_EDIT_KIFU_INFO),
+                        main_menu_view_board_scroll_reset(ID_MENU_VIEW_BOARD_SCROLL_RESET),
                         main_menu_view_board_separate_window(ID_MENU_VIEW_BOARD_SEPARATE_WINDOW),
                         main_menu_game_new(ID_MENU_GAME_NEW),
                         main_menu_help_version(ID_MENU_HELP_VERSION);
@@ -35,108 +36,67 @@ bool key_held[256] = {};
 UINT_PTR timer_id = 1;
 static const int scroll_speed = 8;
 
-std::string utf16_to_utf8(const std::wstring &utf16_str) {
-    if (utf16_str.empty()) return std::string();
-
-    int utf8_len = WideCharToMultiByte(CP_UTF8, 0, utf16_str.data(), static_cast<int>(utf16_str.size()), nullptr, 0, nullptr, nullptr);
-    if (utf8_len <= 0) return std::string();
-
-    std::string utf8_str(utf8_len, 0);
-    WideCharToMultiByte(CP_UTF8, 0, utf16_str.data(), static_cast<int>(utf16_str.size()), &utf8_str[0], utf8_len, nullptr, nullptr);
-    return utf8_str;
-}
-
-std::wstring utf8_to_utf16(const std::string &utf8_str) {
-    if (utf8_str.empty()) return std::wstring();
-
-    int utf16_len = MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), static_cast<int>(utf8_str.size()), nullptr, 0);
-    if (utf16_len <= 0) return std::wstring();
-
-    std::wstring utf16_str(utf16_len, 0);
-    MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), static_cast<int>(utf8_str.size()), &utf16_str[0], utf16_len);
-    return utf16_str;
-}
-
-void update_title() {
-    if (main_window.current_kifu_path.empty()) {
-        SetWindowTextW(main_window, L"Hook-Mark GUI");
-    } else {
-        std::filesystem::path path(main_window.current_kifu_path);
-        std::wstring filename = path.filename().wstring();
-        std::wstring title = L"Hook-Mark GUI - " + filename + L"\0";
-        SetWindowTextW(main_window, title.c_str());
+namespace hmgui {
+    void update_title() {
+        if (main_window.current_kifu_path.empty()) {
+            SetWindowTextW(main_window, L"Hook-Mark GUI");
+        } else {
+            std::filesystem::path path(main_window.current_kifu_path);
+            std::wstring filename = path.filename().wstring();
+            std::wstring title = L"Hook-Mark GUI - " + filename + L"\0";
+            SetWindowTextW(main_window, title.c_str());
+        }
     }
-}
 
-float to_float(const std::string &str) {
-    try {
-        return std::stof(str);
+    float to_float(const std::string &str) {
+        try {
+            return std::stof(str);
+        }
+        catch (...) {
+            return 0.0f;
+        }
     }
-    catch (...) {
-        return 0.0f;
+
+    bool to_bool(const std::string &str) {
+        return (str == "1" || str == "true" || str == "TRUE");
     }
-}
 
-bool to_bool(const std::string &str) {
-    return (str == "1" || str == "true" || str == "TRUE");
-}
-
-void import_config_single(const std::string &filepath, std::unordered_map<std::string, std::string> &config) {
-    std::ifstream file(filepath);
-    if (!file.is_open()) return;
-
-    std::string line;
-    while (std::getline(file, line)) {
-        if (line.empty() || line[0] == '[') continue;
-
-        size_t pos = line.find('=');
-        if (pos == std::string::npos) continue;
-
-        std::string key = line.substr(0, pos);
-        std::string value = line.substr(pos + 1);
-
-        key.erase(0, key.find_first_not_of(" \t"));
-        key.erase(key.find_last_not_of(" \t") + 1);
-        value.erase(0, value.find_first_not_of(" \t\""));
-        value.erase(value.find_last_not_of(" \t\"") + 1);
-
-        config[key] = value;
+    void import_config() {
+        wchar_t path[MAX_PATH];
+        GetModuleFileNameW(NULL, path, MAX_PATH);
+        std::filesystem::path exe_path(utf16_to_utf8(path));
+        std::filesystem::path dir = exe_path.parent_path();
+        std::string init_path = (dir / "config" / "init.cfg").string();
+        std::string default_path = (dir / "config" / "default.cfg").string();
+        std::unordered_map<std::string, std::string> um_config;
+        if (std::filesystem::exists(default_path)) {
+            import_config_single(default_path, um_config);
+        }
+        if (std::filesystem::exists(init_path)) {
+            import_config_single(init_path, um_config);
+        }
+        if (um_config.count("window_pos_x")) config.window_pos_x = to_float(um_config.at("window_pos_x"));
+        if (um_config.count("window_pos_y")) config.window_pos_y = to_float(um_config.at("window_pos_y"));
+        if (um_config.count("margin")) config.margin = to_float(um_config.at("margin"));
+        if (um_config.count("padding")) config.padding = to_float(um_config.at("padding"));
+        if (um_config.count("window_size_x")) config.window_size_x = to_float(um_config.at("window_size_x"));
+        if (um_config.count("window_size_y")) config.window_size_y = to_float(um_config.at("window_size_y"));
+        if (um_config.count("grid_spacing")) config.grid_spacing = to_float(um_config.at("grid_spacing"));
+        if (um_config.count("grid_size_x")) config.grid_size_x = to_float(um_config.at("grid_size_x"));
+        if (um_config.count("kifu_size_x")) config.kifu_size_x = to_float(um_config.at("kifu_size_x"));
+        if (um_config.count("kifu_turn_size_x")) config.kifu_turn_size_x = to_float(um_config.at("kifu_turn_size_x"));
+        if (um_config.count("grid_and_kifu_size_y")) config.grid_and_kifu_size_y = to_float(um_config.at("grid_and_kifu_size_y"));
+        if (um_config.count("open_file")) config.open_file = um_config.at("open_file");
+        if (um_config.count("label_size")) config.label_size = to_float(um_config.at("label_size"));
+        if (um_config.count("first_name")) config.first_name = um_config.at("first_name");
+        if (um_config.count("second_name")) config.second_name = um_config.at("second_name");
+        if (um_config.count("first_time")) config.first_time = to_float(um_config.at("first_time"));
+        if (um_config.count("second_time")) config.second_time = to_float(um_config.at("second_time"));
+        if (um_config.count("first_countdown")) config.first_countdown = to_float(um_config.at("first_countdown"));
+        if (um_config.count("second_countdown")) config.second_countdown = to_float(um_config.at("second_countdown"));
+        if (um_config.count("lose_time_runs_out")) config.lose_time_runs_out = to_bool(um_config.at("lose_time_runs_out"));
+        if (um_config.count("kifu_spacing")) config.kifu_spacing = to_float(um_config.at("kifu_spacing"));
     }
-}
-
-void import_config() {
-    wchar_t path[MAX_PATH];
-    GetModuleFileNameW(NULL, path, MAX_PATH);
-    std::filesystem::path exe_path(utf16_to_utf8(path));
-    std::filesystem::path dir = exe_path.parent_path();
-    std::string init_path = (dir / "config" / "init.cfg").string();
-    std::string default_path = (dir / "config" / "default.cfg").string();
-    std::unordered_map<std::string, std::string> um_config;
-    if (std::filesystem::exists(default_path)) {
-        import_config_single(default_path, um_config);
-    }
-    if (std::filesystem::exists(init_path)) {
-        import_config_single(init_path, um_config);
-    }
-    if (um_config.count("window_pos_x")) config.window_pos_x = to_float(um_config.at("window_pos_x"));
-    if (um_config.count("window_pos_y")) config.window_pos_y = to_float(um_config.at("window_pos_y"));
-    if (um_config.count("margin")) config.margin = to_float(um_config.at("margin"));
-    if (um_config.count("window_size_x")) config.window_size_x = to_float(um_config.at("window_size_x"));
-    if (um_config.count("window_size_y")) config.window_size_y = to_float(um_config.at("window_size_y"));
-    if (um_config.count("grid_spacing")) config.grid_spacing = to_float(um_config.at("grid_spacing"));
-    if (um_config.count("grid_size_x")) config.grid_size_x = to_float(um_config.at("grid_size_x"));
-    if (um_config.count("kifu_size_x")) config.kifu_size_x = to_float(um_config.at("kifu_size_x"));
-    if (um_config.count("grid_and_kifu_size_y")) config.grid_and_kifu_size_y = to_float(um_config.at("grid_and_kifu_size_y"));
-    if (um_config.count("open_file")) config.open_file = um_config.at("open_file");
-    if (um_config.count("label_size")) config.label_size = to_float(um_config.at("label_size"));
-    if (um_config.count("first_name")) config.first_name = um_config.at("first_name");
-    if (um_config.count("second_name")) config.second_name = um_config.at("second_name");
-    if (um_config.count("first_time")) config.first_time = to_float(um_config.at("first_time"));
-    if (um_config.count("second_time")) config.second_time = to_float(um_config.at("second_time"));
-    if (um_config.count("first_countdown")) config.first_countdown = to_float(um_config.at("first_countdown"));
-    if (um_config.count("second_countdown")) config.second_countdown = to_float(um_config.at("second_countdown"));
-    if (um_config.count("lose_time_runs_out")) config.lose_time_runs_out = to_bool(um_config.at("lose_time_runs_out"));
-    if (um_config.count("kifu_spacing")) config.kifu_spacing = to_float(um_config.at("kifu_spacing"));
 }
 
 void hmgui::menu_main::create_menu() {
@@ -164,6 +124,8 @@ void hmgui::menu_main::create_menu() {
         AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_comment, L"コメントを編集");
         AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_kifu_info, L"棋譜情報を編集");
 
+        AppendMenuW(main_menu_view, MF_STRING, main_menu_view_board_scroll_reset, L"盤面のスクロールをリセット");
+        AppendMenuW(main_menu_view, MF_SEPARATOR, 0, NULL);
         AppendMenuW(main_menu_view, MF_STRING, main_menu_view_board_separate_window, L"盤面を別ウィンドウで表示");
 
         AppendMenuW(main_menu_game, MF_STRING, main_menu_game_new, L"新規対局");
@@ -230,6 +192,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     catch (const std::exception &e) {
                         MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
                     }
+                    hm::kifuver1_to_board(current_kifu, board);
                     InvalidateRect(handle_window, nullptr, FALSE);
                     update_title();
                     break;
@@ -266,7 +229,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     break;
                 }
                 case ID_MENU_FILE_EXIT: {
-                    main_window.handle_exit();
+                    handle_exit();
                     break;
                 }
                 case ID_MENU_EDIT_MOVE_FORWARD: {
@@ -281,11 +244,16 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                 case ID_MENU_EDIT_KIFU_INFO: {
                     break;
                 }
+                case ID_MENU_VIEW_BOARD_SCROLL_RESET: {
+                    set_grid_scroll(-(main_config.grid_size_x - main_config.margin * 2) / 2 + main_config.grid_spacing / 2, (main_config.grid_and_kifu_size_y - main_config.margin * 2) / 2 - main_config.grid_spacing / 2);
+                    InvalidateRect(handle_window, nullptr, FALSE);
+                    break;
+                }
                 case ID_MENU_VIEW_BOARD_SEPARATE_WINDOW: {
                     break;
                 }
                 case ID_MENU_GAME_NEW: {
-                    newgame_window.show_window();
+                    newgame_window.show_window(SW_SHOW, window_area_rectf.left + 30.0f, window_area_rectf.top + 30.0f);
                     break;
                 }
                 case ID_MENU_HELP_VERSION: {
@@ -310,12 +278,12 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
             }
             else if (PtInRect(&kifu_area_rect, point)) {
                 short delta = GET_WHEEL_DELTA_WPARAM(w_param);
-                if (ctrl_down) {
-                    kifu_scroll((float)-delta / 8, 0);
-                }
-                else {
-                    kifu_scroll(0, (float)-delta / 8);
-                }
+                kifu_scroll(0, (float)-delta / 8);
+                InvalidateRect(handle_window, nullptr, FALSE);
+            }
+            else if (PtInRect(&config_area_rect, point)) {
+                short delta = GET_WHEEL_DELTA_WPARAM(w_param);
+                config_scroll(0, (float)-delta / 8);
                 InvalidateRect(handle_window, nullptr, FALSE);
             }
             return 0;
@@ -333,6 +301,73 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
             return 0;
         }
         case WM_LBUTTONDOWN: {
+            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+            const int tol = 5;
+            float boundary1 = main_config.grid_size_x;
+            float boundary2 = main_config.grid_size_x + main_config.kifu_size_x;
+
+            if (std::abs(pt.x - boundary1) <= tol) {
+                is_resizing = true;
+                cr_resize_region = resize_region::grid_kifu;
+                resize_start = pt;
+                initial_grid_size = main_config.grid_size_x;
+                initial_kifu_size = main_config.kifu_size_x;
+                SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
+                SetCapture(handle_window);
+                return 0;
+            }
+            else if (std::abs(pt.x - boundary2) <= tol) {
+                is_resizing = true;
+                cr_resize_region = resize_region::kifu_config;
+                resize_start = pt;
+                initial_kifu_size = main_config.kifu_size_x;
+                SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
+                SetCapture(handle_window);
+                return 0;
+            }
+            return 0;
+        }
+        case WM_LBUTTONUP: {
+            if (is_resizing) {
+                is_resizing = false;
+                cr_resize_region = resize_region::none;
+                ReleaseCapture();
+                return 0;
+            }
+            break;
+        }
+        case WM_MOUSEMOVE: {
+            POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+            if (is_resizing) {
+                SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
+                int dx = pt.x - resize_start.x;
+                switch (cr_resize_region) {
+                    case resize_region::grid_kifu: {
+                        main_config.grid_size_x = initial_grid_size + dx;
+                        main_config.kifu_size_x = initial_kifu_size - dx;
+                        break;
+                    }
+                    case resize_region::kifu_config: {
+                        main_config.kifu_size_x = initial_kifu_size + dx;
+                        break;
+                    }
+                    default:
+                        break;
+                }
+                update_rect();
+                InvalidateRect(handle_window, nullptr, FALSE);
+                return 0;
+            }
+            else {
+                const int tol = 5;
+                float boundary1 = main_config.grid_size_x;
+                float boundary2 = main_config.grid_size_x + main_config.kifu_size_x;
+                if (std::abs(pt.x - boundary1) <= tol || std::abs(pt.x - boundary2) <= tol) {
+                    SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
+                } else {
+                    SetCursor(LoadCursor(nullptr, IDC_ARROW));
+                }
+            }
             return 0;
         }
         case WM_TIMER: {
@@ -377,6 +412,10 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
             InvalidateRect(handle_window, NULL, TRUE);
             return 0;
         }
+        case WM_MOVE: {
+            update_rect();
+            return 0;
+        }
         case WM_SIZE: {
             update_rect();
             UINT width = LOWORD(l_param);
@@ -410,7 +449,7 @@ LRESULT CALLBACK hmgui::window_newgame::handle_message(HWND handle_window, UINT 
 }
 
 int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
-    import_config();
+    hmgui::import_config();
     main_menu.create_menu();
     HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &grobal_d2d1_factory);
     if (FAILED(hr)) return false;
@@ -418,13 +457,14 @@ int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
     if (FAILED(hr)) return false;
 
     main_window.initialize(config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
-    newgame_window.initialize(config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
+    newgame_window.initialize(config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
     main_window.show_window();
+    newgame_window.show_window(SW_HIDE);
     SetMenu(main_window, main_menu);
 
-    main_window.board.progress(1, 1);
-    main_window.board.progress(-1, -1);
-    main_window.board.progress(1, -1);
+    // main_window.board.progress(1, 1);
+    // main_window.board.progress(-1, -1);
+    // main_window.board.progress(1, -1);
 
     MSG message;
     while (true) {
