@@ -219,8 +219,7 @@ namespace hmgui {
             static_cast<int>(main_config.window_size_x), static_cast<int>(main_config.window_size_y),
             nullptr, nullptr, GetModuleHandle(nullptr), this
         );
-        DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;
-        DwmSetWindowAttribute(handle_window, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
+        
         SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     }
 
@@ -860,8 +859,6 @@ namespace hmgui {
             handle_parent_window, NULL, GetModuleHandle(nullptr), NULL
         );
 
-        DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;
-        DwmSetWindowAttribute(handle_window, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
         SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     }
 
