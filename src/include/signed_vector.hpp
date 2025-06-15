@@ -118,7 +118,7 @@ namespace hm {
             }
 
             range index_range() const noexcept {
-                return range(-static_cast<int>(_negative.size()), static_cast<int>(_positive.size()));
+                return range(-static_cast<int>(_negative.size() - 1), static_cast<int>(_positive.size() - 1));
             }
 
             unsigned int positive_size() const noexcept {

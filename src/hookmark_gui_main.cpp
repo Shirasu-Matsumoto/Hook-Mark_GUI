@@ -26,6 +26,7 @@ hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
                         main_menu_view_board_scroll_reset(ID_MENU_VIEW_BOARD_SCROLL_RESET),
                         main_menu_view_board_separate_window(ID_MENU_VIEW_BOARD_SEPARATE_WINDOW),
                         main_menu_game_new(ID_MENU_GAME_NEW),
+                        main_menu_game_do_over(ID_MENU_GAME_DO_OVER),
                         main_menu_game_resign(ID_MENU_GAME_RESIGN),
                         main_menu_help_version(ID_MENU_HELP_VERSION);
 hmgui::window_conf config;
@@ -145,6 +146,7 @@ void hmgui::menu_main::create_menu() {
 
         AppendMenuW(main_menu_game, MF_STRING, main_menu_game_new, L"新規対局");
         AppendMenuW(main_menu_game, MF_SEPARATOR, 0, NULL);
+        AppendMenuW(main_menu_game, MF_STRING, main_menu_game_do_over, L"待った");
         AppendMenuW(main_menu_game, MF_STRING, main_menu_game_resign, L"投了");
 
         AppendMenuW(main_menu_help, MF_STRING, main_menu_help_version, L"バージョン情報");
@@ -327,7 +329,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     break;
                 }
                 case ID_MENU_EDIT_MOVE_FORWARD: {
-                    if (current_kifu.size() && kifu_current_turn < current_kifu.size() - 1) {
+                    if (current_kifu.size() && kifu_current_turn < static_cast<int>(current_kifu.size() - 1)) {
                         kifu_current_turn++;
                         hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
                         InvalidateRect(handle_window, nullptr, FALSE);
@@ -365,29 +367,29 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     break;
                 }
                 case ID_MENU_GAME_NEW: {
-                    if (!kifu_saved) {
-                        int ret = check_nosave();
-                        switch (ret) {
-                            case 0: {
-                                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
-                            }
-                            case 1: {
-                                break;
-                            }
-                            case 2: {
-                                return 0;
-                            }
-                        }
-                    }
                     newgame_window.show_window(SW_SHOW, window_area_rectf.left + 30.0f, window_area_rectf.top + 30.0f);
                     break;
                 }
-                case ID_MENU_GAME_RESIGN: {
-                    if (!is_gaming) {
-                        return 0;
+                case ID_MENU_GAME_DO_OVER: {
+                    if (!is_gaming) return 0;
+                    if (kifu_current_turn > -1) {
+                        kifu_current_turn = current_kifu.size() - 2;
+                        current_kifu.remove();
+                        if (current_kifu.size() == 0) {
+                            board.clear();
+                        } else {
+                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
+                        }
+                        InvalidateRect(handle_window, nullptr, FALSE);
                     }
+                    return 0;
+                }
+                case ID_MENU_GAME_RESIGN: {
+                    if (!is_gaming) return 0;
                     is_gaming = false;
                     InvalidateRect(handle_window, nullptr, FALSE);
+                    MessageBoxW(NULL, std::wstring(L"まで" + std::to_wstring(current_kifu.size()) + L"手で" + (((current_kifu.size() - 1) % 2 == 0) ? L"先手" : L"後手") + L"の勝ち").c_str(), L"", MB_OK);
+                    break;
                 }
                 case ID_MENU_HELP_VERSION: {
                     break;
@@ -453,12 +455,22 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
                     kifu_saved = false;
                     InvalidateRect(handle_window, nullptr, FALSE);
+                    if (board.is_win()) SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_GAME_RESIGN, 0), 0);
                 } catch (...) {
                     return 0;
                 }
                 return 0;
             }
-
+            if (PtInRect(&do_over_button_area_rect, pt)) {
+                do_over_button_state = 2;
+                InvalidateRect(handle_window, nullptr, FALSE);
+                return 0;
+            }
+            if (PtInRect(&resign_button_area_rect, pt)) {
+                resign_button_state = 2;
+                InvalidateRect(handle_window, nullptr, FALSE);
+                return 0;
+            }
             if (PtInRect(&kifu_area_rect, pt)) {
                 float relative_y = pt.y - kifu_area_rect.top + kifu_scroll_offset.y;
                 unsigned int clicked_turn = static_cast<unsigned int>(relative_y / main_config.kifu_spacing);
@@ -504,6 +516,29 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                 ReleaseCapture();
                 return 0;
             }
+            if (do_over_button_state == 2) {
+                if (!is_gaming) return 0;
+                if (kifu_current_turn > -1) {
+                    kifu_current_turn = current_kifu.size() - 2;
+                    current_kifu.remove();
+                    if (current_kifu.size() == 0) {
+                        board.clear();
+                    } else {
+                        hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
+                    }
+                    InvalidateRect(handle_window, nullptr, FALSE);
+                }
+                do_over_button_state = 1;
+                return 0;
+            }
+            if (resign_button_state == 2) {
+                if (!is_gaming) return 0;
+                is_gaming = false;
+                InvalidateRect(handle_window, nullptr, FALSE);
+                MessageBoxW(NULL, std::wstring(L"まで" + std::to_wstring(current_kifu.size()) + L"手で" + (((current_kifu.size() - 1) % 2 == 0) ? L"先手" : L"後手") + L"の勝ち").c_str(), L"", MB_OK);
+                resign_button_state = 1;
+            }
+
             break;
         }
         case WM_MOUSEMOVE: {
@@ -527,17 +562,29 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                 }
                 update_rect();
                 InvalidateRect(handle_window, nullptr, FALSE);
-                return 0;
+            }
+
+            if (PtInRect(&do_over_button_area_rect, pt)) {
+                do_over_button_state = 1;
             }
             else {
-                const int tol = 5;
-                float boundary1 = main_config.grid_size_x;
-                float boundary2 = main_config.grid_size_x + main_config.kifu_size_x;
-                if (std::abs(pt.x - boundary1) <= tol || std::abs(pt.x - boundary2) <= tol) {
-                    SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
-                } else {
-                    SetCursor(LoadCursor(nullptr, IDC_ARROW));
-                }
+                do_over_button_state = 0;
+            }
+            if (PtInRect(&resign_button_area_rect, pt)) {
+                resign_button_state = 1;
+            }
+            else {
+                resign_button_state = 0;
+            }
+            InvalidateRect(handle_window, nullptr, FALSE);
+
+            const int tol = 5;
+            float boundary1 = main_config.grid_size_x;
+            float boundary2 = main_config.grid_size_x + main_config.kifu_size_x;
+            if (std::abs(pt.x - boundary1) <= tol || std::abs(pt.x - boundary2) <= tol) {
+                SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
+            } else {
+                SetCursor(LoadCursor(nullptr, IDC_ARROW));
             }
             return 0;
         }
@@ -623,10 +670,12 @@ LRESULT CALLBACK hmgui::window_newgame::handle_message(HWND handle_window, UINT 
                             }
                         }
                     }
+                    main_window.board.clear();
                     main_window.current_kifu.clear();
                     main_window.kifu_current_turn = 0;
                     main_window.is_gaming = true;
                     main_window.kifu_saved = false;
+                    InvalidateRect(main_window, nullptr, FALSE);
                     handle_exit();
                     break;
                 }

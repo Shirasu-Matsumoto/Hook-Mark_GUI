@@ -182,26 +182,25 @@ namespace hm {
                     int mask_width = static_cast<int>(mask[0].size());
 
                     auto x_range = _has_piece.index_range();
-                    for (int x = x_range.min; x <= x_range.max - mask_width; ++x) {
-                        for (int y = x_range.min; y <= x_range.max - mask_height; ++y) {
+                    for (int x = x_range.min; x <= x_range.max - mask_width + 1; ++x) {
+                        auto y_range = _has_piece[x].index_range();
+                        for (int y = y_range.min; y <= y_range.max - mask_height + 1; ++y) {
                             for (unsigned int player = 1; player <= 2; ++player) {
                                 bool match = true;
                                 for (int dy = 0; dy < mask_height; ++dy) {
                                     for (int dx = 0; dx < mask_width; ++dx) {
                                         if (!mask[dy][dx]) continue;
-
-                                        if (_has_piece.need_resize(x + dx) ||
-                                            _has_piece[x + dx].need_resize(y + dy)) {
+                                        int bx = x + dx;
+                                        int by = y + dy;
+                                        if (_has_piece.need_resize(bx) || _has_piece[bx].need_resize(by)) {
                                             match = false;
                                             break;
                                         }
-
-                                        if (!_has_piece[x + dx][y + dy]) {
+                                        if (!_has_piece[bx][by]) {
                                             match = false;
                                             break;
                                         }
-
-                                        bool piece_is_first = _is_first[x + dx][y + dy];
+                                        bool piece_is_first = _is_first[bx][by];
                                         if ((player == 1 && !piece_is_first) || (player == 2 && piece_is_first)) {
                                             match = false;
                                             break;
@@ -209,8 +208,8 @@ namespace hm {
                                     }
                                     if (!match) break;
                                 }
-
                                 if (match) {
+                                    throw std::wstring(L"Win: player=" + std::to_wstring(player) + L", at=(" + std::to_wstring(x) + L"," + std::to_wstring(y) + L"), rotate_index=" + std::to_wstring(rotate_index));
                                     return player;
                                 }
                             }

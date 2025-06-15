@@ -19,6 +19,10 @@ namespace hm {
                 _kifu.emplace_back(x, y);
             }
 
+            virtual void remove() {
+                if (!_kifu.empty()) _kifu.pop_back();
+            }
+
             virtual void clear() {
                 _kifu.clear();
             }

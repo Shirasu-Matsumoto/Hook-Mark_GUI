@@ -5,12 +5,6 @@
 #include <hookmark_gui_id.hpp>
 
 namespace hmgui {
-    class wc_main final : public wc_base {
-        public:
-            wc_main();
-            ATOM register_class() override;
-    };
-
     struct window_conf {
         float window_pos_x;
         float window_pos_y;
@@ -36,6 +30,12 @@ namespace hmgui {
         bool lose_time_runs_out;
     };
 
+    class wc_main final : public wc_base {
+        public:
+            wc_main();
+            ATOM register_class() override;
+    };
+
     class window_main final : public window_base {
         public:
             wc_main window_class;
@@ -51,6 +51,7 @@ namespace hmgui {
             IDWriteTextFormat *text_format_kifu;
             IDWriteTextFormat *text_format_label;
             IDWriteTextFormat *text_format_config;
+            IDWriteTextFormat *text_format_game_control_button_label;
             RECT window_area_rect;
             D2D1_RECT_F window_area_rectf;
             RECT grid_area_rect;
@@ -62,12 +63,16 @@ namespace hmgui {
             RECT config_area_rect;
             D2D1_RECT_F config_area_rectf;
             D2D1_RECT_F config_area_clip_rectf;
+            RECT do_over_button_area_rect;
+            D2D1_RECT_F do_over_button_area_rectf;
+            RECT resign_button_area_rect;
+            D2D1_RECT_F resign_button_area_rectf;
             D2D1_POINT_2F grid_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             D2D1_POINT_2F kifu_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             D2D1_POINT_2F config_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             std::vector<float> label_width;
             std::vector<float> label_height;
-            unsigned int kifu_current_turn = 0;
+            int kifu_current_turn = 0;
             bool kifu_saved = true;
 
             enum class resize_region {
@@ -90,6 +95,9 @@ namespace hmgui {
 
             bool is_gaming = false;
 
+            int do_over_button_state = 0;
+            int resign_button_state = 0;
+
             window_main() {}
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
@@ -105,6 +113,7 @@ namespace hmgui {
             void draw_kifu_single_last(unsigned int turn);
             void draw_kifu();
             void draw_board();
+            void draw_game_control();
             void grid_scroll(float dx, float dy);
             void set_grid_scroll(float x, float y);
             D2D1_POINT_2F get_grid_scroll() const;

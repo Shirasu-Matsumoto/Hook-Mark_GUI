@@ -89,6 +89,21 @@ namespace hmgui {
         );
         if (FAILED(hr)) return false;
 
+        hr = d2d1_dwrite_factory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_NORMAL,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            20.0f,
+            L"ja-JP",
+            &text_format_game_control_button_label
+        );
+        if (FAILED(hr)) return false;
+
+        text_format_game_control_button_label->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+        text_format_game_control_button_label->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+
         for (int i = 1; i < 6; i++) {
             add_label_size(i);
         }
@@ -163,9 +178,23 @@ namespace hmgui {
             window_area_rectf.right - window_area_rectf.left - main_config.margin,
             main_config.grid_and_kifu_size_y - main_config.margin
         );
+        do_over_button_area_rectf = D2D1::RectF(
+            main_config.margin,
+            main_config.grid_and_kifu_size_y + main_config.margin,
+            100.0f - main_config.margin,
+            main_config.grid_and_kifu_size_y + 50.0f - main_config.margin
+        );
+        resign_button_area_rectf = D2D1::RectF(
+            100.0f + main_config.margin,
+            main_config.grid_and_kifu_size_y + main_config.margin,
+            200.0f - main_config.margin,
+            main_config.grid_and_kifu_size_y + 50.0f - main_config.margin
+        );
         grid_area_rect = rectf_to_rect(grid_area_rectf);
         kifu_area_rect = rectf_to_rect(kifu_area_rectf);
         config_area_rect = rectf_to_rect(config_area_rectf);
+        do_over_button_area_rect = rectf_to_rect(do_over_button_area_rectf);
+        resign_button_area_rect = rectf_to_rect(resign_button_area_rectf);
         grid_area_clip_rectf = cliped_rectf(grid_area_rectf);
         kifu_area_clip_rectf = cliped_rectf(kifu_area_rectf);
         config_area_clip_rectf = cliped_rectf(config_area_rectf);
@@ -283,6 +312,7 @@ namespace hmgui {
         this->draw_grid();
         this->draw_kifu();
         this->draw_config();
+        this->draw_game_control();
     }
 
     void window_main::draw_grid() {
@@ -590,7 +620,7 @@ namespace hmgui {
         );
 
         layout_rect.left += main_config.kifu_turn_size_x + main_config.kifu_spacing;
-        std::wstring move_str = L"まで" + std::to_wstring(turn) + L"手で" + ((turn % 2 == 0) ? L"先手" : L"後手") + L"の勝ち";
+        std::wstring move_str = L"投了";
         d2d1_render_target->DrawText(
             move_str.c_str(),
             static_cast<UINT32>(move_str.size()),
@@ -658,6 +688,57 @@ namespace hmgui {
         );
 
         d2d1_render_target->PopAxisAlignedClip();
+    }
+
+    void window_main::draw_game_control() {
+        D2D1_COLOR_F color;
+        switch (do_over_button_state) {
+            case 0: {
+                color = D2D1::ColorF(D2D1::ColorF::White);
+                break;
+            }
+            case 1: {
+                color = D2D1::ColorF(D2D1::ColorF::WhiteSmoke);
+                break;
+            }
+            case 2: {
+                color = D2D1::ColorF(D2D1::ColorF::LightGray);
+                break;
+            }
+        }
+        d2d1_brush->SetColor(color);
+        d2d1_render_target->FillRectangle(do_over_button_area_rectf, d2d1_brush);
+        switch (resign_button_state) {
+            case 0: {
+                color = D2D1::ColorF(D2D1::ColorF::White);
+                break;
+            }
+            case 1: {
+                color = D2D1::ColorF(D2D1::ColorF::WhiteSmoke);
+                break;
+            }
+            case 2: {
+                color = D2D1::ColorF(D2D1::ColorF::LightGray);
+                break;
+            }
+        }
+        d2d1_brush->SetColor(color);
+        d2d1_render_target->FillRectangle(resign_button_area_rectf, d2d1_brush);
+        d2d1_brush->SetColor(black_color);
+        d2d1_render_target->DrawRectangle(do_over_button_area_rectf, d2d1_brush, 2.0f);
+        d2d1_render_target->DrawRectangle(resign_button_area_rectf, d2d1_brush, 2.0f);
+        d2d1_render_target->DrawText(
+            L"待った", 3,
+            text_format_game_control_button_label,
+            &do_over_button_area_rectf,
+            d2d1_brush
+        );
+        d2d1_render_target->DrawText(
+            L"投了", 2,
+            text_format_game_control_button_label,
+            &resign_button_area_rectf,
+            d2d1_brush
+        );
     }
 
     void window_main::grid_scroll(float dx, float dy) {
