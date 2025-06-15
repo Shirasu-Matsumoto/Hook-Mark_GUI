@@ -68,6 +68,7 @@ namespace hmgui {
             std::vector<float> label_width;
             std::vector<float> label_height;
             unsigned int kifu_current_turn = 0;
+            bool kifu_saved = true;
 
             enum class resize_region {
                 none,
@@ -83,7 +84,11 @@ namespace hmgui {
             D2D1_COLOR_F red_color = D2D1::ColorF(D2D1::ColorF::Red);
             D2D1_COLOR_F blue_color = D2D1::ColorF(D2D1::ColorF::Blue);
             D2D1_COLOR_F black_color = D2D1::ColorF(D2D1::ColorF::Black);
-            D2D1_COLOR_F kifu_bg_color = D2D1::ColorF(D2D1::ColorF::Aqua);
+            D2D1_COLOR_F kifu_edge_color = D2D1::ColorF(0x176ff7);
+            D2D1_COLOR_F kifu_bg_color = D2D1::ColorF(0x689be9);
+            D2D1_COLOR_F gray_color = D2D1::ColorF(D2D1::ColorF::Gray);
+
+            bool is_gaming = false;
 
             window_main() {}
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
@@ -97,6 +102,7 @@ namespace hmgui {
             void draw_config();
             void draw_grid();
             void draw_kifu_single(const hm::pos &move, unsigned int turn);
+            void draw_kifu_single_last(unsigned int turn);
             void draw_kifu();
             void draw_board();
             void grid_scroll(float dx, float dy);
@@ -137,6 +143,8 @@ namespace hmgui {
             ID2D1HwndRenderTarget *d2d1_render_target;
             ID2D1SolidColorBrush *d2d1_brush;
             IDWriteTextFormat *text_format_default;
+
+            HWND handle_newgame_button = nullptr;
 
             window_newgame() {}
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);

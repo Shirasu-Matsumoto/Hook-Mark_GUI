@@ -9,6 +9,7 @@
 #endif
 
 #include <hookmark.hpp>
+#include <hookmark_gui_helpers.hpp>
 #include <windows.h>
 #include <windowsx.h>
 #include <d2d1.h>

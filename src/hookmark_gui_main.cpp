@@ -20,11 +20,13 @@ hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
                         main_menu_file_exit(ID_MENU_FILE_EXIT),
                         main_menu_edit_move_forward(ID_MENU_EDIT_MOVE_FORWARD),
                         main_menu_edit_step_back(ID_MENU_EDIT_STEP_BACK),
+                        main_menu_edit_jump_to_first_move(ID_MENU_EDIT_JUMP_TO_FIRST_MOVE),
                         main_menu_edit_comment(ID_MENU_EDIT_COMMENT),
                         main_menu_edit_kifu_info(ID_MENU_EDIT_KIFU_INFO),
                         main_menu_view_board_scroll_reset(ID_MENU_VIEW_BOARD_SCROLL_RESET),
                         main_menu_view_board_separate_window(ID_MENU_VIEW_BOARD_SEPARATE_WINDOW),
                         main_menu_game_new(ID_MENU_GAME_NEW),
+                        main_menu_game_resign(ID_MENU_GAME_RESIGN),
                         main_menu_help_version(ID_MENU_HELP_VERSION);
 hmgui::window_conf config;
 
@@ -97,6 +99,18 @@ namespace hmgui {
         if (um_config.count("lose_time_runs_out")) config.lose_time_runs_out = to_bool(um_config.at("lose_time_runs_out"));
         if (um_config.count("kifu_spacing")) config.kifu_spacing = to_float(um_config.at("kifu_spacing"));
     }
+
+    int check_nosave() {
+        int ret = MessageBoxW(
+            main_window,
+            L"変更内容が保存されていません。保存しますか？",
+            L"確認",
+            MB_ICONWARNING | MB_YESNOCANCEL | MB_DEFBUTTON1
+        );
+        if (ret == IDYES) return 0;
+        else if (ret == IDNO) return 1;
+        else return 2;
+    }
 }
 
 void hmgui::menu_main::create_menu() {
@@ -120,6 +134,7 @@ void hmgui::menu_main::create_menu() {
 
         AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_move_forward, L"一手進む");
         AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_step_back, L"一手戻る");
+        AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_jump_to_first_move, L"初手に戻る");
         AppendMenuW(main_menu_edit, MF_SEPARATOR, 0, NULL);
         AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_comment, L"コメントを編集");
         AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_kifu_info, L"棋譜情報を編集");
@@ -129,6 +144,8 @@ void hmgui::menu_main::create_menu() {
         AppendMenuW(main_menu_view, MF_STRING, main_menu_view_board_separate_window, L"盤面を別ウィンドウで表示");
 
         AppendMenuW(main_menu_game, MF_STRING, main_menu_game_new, L"新規対局");
+        AppendMenuW(main_menu_game, MF_SEPARATOR, 0, NULL);
+        AppendMenuW(main_menu_game, MF_STRING, main_menu_game_resign, L"投了");
 
         AppendMenuW(main_menu_help, MF_STRING, main_menu_help_version, L"バージョン情報");
     }
@@ -138,6 +155,24 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
     switch (message) {
         case WM_CREATE: {
             timer_id = SetTimer(handle_window, timer_id, 33, NULL);
+            return 0;
+        }
+        case WM_CLOSE: {
+            if (!kifu_saved) {
+                int ret = check_nosave();
+                switch (ret) {
+                    case 0: {
+                        SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                    }
+                    case 1: {
+                        break;
+                    }
+                    case 2: {
+                        return 0;
+                    }
+                }
+            }
+            handle_exit();
             return 0;
         }
         case WM_KEYDOWN: {
@@ -180,6 +215,20 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     break;
                 }
                 case ID_MENU_FILE_OPEN: {
+                    if (!kifu_saved) {
+                        int ret = check_nosave();
+                        switch (ret) {
+                            case 0: {
+                                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                            }
+                            case 1: {
+                                break;
+                            }
+                            case 2: {
+                                return 0;
+                            }
+                        }
+                    }
                     std::wstring result;
                     show_file_load_dialog(result);
                     current_kifu_path = result;
@@ -194,16 +243,26 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                         MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
                     }
                     kifu_current_turn = current_kifu.size() - 1;
+                    kifu_saved = true;
                     hm::kifuver1_to_board(current_kifu, board, current_kifu.size() - 1);
-                    InvalidateRect(handle_window, nullptr, FALSE);
                     update_title();
+                    InvalidateRect(handle_window, nullptr, FALSE);
                     break;
                 }
                 case ID_MENU_FILE_OVERWRITE_SAVE: {
                     if (current_kifu_path.empty()) {
-                        break;
+                        SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_SAVE_AS, 0), 0);
                     }
-                    current_kifu.kifu_save(utf16_to_utf8(current_kifu_path));
+                    else {
+                        try {
+                            current_kifu.kifu_save(utf16_to_utf8(current_kifu_path));
+                            kifu_saved = true;
+                        }
+                        catch (const std::exception &e) {
+                            MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(),
+                                        L"Error", MB_OK | MB_ICONERROR);
+                        }
+                    }
                     break;
                 }
                 case ID_MENU_FILE_SAVE_AS: {
@@ -216,28 +275,79 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     }
                     try {
                         current_kifu.kifu_save(filepath);
+                        kifu_saved = true;
                     }
-                    catch (std::exception e) {
-                        MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
+                    catch (const std::exception &e) {
+                        MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(),
+                                    L"Error", MB_OK | MB_ICONERROR);
                     }
                     update_title();
                     break;
                 }
                 case ID_MENU_FILE_CLOSE: {
+                    if (!kifu_saved) {
+                        int ret = check_nosave();
+                        switch (ret) {
+                            case 0: {
+                                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                            }
+                            case 1: {
+                                break;
+                            }
+                            case 2: {
+                                return 0;
+                            }
+                        }
+                    }
                     current_kifu_path.clear();
                     current_kifu.clear();
+                    kifu_current_turn = 0;
+                    board.clear();
+                    kifu_saved = true;
                     update_title();
                     InvalidateRect(handle_window, nullptr, FALSE);
                     break;
                 }
                 case ID_MENU_FILE_EXIT: {
+                    if (!kifu_saved) {
+                        int ret = check_nosave();
+                        switch (ret) {
+                            case 0: {
+                                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                            }
+                            case 1: {
+                                break;
+                            }
+                            case 2: {
+                                return 0;
+                            }
+                        }
+                    }
                     handle_exit();
                     break;
                 }
                 case ID_MENU_EDIT_MOVE_FORWARD: {
+                    if (current_kifu.size() && kifu_current_turn < current_kifu.size() - 1) {
+                        kifu_current_turn++;
+                        hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
+                        InvalidateRect(handle_window, nullptr, FALSE);
+                    }
                     break;
                 }
                 case ID_MENU_EDIT_STEP_BACK: {
+                    if (current_kifu.size() && kifu_current_turn > 0) {
+                        kifu_current_turn--;
+                        hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
+                        InvalidateRect(handle_window, nullptr, FALSE);
+                    }
+                    break;
+                }
+                case ID_MENU_EDIT_JUMP_TO_FIRST_MOVE: {
+                    if (current_kifu.size()) {
+                        kifu_current_turn = 0;
+                        hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
+                        InvalidateRect(handle_window, nullptr, FALSE);
+                    }
                     break;
                 }
                 case ID_MENU_EDIT_COMMENT: {
@@ -255,8 +365,29 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     break;
                 }
                 case ID_MENU_GAME_NEW: {
+                    if (!kifu_saved) {
+                        int ret = check_nosave();
+                        switch (ret) {
+                            case 0: {
+                                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                            }
+                            case 1: {
+                                break;
+                            }
+                            case 2: {
+                                return 0;
+                            }
+                        }
+                    }
                     newgame_window.show_window(SW_SHOW, window_area_rectf.left + 30.0f, window_area_rectf.top + 30.0f);
                     break;
+                }
+                case ID_MENU_GAME_RESIGN: {
+                    if (!is_gaming) {
+                        return 0;
+                    }
+                    is_gaming = false;
+                    InvalidateRect(handle_window, nullptr, FALSE);
                 }
                 case ID_MENU_HELP_VERSION: {
                     break;
@@ -304,6 +435,30 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
         }
         case WM_LBUTTONDOWN: {
             POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+
+            if (PtInRect(&grid_area_rect, pt) && is_gaming) {
+                float gx = static_cast<float>(pt.x);
+                float gy = static_cast<float>(pt.y);
+                float fx = (gx - grid_area_rectf.left + main_window.grid_scroll_offset.x) / main_config.grid_spacing - 0.5f;
+                float fy = (grid_area_rectf.bottom - main_window.grid_scroll_offset.y - gy) / main_config.grid_spacing - 0.5f;
+                int x = static_cast<int>(std::round(fx));
+                int y = static_cast<int>(std::round(fy));
+                if (board.has_piece(x, y)) {
+                    return 0;
+                }
+                try {
+                    main_window.board.progress(x, y);
+                    kifu_current_turn = current_kifu.size();
+                    current_kifu.add(x, y);
+                    hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
+                    kifu_saved = false;
+                    InvalidateRect(handle_window, nullptr, FALSE);
+                } catch (...) {
+                    return 0;
+                }
+                return 0;
+            }
+
             if (PtInRect(&kifu_area_rect, pt)) {
                 float relative_y = pt.y - kifu_area_rect.top + kifu_scroll_offset.y;
                 unsigned int clicked_turn = static_cast<unsigned int>(relative_y / main_config.kifu_spacing);
@@ -338,6 +493,8 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                 SetCapture(handle_window);
                 return 0;
             }
+
+            InvalidateRect(handle_window, nullptr, FALSE);
             return 0;
         }
         case WM_LBUTTONUP: {
@@ -364,8 +521,9 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                         main_config.kifu_size_x = initial_kifu_size + dx;
                         break;
                     }
-                    default:
+                    default: {
                         break;
+                    }
                 }
                 update_rect();
                 InvalidateRect(handle_window, nullptr, FALSE);
@@ -448,6 +606,32 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
 
 LRESULT CALLBACK hmgui::window_newgame::handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) {
     switch (message) {
+        case WM_COMMAND: {
+            switch (LOWORD(w_param)) {
+                case ID_NEWGAME_BUTTON: {
+                    if (!main_window.kifu_saved) {
+                        int ret = check_nosave();
+                        switch (ret) {
+                            case 0: {
+                                SendMessageW(main_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                            }
+                            case 1: {
+                                break;
+                            }
+                            case 2: {
+                                return 0;
+                            }
+                        }
+                    }
+                    main_window.current_kifu.clear();
+                    main_window.kifu_current_turn = 0;
+                    main_window.is_gaming = true;
+                    main_window.kifu_saved = false;
+                    handle_exit();
+                    break;
+                }
+            }
+        }
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC handle_device_context = BeginPaint(handle_window, &ps);

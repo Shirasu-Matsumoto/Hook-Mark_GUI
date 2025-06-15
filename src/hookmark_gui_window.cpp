@@ -200,11 +200,11 @@ namespace hmgui {
         IFileOpenDialog *file_open_dialog = nullptr;
         HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL, IID_PPV_ARGS(&file_open_dialog));
         if (SUCCEEDED(hr)) {
-            COMDLG_FILTERSPEC rgSpec[] = {
+            COMDLG_FILTERSPEC rg_spec[] = {
                 { L"Hook-Mark棋譜ファイル (*.hmk, *.hmkif)", L"*.hmk;*.hmkif" },
                 { L"すべてのファイル (*.*)", L"*.*" }
             };
-            hr = file_open_dialog->SetFileTypes(ARRAYSIZE(rgSpec), rgSpec);
+            hr = file_open_dialog->SetFileTypes(ARRAYSIZE(rg_spec), rg_spec);
             if (SUCCEEDED(hr)) {
                 hr = file_open_dialog->SetFileTypeIndex(1);
             }
@@ -231,38 +231,38 @@ namespace hmgui {
     }
 
     void window_main::show_file_save_dialog(std::wstring &path) {
-        IFileSaveDialog *pFileSave = nullptr;
+        IFileSaveDialog *file_save_dialog = nullptr;
         HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog,
                                     nullptr,
                                     CLSCTX_ALL,
-                                    IID_PPV_ARGS(&pFileSave));
+                                    IID_PPV_ARGS(&file_save_dialog));
         if (SUCCEEDED(hr)) {
-            COMDLG_FILTERSPEC rgSpec[] = {
+            COMDLG_FILTERSPEC rg_spec[] = {
                 { L"Hook-Mark棋譜ファイル (*.hmk, *.hmkif)", L"*.hmk;*.hmkif" },
                 { L"すべてのファイル (*.*)", L"*.*" }
             };
-            hr = pFileSave->SetFileTypes(ARRAYSIZE(rgSpec), rgSpec);
+            hr = file_save_dialog->SetFileTypes(ARRAYSIZE(rg_spec), rg_spec);
             if (SUCCEEDED(hr)) {
-                hr = pFileSave->SetFileTypeIndex(1);
+                hr = file_save_dialog->SetFileTypeIndex(1);
             }
 
-            pFileSave->SetDefaultExtension(L"hmk");
+            file_save_dialog->SetDefaultExtension(L"hmk");
 
-            hr = pFileSave->Show(nullptr);
+            hr = file_save_dialog->Show(nullptr);
             if (SUCCEEDED(hr)) {
-                IShellItem* pResult = nullptr;
-                hr = pFileSave->GetResult(&pResult);
+                IShellItem* shell_item = nullptr;
+                hr = file_save_dialog->GetResult(&shell_item);
                 if (SUCCEEDED(hr)) {
-                    PWSTR pszFilePath = nullptr;
-                    hr = pResult->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
-                    if (SUCCEEDED(hr) && pszFilePath) {
-                        path = pszFilePath;
-                        CoTaskMemFree(pszFilePath);
+                    PWSTR psz_file_path = nullptr;
+                    hr = shell_item->GetDisplayName(SIGDN_FILESYSPATH, &psz_file_path);
+                    if (SUCCEEDED(hr) && psz_file_path) {
+                        path = psz_file_path;
+                        CoTaskMemFree(psz_file_path);
                     }
-                    pResult->Release();
+                    shell_item->Release();
                 }
             }
-            pFileSave->Release();
+            file_save_dialog->Release();
         }
     }
 
@@ -476,15 +476,27 @@ namespace hmgui {
 
         if (y + main_config.kifu_spacing < kifu_area_rectf.top || y > kifu_area_rectf.bottom) return;
 
+        D2D1_RECT_F single_kifu_rectf = D2D1::RectF(
+            kifu_area_rectf.left,
+            y,
+            kifu_area_rectf.right,
+            y + main_config.kifu_spacing
+        );
+
+        d2d1_brush->SetColor(gray_color);
+
+        d2d1_render_target->DrawLine(
+            D2D1::Point2F(single_kifu_rectf.left + 5.0f, single_kifu_rectf.bottom + 1.0f),
+            D2D1::Point2F(single_kifu_rectf.right - 5.0f, single_kifu_rectf.bottom + 1.0f),
+            d2d1_brush,
+            1.0f
+        );
+
         if (kifu_current_turn == turn) {
             d2d1_brush->SetColor(kifu_bg_color);
-            D2D1_RECT_F single_kifu_rectf = D2D1::RectF(
-                kifu_area_rectf.left,
-                y,
-                kifu_area_rectf.right,
-                y + main_config.kifu_spacing
-            );
             d2d1_render_target->FillRectangle(single_kifu_rectf, d2d1_brush);
+            d2d1_brush->SetColor(kifu_edge_color);
+            d2d1_render_target->DrawRectangle(single_kifu_rectf, d2d1_brush, 3.0f);
             d2d1_brush->SetColor(black_color);
         }
 
@@ -543,6 +555,51 @@ namespace hmgui {
         );
     }
 
+    void window_main::draw_kifu_single_last(unsigned int turn) {
+        float y = kifu_area_rectf.top + turn * main_config.kifu_spacing - kifu_scroll_offset.y;
+
+        if (y + main_config.kifu_spacing < kifu_area_rectf.top || y > kifu_area_rectf.bottom) return;
+
+        D2D1_RECT_F single_kifu_rectf = D2D1::RectF(
+            kifu_area_rectf.left,
+            y,
+            kifu_area_rectf.right,
+            y + main_config.kifu_spacing
+        );
+
+        if (kifu_current_turn == turn) {
+            d2d1_brush->SetColor(kifu_bg_color);
+            d2d1_render_target->FillRectangle(single_kifu_rectf, d2d1_brush);
+            d2d1_brush->SetColor(kifu_edge_color);
+            d2d1_render_target->DrawRectangle(single_kifu_rectf, d2d1_brush, 3.0f);
+            d2d1_brush->SetColor(black_color);
+        }
+
+        D2D1_RECT_F layout_rect = D2D1::RectF(
+            kifu_area_rectf.left + main_config.padding,
+            y - main_config.kifu_spacing * 0.05f,
+            kifu_area_rectf.right - main_config.padding,
+            y + main_config.kifu_spacing * 9.95f
+        );
+        d2d1_render_target->DrawText(
+            std::to_wstring(turn + 1).c_str(),
+            static_cast<UINT32>(std::to_wstring(turn + 1).size()),
+            text_format_kifu,
+            layout_rect,
+            d2d1_brush
+        );
+
+        layout_rect.left += main_config.kifu_turn_size_x + main_config.kifu_spacing;
+        std::wstring move_str = L"まで" + std::to_wstring(turn) + L"手で" + ((turn % 2 == 0) ? L"先手" : L"後手") + L"の勝ち";
+        d2d1_render_target->DrawText(
+            move_str.c_str(),
+            static_cast<UINT32>(move_str.size()),
+            text_format_kifu,
+            layout_rect,
+            d2d1_brush
+        );
+    }
+
     void window_main::draw_kifu() {
         if (!d2d1_render_target || !d2d1_brush) return;
 
@@ -563,6 +620,8 @@ namespace hmgui {
         for (unsigned int i = 0; i < moves.size(); i++) {
             draw_kifu_single(moves[i], i);
         }
+
+        if (!moves.size() == 0 && !is_gaming) draw_kifu_single_last(static_cast<unsigned int>(moves.size()));
 
         d2d1_render_target->PopAxisAlignedClip();
     }
@@ -620,7 +679,7 @@ namespace hmgui {
         kifu_scroll_offset.y += dy;
 
         const auto &moves = current_kifu.data();
-        float total_height = static_cast<float>(moves.size()) * main_config.kifu_spacing + main_config.padding;
+        float total_height = static_cast<float>(moves.size() + 1) * main_config.kifu_spacing + main_config.padding;
         float view_height = kifu_area_rectf.bottom - kifu_area_rectf.top;
 
         if (kifu_scroll_offset.y < 0.0f) {
@@ -735,6 +794,9 @@ namespace hmgui {
         window_class.register_class();
         create_window(handle_parent_window);
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
+
+        handle_newgame_button = CreateWindowExW(NULL, L"BUTTON", L"対局開始", WS_CHILD | WS_VISIBLE, 10, 10, 300, 25, handle_window, reinterpret_cast<HMENU>(static_cast<intptr_t>(ID_NEWGAME_BUTTON)), GetModuleHandleW(nullptr), nullptr);
+        ShowWindow(handle_newgame_button, SW_SHOW);
     }
 
     bool window_newgame::d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
@@ -786,16 +848,7 @@ namespace hmgui {
 
     void window_newgame::redraw() {
         d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
-        std::wstring first = L"先手: ";
-        D2D1_RECT_F layout_rect = D2D1::RectF(10, 10, 400, 40);
-        d2d1_render_target->DrawText(
-            first.c_str(),
-            static_cast<UINT32>(first.size()),
-            text_format_default,
-            layout_rect,
-            d2d1_brush
-        );
-        CreateWindowExW(NULL, L"EDIT", L"", WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 40, 10, 300, 25, handle_window, nullptr, GetModuleHandleW(nullptr), nullptr);
+        return;
     }
 
     void window_newgame::handle_exit() {

@@ -110,13 +110,19 @@ namespace hm {
                 return _is_first;
             }
 
+            bool has_piece(int x, int y) {
+                ensure_size(x, y);
+                return _has_piece[x][y];
+            }
+
             void set(int x, int y, unsigned int p) {
                 ensure_size(x, y);
                 _has_piece[x][y] = (p != 0);
                 _is_first[x][y] = (p == 1);
             }
 
-            unsigned int get(int x, int y) const {
+            unsigned int get(int x, int y) {
+                ensure_size(x, y);
                 if (_has_piece.need_resize(x) || _has_piece[x].need_resize(y)) return 0;
                 if (!_has_piece[x][y]) return 0;
                 return _is_first[x][y] ? 1 : 2;
