@@ -21,4 +21,10 @@ target_link_libraries(Hook-Mark_GUI
     d2d1.lib
     dwrite.lib
     dwmapi.lib
+    ole32.lib
+    uuid.lib
+    gdi32.lib
+    kernel32.lib
+    comctl32.lib
+    user32.lib
 )

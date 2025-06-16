@@ -219,6 +219,9 @@ namespace hmgui {
             static_cast<int>(main_config.window_size_x), static_cast<int>(main_config.window_size_y),
             nullptr, nullptr, GetModuleHandle(nullptr), this
         );
+
+        DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;
+        DwmSetWindowAttribute(handle_window, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
         
         SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     }
@@ -859,6 +862,9 @@ namespace hmgui {
             handle_parent_window, NULL, GetModuleHandle(nullptr), NULL
         );
 
+        DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;
+        DwmSetWindowAttribute(handle_window, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
+
         SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     }
 
@@ -873,7 +879,7 @@ namespace hmgui {
         create_window(handle_parent_window);
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
 
-        handle_newgame_button = CreateWindowExW(NULL, L"BUTTON", L"対局開始", WS_CHILD | WS_VISIBLE, 10, 10, 300, 25, handle_window, reinterpret_cast<HMENU>(static_cast<intptr_t>(ID_NEWGAME_BUTTON)), GetModuleHandleW(nullptr), nullptr);
+        handle_newgame_button = CreateWindowExW(NULL, L"BUTTON", L"対局開始", WS_CHILD | WS_VISIBLE, 10, 10, 300, 25, handle_window, reinterpret_cast<HMENU>(static_cast<uintptr_t>(ID_NEWGAME_BUTTON)), GetModuleHandleW(nullptr), nullptr);
         ShowWindow(handle_newgame_button, SW_SHOW);
     }
 

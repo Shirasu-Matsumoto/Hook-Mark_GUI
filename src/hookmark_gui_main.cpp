@@ -316,6 +316,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                         switch (ret) {
                             case 0: {
                                 SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                break;
                             }
                             case 1: {
                                 break;
