@@ -19,7 +19,7 @@ namespace hm {
 
                 ofs << "Hook-Mark Kifu File Version 1.0\n#Config\n" << _config << "\n#End\n#Begin\n";
                 for (const auto &move : data()) {
-                    ofs << "\t" << move.x << ", " << move.y << "\n";
+                    ofs << move.x << ", " << move.y << "\n";
                 }
                 ofs << "#End\n";
                 ofs.close();

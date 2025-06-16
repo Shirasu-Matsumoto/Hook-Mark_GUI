@@ -145,6 +145,8 @@ namespace hmgui {
     }
 
     void window_main::update_rect() {
+        GetClientRect(handle_window, &client_area_rect);
+        client_area_rectf = rect_to_rectf(client_area_rect);
         BOOL is_composition_enabled = FALSE;
         HRESULT hr = DwmIsCompositionEnabled(&is_composition_enabled);
         if (SUCCEEDED(hr) && is_composition_enabled) {
@@ -175,7 +177,7 @@ namespace hmgui {
         config_area_rectf = D2D1::RectF(
             main_config.grid_size_x + main_config.kifu_size_x + main_config.margin,
             main_config.margin,
-            window_area_rectf.right - window_area_rectf.left - main_config.margin,
+            client_area_rectf.right - main_config.margin,
             main_config.grid_and_kifu_size_y - main_config.margin
         );
         do_over_button_area_rectf = D2D1::RectF(
@@ -200,9 +202,15 @@ namespace hmgui {
         config_area_clip_rectf = cliped_rectf(config_area_rectf);
     }
 
+    void window_main::initialize_scroll() {
+        grid_scroll_offset = D2D1::Point2F(-(main_config.grid_size_x - main_config.margin * 2) / 2 + main_config.grid_spacing / 2, (main_config.grid_and_kifu_size_y - main_config.margin * 2) / 2 - main_config.grid_spacing / 2);
+        kifu_scroll_offset = D2D1::Point2F();
+        config_scroll_offset = D2D1::Point2F();
+    }
+
     void window_main::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
         main_config = config;
-        grid_scroll_offset = D2D1::Point2F(-(main_config.grid_size_x - main_config.margin * 2) / 2 + main_config.grid_spacing / 2, (main_config.grid_and_kifu_size_y - main_config.margin * 2) / 2 - main_config.grid_spacing / 2);
+        initialize_scroll();
         window_class.register_class();
         create_window();
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
@@ -298,6 +306,7 @@ namespace hmgui {
     }
 
     void window_main::handle_exit() {
+        initialize_scroll();
         PostQuitMessage(0);
         d2d1_render_target->Release();
         d2d1_brush->Release();

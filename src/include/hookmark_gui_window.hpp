@@ -28,6 +28,30 @@ namespace hmgui {
         float first_countdown;
         float second_countdown;
         bool lose_time_runs_out;
+
+        window_conf()
+            : window_pos_x(2147483648.0f),
+              window_pos_y(2147483648.0f),
+              margin(3.0f),
+              padding(5.0f),
+              window_size_x(2147483648.0f),
+              window_size_y(2147483648.0f),
+              grid_spacing(50.0f),
+              kifu_spacing(40.0f),
+              grid_size_x(500.0f),
+              kifu_size_x(400.0f),
+              kifu_turn_size_x(100.0f),
+              grid_and_kifu_size_y(500.0f),
+              open_file(""),
+              label_size(12.0f),
+              first_name(""),
+              second_name(""),
+              first_time(600.0f),
+              second_time(600.0f),
+              first_countdown(10.0f),
+              second_countdown(10.0f),
+              lose_time_runs_out(false)
+        {}
     };
 
     class wc_main final : public wc_base {
@@ -52,6 +76,8 @@ namespace hmgui {
             IDWriteTextFormat *text_format_label;
             IDWriteTextFormat *text_format_config;
             IDWriteTextFormat *text_format_game_control_button_label;
+            RECT client_area_rect;
+            D2D1_RECT_F client_area_rectf;
             RECT window_area_rect;
             D2D1_RECT_F window_area_rectf;
             RECT grid_area_rect;
@@ -102,6 +128,7 @@ namespace hmgui {
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void update_rect();
+            void initialize_scroll();
             void add_label_size(int i);
             void create_window();
             void show_file_load_dialog(std::wstring &result);

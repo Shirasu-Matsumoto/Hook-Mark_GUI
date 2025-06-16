@@ -248,6 +248,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     kifu_saved = true;
                     hm::kifuver1_to_board(current_kifu, board, current_kifu.size() - 1);
                     update_title();
+                    initialize_scroll();
                     InvalidateRect(handle_window, nullptr, FALSE);
                     break;
                 }
@@ -307,6 +308,7 @@ LRESULT CALLBACK hmgui::window_main::handle_message(HWND handle_window, UINT mes
                     board.clear();
                     kifu_saved = true;
                     update_title();
+                    initialize_scroll();
                     InvalidateRect(handle_window, nullptr, FALSE);
                     break;
                 }
@@ -676,6 +678,7 @@ LRESULT CALLBACK hmgui::window_newgame::handle_message(HWND handle_window, UINT 
                     main_window.kifu_current_turn = 0;
                     main_window.is_gaming = true;
                     main_window.kifu_saved = false;
+                    main_window.initialize_scroll();
                     InvalidateRect(main_window, nullptr, FALSE);
                     handle_exit();
                     break;
