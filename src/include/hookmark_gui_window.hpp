@@ -76,6 +76,7 @@ namespace hmgui {
             IDWriteTextFormat *text_format_label;
             IDWriteTextFormat *text_format_config;
             IDWriteTextFormat *text_format_game_control_button_label;
+            float scroll_speed = 15.0f;
             RECT client_area_rect;
             D2D1_RECT_F client_area_rectf;
             RECT window_area_rect;
@@ -104,13 +105,15 @@ namespace hmgui {
             enum class resize_region {
                 none,
                 grid_kifu,
-                kifu_config
+                kifu_config,
+                vertical
             };
             resize_region cr_resize_region = resize_region::none;
             bool is_resizing = false;
             POINT resize_start = { 0, 0 };
             float initial_grid_size = 0.0f;
             float initial_kifu_size = 0.0f;
+            float initial_grid_and_kifu_size_y = 0.0f;
 
             D2D1_COLOR_F red_color = D2D1::ColorF(D2D1::ColorF::Red);
             D2D1_COLOR_F blue_color = D2D1::ColorF(D2D1::ColorF::Blue);
@@ -128,6 +131,7 @@ namespace hmgui {
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void update_rect();
+            void update_config();
             void initialize_scroll();
             void add_label_size(int i);
             void create_window();

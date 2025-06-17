@@ -202,6 +202,10 @@ namespace hmgui {
         config_area_clip_rectf = cliped_rectf(config_area_rectf);
     }
 
+    void window_main::update_config() {
+        scroll_speed = static_cast<int>(main_config.grid_spacing / 0.5f);
+    }
+
     void window_main::initialize_scroll() {
         grid_scroll_offset = D2D1::Point2F(-(main_config.grid_size_x - main_config.margin * 2) / 2 + main_config.grid_spacing / 2, (main_config.grid_and_kifu_size_y - main_config.margin * 2) / 2 - main_config.grid_spacing / 2);
         kifu_scroll_offset = D2D1::Point2F();
