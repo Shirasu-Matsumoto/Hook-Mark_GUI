@@ -31,7 +31,7 @@ namespace hmgui {
         return utf16_str;
     }
 
-    inline void import_config_single(const std::string &filepath, std::unordered_map<std::string, std::string> &config) {
+    inline void load_config_single(const std::string &filepath, std::unordered_map<std::string, std::string> &config) {
         std::ifstream file(filepath);
         if (!file.is_open()) return;
 

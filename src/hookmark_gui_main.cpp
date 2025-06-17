@@ -29,8 +29,8 @@ hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
                         main_menu_game_do_over(ID_MENU_GAME_DO_OVER),
                         main_menu_game_resign(ID_MENU_GAME_RESIGN),
                         main_menu_help_version(ID_MENU_HELP_VERSION);
-hmgui::window_conf config;
 
+hmgui::window_conf grobal_config;
 ID2D1Factory *grobal_d2d1_factory;
 IDWriteFactory *grobal_d2d1_dwrite_factory;
 
@@ -63,7 +63,7 @@ namespace hmgui {
         return (str == "1" || str == "true" || str == "TRUE");
     }
 
-    void import_config() {
+    void load_config() {
         wchar_t path[MAX_PATH];
         GetModuleFileNameW(NULL, path, MAX_PATH);
         std::filesystem::path exe_path(utf16_to_utf8(path));
@@ -72,32 +72,67 @@ namespace hmgui {
         std::string default_path = (dir / "config" / "default.cfg").string();
         std::unordered_map<std::string, std::string> um_config;
         if (std::filesystem::exists(default_path)) {
-            import_config_single(default_path, um_config);
+            load_config_single(default_path, um_config);
         }
         if (std::filesystem::exists(init_path)) {
-            import_config_single(init_path, um_config);
+            load_config_single(init_path, um_config);
         }
-        if (um_config.count("window_pos_x")) config.window_pos_x = to_float(um_config.at("window_pos_x"));
-        if (um_config.count("window_pos_y")) config.window_pos_y = to_float(um_config.at("window_pos_y"));
-        if (um_config.count("margin")) config.margin = to_float(um_config.at("margin"));
-        if (um_config.count("padding")) config.padding = to_float(um_config.at("padding"));
-        if (um_config.count("window_size_x")) config.window_size_x = to_float(um_config.at("window_size_x"));
-        if (um_config.count("window_size_y")) config.window_size_y = to_float(um_config.at("window_size_y"));
-        if (um_config.count("grid_spacing")) config.grid_spacing = to_float(um_config.at("grid_spacing"));
-        if (um_config.count("grid_size_x")) config.grid_size_x = to_float(um_config.at("grid_size_x"));
-        if (um_config.count("kifu_size_x")) config.kifu_size_x = to_float(um_config.at("kifu_size_x"));
-        if (um_config.count("kifu_turn_size_x")) config.kifu_turn_size_x = to_float(um_config.at("kifu_turn_size_x"));
-        if (um_config.count("grid_and_kifu_size_y")) config.grid_and_kifu_size_y = to_float(um_config.at("grid_and_kifu_size_y"));
-        if (um_config.count("open_file")) config.open_file = um_config.at("open_file");
-        if (um_config.count("label_size")) config.label_size = to_float(um_config.at("label_size"));
-        if (um_config.count("first_name")) config.first_name = um_config.at("first_name");
-        if (um_config.count("second_name")) config.second_name = um_config.at("second_name");
-        if (um_config.count("first_time")) config.first_time = to_float(um_config.at("first_time"));
-        if (um_config.count("second_time")) config.second_time = to_float(um_config.at("second_time"));
-        if (um_config.count("first_countdown")) config.first_countdown = to_float(um_config.at("first_countdown"));
-        if (um_config.count("second_countdown")) config.second_countdown = to_float(um_config.at("second_countdown"));
-        if (um_config.count("lose_time_runs_out")) config.lose_time_runs_out = to_bool(um_config.at("lose_time_runs_out"));
-        if (um_config.count("kifu_spacing")) config.kifu_spacing = to_float(um_config.at("kifu_spacing"));
+        if (um_config.count("window_pos_x")) grobal_config.window_pos_x = to_float(um_config.at("window_pos_x"));
+        if (um_config.count("window_pos_y")) grobal_config.window_pos_y = to_float(um_config.at("window_pos_y"));
+        if (um_config.count("margin")) grobal_config.margin = to_float(um_config.at("margin"));
+        if (um_config.count("padding")) grobal_config.padding = to_float(um_config.at("padding"));
+        if (um_config.count("window_size_x")) grobal_config.window_size_x = to_float(um_config.at("window_size_x"));
+        if (um_config.count("window_size_y")) grobal_config.window_size_y = to_float(um_config.at("window_size_y"));
+        if (um_config.count("grid_spacing")) grobal_config.grid_spacing = to_float(um_config.at("grid_spacing"));
+        if (um_config.count("grid_size_x")) grobal_config.grid_size_x = to_float(um_config.at("grid_size_x"));
+        if (um_config.count("kifu_size_x")) grobal_config.kifu_size_x = to_float(um_config.at("kifu_size_x"));
+        if (um_config.count("kifu_turn_size_x")) grobal_config.kifu_turn_size_x = to_float(um_config.at("kifu_turn_size_x"));
+        if (um_config.count("grid_and_kifu_size_y")) grobal_config.grid_and_kifu_size_y = to_float(um_config.at("grid_and_kifu_size_y"));
+        if (um_config.count("open_file")) grobal_config.open_file = um_config.at("open_file");
+        if (um_config.count("label_size")) grobal_config.label_size = to_float(um_config.at("label_size"));
+        if (um_config.count("first_name")) grobal_config.first_name = um_config.at("first_name");
+        if (um_config.count("second_name")) grobal_config.second_name = um_config.at("second_name");
+        if (um_config.count("first_time")) grobal_config.first_time = to_float(um_config.at("first_time"));
+        if (um_config.count("second_time")) grobal_config.second_time = to_float(um_config.at("second_time"));
+        if (um_config.count("first_countdown")) grobal_config.first_countdown = to_float(um_config.at("first_countdown"));
+        if (um_config.count("second_countdown")) grobal_config.second_countdown = to_float(um_config.at("second_countdown"));
+        if (um_config.count("lose_time_runs_out")) grobal_config.lose_time_runs_out = to_bool(um_config.at("lose_time_runs_out"));
+        if (um_config.count("kifu_spacing")) grobal_config.kifu_spacing = to_float(um_config.at("kifu_spacing"));
+    }
+
+    void save_config() {
+        wchar_t path[MAX_PATH];
+        GetModuleFileNameW(NULL, path, MAX_PATH);
+        std::filesystem::path exe_path(utf16_to_utf8(path));
+        std::filesystem::path dir = exe_path.parent_path();
+        std::ofstream file(dir / "config" / "init.cfg");
+
+        if (!file.is_open()) return;
+
+        file << "[Hook-Mark GUI Window Initialize Config]\r\n\r\n#Main window\r\n";
+        file << "window_pos_x = " << grobal_config.window_pos_x << "\r\n";
+        file << "window_pos_y = " << grobal_config.window_pos_y << "\r\n";
+        file << "margin = " << grobal_config.margin << "\r\n";
+        file << "padding = " << grobal_config.padding << "\r\n";
+        file << "window_size_x = " << grobal_config.window_size_x << "\r\n";
+        file << "window_size_y = " << grobal_config.window_size_y << "\r\n";
+        file << "grid_spacing = " << grobal_config.grid_spacing << "\r\n";
+        file << "kifu_spacing = " << grobal_config.kifu_spacing << "\r\n";
+        file << "grid_size_x = " << grobal_config.grid_size_x << "\r\n";
+        file << "kifu_size_x = " << grobal_config.kifu_size_x << "\r\n";
+        file << "kifu_turn_size_x = " << grobal_config.kifu_turn_size_x << "\r\n";
+        file << "grid_and_kifu_size_y = " << grobal_config.grid_and_kifu_size_y << "\r\n";
+        file << "open_file = " << grobal_config.open_file << "\r\n";
+        file << "label_size = " << grobal_config.label_size << "\r\n\r\n#New game window\r\n";
+        file << "first_name = " << grobal_config.first_name << "\r\n";
+        file << "second_name = " << grobal_config.second_name << "\r\n";
+        file << "first_time = " << grobal_config.first_time << "\r\n";
+        file << "second_time = " << grobal_config.second_time << "\r\n";
+        file << "first_countdown = " << grobal_config.first_countdown << "\r\n";
+        file << "second_countdown = " << grobal_config.second_countdown << "\r\n";
+        file << "lose_time_runs_out = " << (grobal_config.lose_time_runs_out ? "true" : "false") << "\r\n";   
+
+        file.close();
     }
 
     int check_nosave() {
@@ -210,6 +245,7 @@ namespace hmgui {
                 return 0;
             }
             case WM_DESTROY: {
+                save_config();
                 KillTimer(handle_window, timer_id);
                 newgame_window.release();
                 handle_exit();
@@ -728,15 +764,15 @@ namespace hmgui {
 }
 
 int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
-    hmgui::import_config();
+    hmgui::load_config();
     main_menu.create_menu();
     HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &grobal_d2d1_factory);
     if (FAILED(hr)) return false;
     hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&grobal_d2d1_dwrite_factory));
     if (FAILED(hr)) return false;
 
-    main_window.initialize(config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
-    newgame_window.initialize(config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
+    main_window.initialize(grobal_config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
+    newgame_window.initialize(grobal_config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
     main_window.show_window();
     newgame_window.show_window(SW_HIDE);
     SetMenu(main_window, main_menu);

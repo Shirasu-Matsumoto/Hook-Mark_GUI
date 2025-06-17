@@ -203,7 +203,7 @@ namespace hmgui {
     }
 
     void window_main::update_config() {
-        scroll_speed = static_cast<int>(main_config.grid_spacing / 0.5f);
+        scroll_speed = main_config.grid_spacing / 0.5f;
     }
 
     void window_main::initialize_scroll() {
@@ -511,6 +511,21 @@ namespace hmgui {
                     );
                 }
             }
+        }
+
+        if (!current_kifu.empty()) {
+            hm::pos p = current_kifu[kifu_current_turn];
+            d2d1_brush->SetColor(yellow_color);
+            d2d1_render_target->DrawRectangle(
+                D2D1::RectF(
+                    grid_area_rectf.left + (p.x + 1.0f) * grid_spacing - grid_scroll_offset.x,
+                    grid_area_rectf.bottom - (p.y + 1.0f) * grid_spacing - grid_scroll_offset.y,
+                    grid_area_rectf.left + (p.x) * grid_spacing - grid_scroll_offset.x,
+                    grid_area_rectf.bottom - (p.y) * grid_spacing - grid_scroll_offset.y
+                ),
+                d2d1_brush,
+                3.0f
+            );
         }
 
         d2d1_brush->SetColor(black_color);

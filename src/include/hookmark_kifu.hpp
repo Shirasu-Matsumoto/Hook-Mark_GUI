@@ -17,11 +17,11 @@ namespace hm {
                     throw std::runtime_error("Failed to open file for writing");
                 }
 
-                ofs << "Hook-Mark Kifu File Version 1.0\n#Config\n" << _config << "\n#End\n#Begin\n";
+                ofs << "Hook-Mark Kifu File Version 1.0\r\n#Config\r\n" << _config << "\r\n#End\r\n#Begin\r\n";
                 for (const auto &move : data()) {
-                    ofs << move.x << ", " << move.y << "\n";
+                    ofs << move.x << ", " << move.y << "\r\n";
                 }
-                ofs << "#End\n";
+                ofs << "#End\r\n";
                 ofs.close();
             }
 
@@ -72,7 +72,7 @@ namespace hm {
                     }
 
                     if (in_config) {
-                        _config += line + "\n";
+                        _config += line + "\r\n";
                         continue;
                     }
 

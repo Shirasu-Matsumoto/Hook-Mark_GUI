@@ -121,6 +121,7 @@ namespace hmgui {
             D2D1_COLOR_F kifu_edge_color = D2D1::ColorF(0x176ff7);
             D2D1_COLOR_F kifu_bg_color = D2D1::ColorF(0x689be9);
             D2D1_COLOR_F gray_color = D2D1::ColorF(D2D1::ColorF::Gray);
+            D2D1_COLOR_F yellow_color = D2D1::ColorF(D2D1::ColorF::Yellow);
 
             bool is_gaming = false;
 

@@ -23,6 +23,10 @@ namespace hm {
                 if (!_kifu.empty()) _kifu.pop_back();
             }
 
+            virtual bool empty() const {
+                return _kifu.empty();
+            }
+
             virtual void clear() {
                 _kifu.clear();
             }
