@@ -59,7 +59,7 @@ namespace hmgui {
             DWRITE_FONT_WEIGHT_NORMAL,
             DWRITE_FONT_STYLE_NORMAL,
             DWRITE_FONT_STRETCH_NORMAL,
-            main_config.kifu_spacing * 0.8f,
+            config_ref.kifu_spacing * 0.8f,
             L"ja-JP",
             &text_format_kifu
         );
@@ -71,7 +71,7 @@ namespace hmgui {
             DWRITE_FONT_WEIGHT_NORMAL,
             DWRITE_FONT_STYLE_NORMAL,
             DWRITE_FONT_STRETCH_NORMAL,
-            main_config.label_size,
+            config_ref.label_size,
             L"ja-JP",
             &text_format_label
         );
@@ -163,34 +163,34 @@ namespace hmgui {
         window_area_rect.right -= 2;
         window_area_rectf = rect_to_rectf(window_area_rect);
         grid_area_rectf = D2D1::RectF(
-            main_config.margin,
-            main_config.margin,
-            main_config.grid_size_x - main_config.margin,
-            main_config.grid_and_kifu_size_y - main_config.margin
+            config_ref.margin,
+            config_ref.margin,
+            config_ref.grid_size_x - config_ref.margin,
+            config_ref.grid_and_kifu_size_y - config_ref.margin
         );
         kifu_area_rectf = D2D1::RectF(
-            main_config.grid_size_x + main_config.margin,
-            main_config.margin,
-            main_config.grid_size_x + main_config.kifu_size_x - main_config.margin,
-            main_config.grid_and_kifu_size_y - main_config.margin
+            config_ref.grid_size_x + config_ref.margin,
+            config_ref.margin,
+            config_ref.grid_size_x + config_ref.kifu_size_x - config_ref.margin,
+            config_ref.grid_and_kifu_size_y - config_ref.margin
         );
         config_area_rectf = D2D1::RectF(
-            main_config.grid_size_x + main_config.kifu_size_x + main_config.margin,
-            main_config.margin,
-            client_area_rectf.right - main_config.margin,
-            main_config.grid_and_kifu_size_y - main_config.margin
+            config_ref.grid_size_x + config_ref.kifu_size_x + config_ref.margin,
+            config_ref.margin,
+            client_area_rectf.right - config_ref.margin,
+            config_ref.grid_and_kifu_size_y - config_ref.margin
         );
         do_over_button_area_rectf = D2D1::RectF(
-            main_config.margin,
-            main_config.grid_and_kifu_size_y + main_config.margin,
-            100.0f - main_config.margin,
-            main_config.grid_and_kifu_size_y + 50.0f - main_config.margin
+            config_ref.margin,
+            config_ref.grid_and_kifu_size_y + config_ref.margin,
+            100.0f - config_ref.margin,
+            config_ref.grid_and_kifu_size_y + 50.0f - config_ref.margin
         );
         resign_button_area_rectf = D2D1::RectF(
-            100.0f + main_config.margin,
-            main_config.grid_and_kifu_size_y + main_config.margin,
-            200.0f - main_config.margin,
-            main_config.grid_and_kifu_size_y + 50.0f - main_config.margin
+            100.0f + config_ref.margin,
+            config_ref.grid_and_kifu_size_y + config_ref.margin,
+            200.0f - config_ref.margin,
+            config_ref.grid_and_kifu_size_y + 50.0f - config_ref.margin
         );
         grid_area_rect = rectf_to_rect(grid_area_rectf);
         kifu_area_rect = rectf_to_rect(kifu_area_rectf);
@@ -203,17 +203,17 @@ namespace hmgui {
     }
 
     void window_main::update_config() {
-        scroll_speed = main_config.grid_spacing / 0.5f;
+        scroll_speed = config_ref.grid_spacing / 0.5f;
     }
 
     void window_main::initialize_scroll() {
-        grid_scroll_offset = D2D1::Point2F(-(main_config.grid_size_x - main_config.margin * 2) / 2 + main_config.grid_spacing / 2, (main_config.grid_and_kifu_size_y - main_config.margin * 2) / 2 - main_config.grid_spacing / 2);
+        grid_scroll_offset = D2D1::Point2F(-(config_ref.grid_size_x - config_ref.margin * 2) / 2 + config_ref.grid_spacing / 2, (config_ref.grid_and_kifu_size_y - config_ref.margin * 2) / 2 - config_ref.grid_spacing / 2);
         kifu_scroll_offset = D2D1::Point2F();
         config_scroll_offset = D2D1::Point2F();
     }
 
     void window_main::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
-        main_config = config;
+        config_ref = config;
         initialize_scroll();
         window_class.register_class();
         create_window();
@@ -227,14 +227,14 @@ namespace hmgui {
             L"Hookmark_GUI_Main",
             L"Hook-Mark GUI",
             WS_OVERLAPPEDWINDOW,
-            static_cast<int>(main_config.window_pos_x), static_cast<int>(main_config.window_pos_y),
-            static_cast<int>(main_config.window_size_x), static_cast<int>(main_config.window_size_y),
+            static_cast<int>(config_ref.window_pos_x), static_cast<int>(config_ref.window_pos_y),
+            static_cast<int>(config_ref.window_size_x), static_cast<int>(config_ref.window_size_y),
             nullptr, nullptr, GetModuleHandle(nullptr), this
         );
 
         DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;
         DwmSetWindowAttribute(handle_window, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
-        
+
         SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     }
 
@@ -333,7 +333,7 @@ namespace hmgui {
     void window_main::draw_grid() {
         if (!d2d1_render_target || !d2d1_brush) return;
 
-        const float grid_spacing = main_config.grid_spacing;
+        const float grid_spacing = config_ref.grid_spacing;
 
         d2d1_render_target->DrawRectangle(
             grid_area_rectf,
@@ -467,7 +467,7 @@ namespace hmgui {
     }
 
     void window_main::draw_board() {
-        const float grid_spacing = main_config.grid_spacing;
+        const float grid_spacing = config_ref.grid_spacing;
 
         auto &has_piece = board.has_piece();
         auto &is_first = board.is_first();
@@ -532,15 +532,15 @@ namespace hmgui {
     }
 
     void window_main::draw_kifu_single(const hm::pos &move, unsigned int turn) {
-        float y = kifu_area_rectf.top + turn * main_config.kifu_spacing - kifu_scroll_offset.y;
+        float y = kifu_area_rectf.top + turn * config_ref.kifu_spacing - kifu_scroll_offset.y;
 
-        if (y + main_config.kifu_spacing < kifu_area_rectf.top || y > kifu_area_rectf.bottom) return;
+        if (y + config_ref.kifu_spacing < kifu_area_rectf.top || y > kifu_area_rectf.bottom) return;
 
         D2D1_RECT_F single_kifu_rectf = D2D1::RectF(
             kifu_area_rectf.left,
             y,
             kifu_area_rectf.right,
-            y + main_config.kifu_spacing
+            y + config_ref.kifu_spacing
         );
 
         d2d1_brush->SetColor(gray_color);
@@ -561,10 +561,10 @@ namespace hmgui {
         }
 
         D2D1_RECT_F layout_rect = D2D1::RectF(
-            kifu_area_rectf.left + main_config.padding,
-            y - main_config.kifu_spacing * 0.05f,
-            kifu_area_rectf.right - main_config.padding,
-            y + main_config.kifu_spacing * 9.95f
+            kifu_area_rectf.left + config_ref.padding,
+            y - config_ref.kifu_spacing * 0.05f,
+            kifu_area_rectf.right - config_ref.padding,
+            y + config_ref.kifu_spacing * 9.95f
         );
         d2d1_render_target->DrawText(
             std::to_wstring(turn + 1).c_str(),
@@ -574,9 +574,9 @@ namespace hmgui {
             d2d1_brush
         );
 
-        float cx = kifu_area_rectf.left + main_config.kifu_turn_size_x + main_config.kifu_spacing / 2;
-        float cy = y + main_config.kifu_spacing / 2;
-        float r = main_config.kifu_spacing * 0.4f;
+        float cx = kifu_area_rectf.left + config_ref.kifu_turn_size_x + config_ref.kifu_spacing / 2;
+        float cy = y + config_ref.kifu_spacing / 2;
+        float r = config_ref.kifu_spacing * 0.4f;
 
         if (turn % 2 == 0) {
             d2d1_brush->SetColor(red_color);
@@ -604,7 +604,7 @@ namespace hmgui {
 
         d2d1_brush->SetColor(black_color);
 
-        layout_rect.left += main_config.kifu_turn_size_x + main_config.kifu_spacing;
+        layout_rect.left += config_ref.kifu_turn_size_x + config_ref.kifu_spacing;
         std::wstring move_str = L"(" + std::to_wstring(move.x) + L", " + std::to_wstring(move.y) + L")";
         d2d1_render_target->DrawText(
             move_str.c_str(),
@@ -616,30 +616,23 @@ namespace hmgui {
     }
 
     void window_main::draw_kifu_single_last(unsigned int turn) {
-        float y = kifu_area_rectf.top + turn * main_config.kifu_spacing - kifu_scroll_offset.y;
+        float y = kifu_area_rectf.top + turn * config_ref.kifu_spacing - kifu_scroll_offset.y;
 
-        if (y + main_config.kifu_spacing < kifu_area_rectf.top || y > kifu_area_rectf.bottom) return;
+        if (y + config_ref.kifu_spacing < kifu_area_rectf.top || y > kifu_area_rectf.bottom) return;
 
         D2D1_RECT_F single_kifu_rectf = D2D1::RectF(
             kifu_area_rectf.left,
             y,
             kifu_area_rectf.right,
-            y + main_config.kifu_spacing
+            y + config_ref.kifu_spacing
         );
 
-        if (kifu_current_turn == turn) {
-            d2d1_brush->SetColor(kifu_bg_color);
-            d2d1_render_target->FillRectangle(single_kifu_rectf, d2d1_brush);
-            d2d1_brush->SetColor(kifu_edge_color);
-            d2d1_render_target->DrawRectangle(single_kifu_rectf, d2d1_brush, 3.0f);
-            d2d1_brush->SetColor(black_color);
-        }
-
+        d2d1_brush->SetColor(gray_color);
         D2D1_RECT_F layout_rect = D2D1::RectF(
-            kifu_area_rectf.left + main_config.padding,
-            y - main_config.kifu_spacing * 0.05f,
-            kifu_area_rectf.right - main_config.padding,
-            y + main_config.kifu_spacing * 9.95f
+            kifu_area_rectf.left + config_ref.padding,
+            y - config_ref.kifu_spacing * 0.05f,
+            kifu_area_rectf.right - config_ref.padding,
+            y + config_ref.kifu_spacing * 9.95f
         );
         d2d1_render_target->DrawText(
             std::to_wstring(turn + 1).c_str(),
@@ -649,7 +642,7 @@ namespace hmgui {
             d2d1_brush
         );
 
-        layout_rect.left += main_config.kifu_turn_size_x + main_config.kifu_spacing;
+        layout_rect.left += config_ref.kifu_turn_size_x + config_ref.kifu_spacing;
         std::wstring move_str = L"投了";
         d2d1_render_target->DrawText(
             move_str.c_str(),
@@ -663,7 +656,7 @@ namespace hmgui {
     void window_main::draw_kifu() {
         if (!d2d1_render_target || !d2d1_brush) return;
 
-        float kifu_spacing = main_config.kifu_spacing;
+        float kifu_spacing = config_ref.kifu_spacing;
 
         d2d1_render_target->DrawRectangle(
             kifu_area_rectf,
@@ -701,10 +694,10 @@ namespace hmgui {
         );
 
         D2D1_RECT_F text_layout = D2D1::RectF(
-            config_area_rectf.left + main_config.padding,
-            config_area_rectf.top + main_config.padding - config_scroll_offset.y,
-            config_area_rectf.right - main_config.padding,
-            config_area_rectf.bottom - main_config.padding - config_scroll_offset.y
+            config_area_rectf.left + config_ref.padding,
+            config_area_rectf.top + config_ref.padding - config_scroll_offset.y,
+            config_area_rectf.right - config_ref.padding,
+            config_area_rectf.bottom - config_ref.padding - config_scroll_offset.y
         );
 
         std::wstring conf_str = utf8_to_utf16(current_kifu.config());
@@ -790,7 +783,7 @@ namespace hmgui {
         kifu_scroll_offset.y += dy;
 
         const auto &moves = current_kifu.data();
-        float total_height = static_cast<float>(moves.size() + 1) * main_config.kifu_spacing + main_config.padding;
+        float total_height = static_cast<float>(moves.size() + 1) * config_ref.kifu_spacing + config_ref.padding;
         float view_height = kifu_area_rectf.bottom - kifu_area_rectf.top;
 
         if (kifu_scroll_offset.y < 0.0f) {
@@ -842,7 +835,7 @@ namespace hmgui {
             config_scroll_offset.y = 0.0f;
         }
         if (text_height > view_height) {
-            float max_offset = (text_height + main_config.padding) - view_height;
+            float max_offset = (text_height + config_ref.padding) - view_height;
             if (config_scroll_offset.y > max_offset) {
                 config_scroll_offset.y = max_offset;
             }
@@ -902,7 +895,7 @@ namespace hmgui {
     }
 
     void window_newgame::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window) {
-        newgame_config = config;
+        config_ref = config;
         window_class.register_class();
         create_window(handle_parent_window);
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
@@ -970,5 +963,33 @@ namespace hmgui {
     void window_newgame::release() {
         DestroyWindow(handle_window);
         text_format_default->Release();
+    }
+
+    wc_settings::wc_settings() : wc_base() {}
+
+    ATOM wc_settings::register_class() {
+        window_class = {
+            sizeof(WNDCLASSEXW),
+            CS_HREDRAW | CS_VREDRAW,
+            window_proc,
+            0, 0,
+            GetModuleHandle(nullptr),
+            LoadIconW(nullptr, MAKEINTRESOURCEW(32512)),
+            LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
+            (HBRUSH)(COLOR_WINDOW + 1),
+            nullptr,
+            L"Hookmark_GUI_Settings",
+            LoadIconW(nullptr, MAKEINTRESOURCEW(32512))
+        };
+        return RegisterClassExW(&window_class);
+    }
+
+    window_settings::window_settings() : window_base() {}
+
+    void window_settings::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window) {
+        config_ref = config;
+        window_class.register_class();
+        create_window(nullptr);
+        d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
     }
 }

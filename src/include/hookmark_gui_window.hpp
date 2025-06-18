@@ -63,7 +63,7 @@ namespace hmgui {
     class window_main final : public window_base {
         public:
             wc_main window_class;
-            window_conf main_config;
+            window_conf config_ref;
             std::wstring current_kifu_path;
             hm::board_state board;
             hm::kifu_ver1 current_kifu;
@@ -177,7 +177,7 @@ namespace hmgui {
     class window_newgame final : public window_base {
         public:
             wc_newgame window_class;
-            window_conf newgame_config;
+            window_conf config_ref;
 
             ID2D1Factory *d2d1_factory;
             IDWriteFactory *d2d1_dwrite_factory;
@@ -195,6 +195,33 @@ namespace hmgui {
             void redraw();
             void handle_exit();
             void release();
+            LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
+    };
+
+    class wc_settings final : public wc_base {
+        public:
+            wc_settings();
+            ATOM register_class() override;
+    };
+
+    class window_settings final : public window_base {
+        public:
+            wc_base window_class;
+            window_conf config_ref;
+
+            ID2D1Factory *d2d1_factory;
+            IDWriteFactory *d2d1_dwrite_factory;
+            ID2D1HwndRenderTarget *d2d1_render_target;
+            ID2D1SolidColorBrush *d2d1_brush;
+            IDWriteTextFormat *text_format_default;
+
+            window_settings() {}
+            bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
+            void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window);
+            void create_window(HWND handle_parent_window);
+            void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT);
+            void redraw();
+            void handle_exit();
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
     };
 }

@@ -5,6 +5,8 @@ hmgui::window_main main_window;
 hmgui::wc_main main_window_class;
 hmgui::window_newgame newgame_window;
 hmgui::wc_newgame newgame_window_class;
+hmgui::window_settings settings_window;
+hmgui::wc_settings settings_window_class;
 hmgui::menu_main main_menu;
 hmgui::menu_item_popup  main_menu_file,
                         main_menu_edit,
@@ -130,7 +132,7 @@ namespace hmgui {
         file << "second_time = " << grobal_config.second_time << "\r\n";
         file << "first_countdown = " << grobal_config.first_countdown << "\r\n";
         file << "second_countdown = " << grobal_config.second_countdown << "\r\n";
-        file << "lose_time_runs_out = " << (grobal_config.lose_time_runs_out ? "true" : "false") << "\r\n";   
+        file << "lose_time_runs_out = " << (grobal_config.lose_time_runs_out ? "true" : "false") << "\r\n";
 
         file.close();
     }
@@ -405,7 +407,7 @@ namespace hmgui {
                         break;
                     }
                     case ID_MENU_VIEW_BOARD_SCROLL_RESET: {
-                        set_grid_scroll(-(main_config.grid_size_x - main_config.margin * 2) / 2 + main_config.grid_spacing / 2, (main_config.grid_and_kifu_size_y - main_config.margin * 2) / 2 - main_config.grid_spacing / 2);
+                        set_grid_scroll(-(config_ref.grid_size_x - config_ref.margin * 2) / 2 + config_ref.grid_spacing / 2, (config_ref.grid_and_kifu_size_y - config_ref.margin * 2) / 2 - config_ref.grid_spacing / 2);
                         InvalidateRect(handle_window, nullptr, FALSE);
                         break;
                     }
@@ -487,8 +489,8 @@ namespace hmgui {
                 if (PtInRect(&grid_area_rect, pt) && is_gaming) {
                     float gx = static_cast<float>(pt.x);
                     float gy = static_cast<float>(pt.y);
-                    float fx = (gx - grid_area_rectf.left + main_window.grid_scroll_offset.x) / main_config.grid_spacing - 0.5f;
-                    float fy = (grid_area_rectf.bottom - main_window.grid_scroll_offset.y - gy) / main_config.grid_spacing - 0.5f;
+                    float fx = (gx - grid_area_rectf.left + main_window.grid_scroll_offset.x) / config_ref.grid_spacing - 0.5f;
+                    float fy = (grid_area_rectf.bottom - main_window.grid_scroll_offset.y - gy) / config_ref.grid_spacing - 0.5f;
                     int x = static_cast<int>(std::round(fx));
                     int y = static_cast<int>(std::round(fy));
                     if (board.has_piece(x, y)) {
@@ -519,7 +521,7 @@ namespace hmgui {
                 }
                 if (PtInRect(&kifu_area_rect, pt)) {
                     float relative_y = pt.y - kifu_area_rect.top + kifu_scroll_offset.y;
-                    unsigned int clicked_turn = static_cast<unsigned int>(relative_y / main_config.kifu_spacing);
+                    unsigned int clicked_turn = static_cast<unsigned int>(relative_y / config_ref.kifu_spacing);
                     if (clicked_turn < current_kifu.size()) {
                         kifu_current_turn = clicked_turn;
                         hm::kifuver1_to_board(current_kifu, board, clicked_turn);
@@ -529,33 +531,33 @@ namespace hmgui {
                 }
 
                 const int tol = 5;
-                float boundary1 = main_config.grid_size_x;
-                float boundary2 = main_config.grid_size_x + main_config.kifu_size_x;
+                float boundary1 = config_ref.grid_size_x;
+                float boundary2 = config_ref.grid_size_x + config_ref.kifu_size_x;
 
-                if (std::abs(pt.x - boundary1) <= tol && pt.y > main_config.margin && pt.y < main_config.grid_and_kifu_size_y - main_config.margin) {
+                if (std::abs(pt.x - boundary1) <= tol && pt.y > config_ref.margin && pt.y < config_ref.grid_and_kifu_size_y - config_ref.margin) {
                     is_resizing = true;
                     cr_resize_region = resize_region::grid_kifu;
                     resize_start = pt;
-                    initial_grid_size = main_config.grid_size_x;
-                    initial_kifu_size = main_config.kifu_size_x;
+                    initial_grid_size = config_ref.grid_size_x;
+                    initial_kifu_size = config_ref.kifu_size_x;
                     SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
                     SetCapture(handle_window);
                     return 0;
                 }
-                else if (std::abs(pt.x - boundary2) <= tol && pt.y > main_config.margin && pt.y < main_config.grid_and_kifu_size_y - main_config.margin) {
+                else if (std::abs(pt.x - boundary2) <= tol && pt.y > config_ref.margin && pt.y < config_ref.grid_and_kifu_size_y - config_ref.margin) {
                     is_resizing = true;
                     cr_resize_region = resize_region::kifu_config;
                     resize_start = pt;
-                    initial_kifu_size = main_config.kifu_size_x;
+                    initial_kifu_size = config_ref.kifu_size_x;
                     SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
                     SetCapture(handle_window);
                     return 0;
                 }
-                else if (std::abs(pt.y - main_config.grid_and_kifu_size_y) <= tol) {
+                else if (std::abs(pt.y - config_ref.grid_and_kifu_size_y) <= tol) {
                     is_resizing = true;
                     cr_resize_region = resize_region::vertical;
                     resize_start = pt;
-                    initial_grid_and_kifu_size_y = main_config.grid_and_kifu_size_y;
+                    initial_grid_and_kifu_size_y = config_ref.grid_and_kifu_size_y;
                     SetCursor(LoadCursor(nullptr, IDC_SIZENS));
                     SetCapture(handle_window);
                     return 0;
@@ -606,20 +608,20 @@ namespace hmgui {
                         case resize_region::grid_kifu: {
                             SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
                             int dx = pt.x - resize_start.x;
-                            main_config.grid_size_x = initial_grid_size + dx;
-                            main_config.kifu_size_x = initial_kifu_size - dx;
+                            config_ref.grid_size_x = initial_grid_size + dx;
+                            config_ref.kifu_size_x = initial_kifu_size - dx;
                             break;
                         }
                         case resize_region::kifu_config: {
                             SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
                             int dx = pt.x - resize_start.x;
-                            main_config.kifu_size_x = initial_kifu_size + dx;
+                            config_ref.kifu_size_x = initial_kifu_size + dx;
                             break;
                         }
                         case resize_region::vertical: {
                             SetCursor(LoadCursor(nullptr, IDC_SIZENS));
                             int dy = pt.y - resize_start.y;
-                            main_config.grid_and_kifu_size_y = initial_grid_and_kifu_size_y + dy;
+                            config_ref.grid_and_kifu_size_y = initial_grid_and_kifu_size_y + dy;
                             break;
                         }
                         default: {
@@ -645,12 +647,12 @@ namespace hmgui {
                 }
 
                 const int tol = 5;
-                float boundary1 = main_config.grid_size_x;
-                float boundary2 = main_config.grid_size_x + main_config.kifu_size_x;
-                if ((std::abs(pt.x - boundary1) <= tol || std::abs(pt.x - boundary2) <= tol) && main_config.margin < static_cast<float>(pt.y) && main_config.grid_and_kifu_size_y - main_config.margin > static_cast<float>(pt.y)) {
+                float boundary1 = config_ref.grid_size_x;
+                float boundary2 = config_ref.grid_size_x + config_ref.kifu_size_x;
+                if ((std::abs(pt.x - boundary1) <= tol || std::abs(pt.x - boundary2) <= tol) && config_ref.margin < static_cast<float>(pt.y) && config_ref.grid_and_kifu_size_y - config_ref.margin > static_cast<float>(pt.y)) {
                     SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
                 }
-                else if (std::abs(pt.y - main_config.grid_and_kifu_size_y) <= tol) {
+                else if (std::abs(pt.y - config_ref.grid_and_kifu_size_y) <= tol) {
                     SetCursor(LoadCursor(nullptr, IDC_SIZENS));
                 }
                 else {
@@ -776,6 +778,7 @@ int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
 
     main_window.initialize(grobal_config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
     newgame_window.initialize(grobal_config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
+    settings_window.initialize(grobal_config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
     main_window.show_window();
     newgame_window.show_window(SW_HIDE);
     SetMenu(main_window, main_menu);
