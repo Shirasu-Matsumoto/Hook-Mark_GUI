@@ -205,6 +205,7 @@ namespace hmgui {
                     switch (ret) {
                         case 0: {
                             SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                            break;
                         }
                         case 1: {
                             break;
@@ -262,6 +263,7 @@ namespace hmgui {
                             switch (ret) {
                                 case 0: {
                                     SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                    break;
                                 }
                                 case 1: {
                                     break;
@@ -333,6 +335,7 @@ namespace hmgui {
                             switch (ret) {
                                 case 0: {
                                     SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                    break;
                                 }
                                 case 1: {
                                     break;
