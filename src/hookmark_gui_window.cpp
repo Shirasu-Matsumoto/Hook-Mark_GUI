@@ -14,7 +14,7 @@ namespace hmgui {
             LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
             (HBRUSH)(COLOR_WINDOW + 1),
             nullptr,
-            L"Hookmark_GUI_Main",
+            L"Hook-Mark_GUI_Main",
             LoadIconW(nullptr, MAKEINTRESOURCEW(32512))
         };
         return RegisterClassExW(&window_class);
@@ -147,21 +147,6 @@ namespace hmgui {
     void window_main::update_rect() {
         GetClientRect(handle_window, &client_area_rect);
         client_area_rectf = rect_to_rectf(client_area_rect);
-        BOOL is_composition_enabled = FALSE;
-        HRESULT hr = DwmIsCompositionEnabled(&is_composition_enabled);
-        if (SUCCEEDED(hr) && is_composition_enabled) {
-            RECT ext_rect = {};
-            hr = DwmGetWindowAttribute(handle_window, DWMWA_EXTENDED_FRAME_BOUNDS, &ext_rect, sizeof(ext_rect));
-            if (SUCCEEDED(hr)) {
-                window_area_rect = ext_rect;
-            } else {
-                GetWindowRect(handle_window, &window_area_rect);
-            }
-        } else {
-            GetWindowRect(handle_window, &window_area_rect);
-        }
-        window_area_rect.right -= 2;
-        window_area_rectf = rect_to_rectf(window_area_rect);
         grid_area_rectf = D2D1::RectF(
             config_ref.margin,
             config_ref.margin,
@@ -224,7 +209,7 @@ namespace hmgui {
     void window_main::create_window() {
         handle_window = CreateWindowExW(
             0,
-            L"Hookmark_GUI_Main",
+            L"Hook-Mark_GUI_Main",
             L"Hook-Mark GUI",
             WS_OVERLAPPEDWINDOW,
             static_cast<int>(config_ref.window_pos_x), static_cast<int>(config_ref.window_pos_y),
@@ -341,9 +326,9 @@ namespace hmgui {
             2.0f
         );
 
-        float offset_x_mod = fmodf(grid_scroll_offset.x, grid_spacing);
+        float offset_x_mod = std::round(fmodf(grid_scroll_offset.x, grid_spacing));
         if (offset_x_mod < 0) offset_x_mod += grid_spacing;
-        float offset_y_mod = fmodf(grid_scroll_offset.y, grid_spacing);
+        float offset_y_mod = std::round(fmodf(grid_scroll_offset.y, grid_spacing));
         if (offset_y_mod < 0) offset_y_mod += grid_spacing;
         float start_x = grid_area_rectf.left + grid_spacing - offset_x_mod;
         float start_y = grid_area_rectf.bottom - offset_y_mod;
@@ -866,7 +851,7 @@ namespace hmgui {
             LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
             (HBRUSH)(COLOR_WINDOW + 1),
             nullptr,
-            L"Hookmark_GUI_NewGame",
+            L"Hook-Mark_GUI_NewGame",
             LoadIconW(nullptr, MAKEINTRESOURCEW(32512))
         };
         return RegisterClassExW(&window_class);
@@ -875,8 +860,8 @@ namespace hmgui {
     void window_newgame::create_window(HWND handle_parent_window) {
         handle_window = CreateWindowExW(
             0,
-            L"Hookmark_GUI_NewGame",
-            L"Hook-Mark GUI - New game",
+            L"Hook-Mark_GUI_NewGame",
+            L"新規対局 - Hook-Mark GUI",
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
             CW_USEDEFAULT, CW_USEDEFAULT,
             600, 600,
@@ -892,6 +877,7 @@ namespace hmgui {
     void window_newgame::show_window(int show_command, float x, float y) {
         ShowWindow(handle_window, show_command);
         SetWindowPos(handle_window, nullptr, static_cast<int>(x), static_cast<int>(y), 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+        UpdateWindow(handle_window);
     }
 
     void window_newgame::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window) {
@@ -978,18 +964,115 @@ namespace hmgui {
             LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
             (HBRUSH)(COLOR_WINDOW + 1),
             nullptr,
-            L"Hookmark_GUI_Settings",
+            L"Hook-Mark_GUI_Settings",
             LoadIconW(nullptr, MAKEINTRESOURCEW(32512))
         };
+
         return RegisterClassExW(&window_class);
     }
 
-    window_settings::window_settings() : window_base() {}
+    void window_settings::create_window(HWND handle_parent_window) {
+        handle_window = CreateWindowExW(
+            0,
+            L"Hook-Mark_GUI_Settings",
+            L"設定 - Hook-Mark GUI",
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+            CW_USEDEFAULT, CW_USEDEFAULT,
+            600, 600,
+            handle_parent_window, NULL, GetModuleHandle(nullptr), NULL
+        );
+
+        DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;
+        DwmSetWindowAttribute(handle_window, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
+
+        SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+    }
+
+    bool window_settings::d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
+        d2d1_factory = i_d2d1_factory;
+        d2d1_factory->AddRef();
+        d2d1_dwrite_factory = i_d2d1_dwrite_factory;
+        d2d1_dwrite_factory->AddRef();
+
+        RECT rect;
+        GetClientRect(handle_window, &rect);
+
+        D2D1_SIZE_U size = D2D1::SizeU(rect.right - rect.left, rect.bottom - rect.top);
+
+        D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties();
+
+        D2D1_HWND_RENDER_TARGET_PROPERTIES handle_window_props = D2D1::HwndRenderTargetProperties(handle_window, size);
+
+        HRESULT hr = d2d1_factory->CreateHwndRenderTarget(props, handle_window_props, &d2d1_render_target);
+        if (FAILED(hr)) return false;
+
+        UINT dpi = 96;
+        if (IsWindows10OrGreater()) {
+            dpi = GetDpiForWindow(handle_window);
+        }
+
+        FLOAT dpi_x = static_cast<FLOAT>(dpi);
+        FLOAT dpi_y = static_cast<FLOAT>(dpi);
+        d2d1_render_target->SetDpi(dpi_x, dpi_y);
+
+        d2d1_render_target->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+        d2d1_render_target->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
+
+        hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
+        if (FAILED(hr)) return false;
+
+        hr = d2d1_dwrite_factory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_NORMAL,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            config_ref.kifu_spacing * 0.8f,
+            L"ja-JP",
+            &text_format_default
+        );
+        if (FAILED(hr)) return false;
+
+        return true;
+    }
 
     void window_settings::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window) {
         config_ref = config;
         window_class.register_class();
-        create_window(nullptr);
+        create_window(handle_parent_window);
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
+    }
+
+    void window_settings::update_rect() {
+        GetClientRect(handle_window, &client_area_rect);
+        client_area_rectf = rect_to_rectf(client_area_rect);
+        settings_area_rectf = D2D1::RectF(
+            client_area_rectf.left + config_ref.margin,
+            client_area_rectf.top + config_ref.margin,
+            client_area_rectf.right - config_ref.margin,
+            client_area_rectf.bottom - config_ref.margin
+        );
+        settings_area_rect = rectf_to_rect(settings_area_rectf);
+    }
+
+    void window_settings::handle_exit() {
+        show_window(SW_HIDE);
+    }
+
+    void window_settings::show_window(int show_command, float x, float y) {
+        ShowWindow(handle_window, show_command);
+        SetWindowPos(handle_window, nullptr, static_cast<int>(x), static_cast<int>(y), 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+        UpdateWindow(handle_window);
+    }
+
+    void window_settings::redraw() {
+        if (!d2d1_render_target || !d2d1_brush) return;
+        d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
+
+        d2d1_render_target->DrawRectangle(
+            settings_area_rectf,
+            d2d1_brush,
+            2.0f
+        );
     }
 }

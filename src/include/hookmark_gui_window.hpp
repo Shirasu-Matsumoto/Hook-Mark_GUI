@@ -187,7 +187,7 @@ namespace hmgui {
 
             HWND handle_newgame_button = nullptr;
 
-            window_newgame() {}
+            window_newgame() {};
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window);
             void create_window(HWND handle_parent_window);
@@ -206,7 +206,7 @@ namespace hmgui {
 
     class window_settings final : public window_base {
         public:
-            wc_base window_class;
+            wc_settings window_class;
             window_conf config_ref;
 
             ID2D1Factory *d2d1_factory;
@@ -214,10 +214,15 @@ namespace hmgui {
             ID2D1HwndRenderTarget *d2d1_render_target;
             ID2D1SolidColorBrush *d2d1_brush;
             IDWriteTextFormat *text_format_default;
+            D2D1_RECT_F client_area_rectf;
+            RECT client_area_rect;
+            D2D1_RECT_F settings_area_rectf;
+            RECT settings_area_rect;
 
-            window_settings() {}
+            window_settings() {};
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window);
+            void update_rect();
             void create_window(HWND handle_parent_window);
             void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT);
             void redraw();

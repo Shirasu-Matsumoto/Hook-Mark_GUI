@@ -80,6 +80,15 @@ namespace hmgui {
             rectf.bottom - 1.0f
         };
     }
+
+    inline D2D1_RECT_F round_rectf(D2D1_RECT_F rectf) {
+        return D2D1::RectF(
+            std::round(rectf.left),
+            std::round(rectf.top),
+            std::round(rectf.right),
+            std::round(rectf.bottom)
+        );
+    }
 }
 
 #endif
