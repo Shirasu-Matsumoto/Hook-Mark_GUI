@@ -47,7 +47,6 @@ namespace hmgui {
         FLOAT dpi_y = static_cast<FLOAT>(dpi);
         d2d1_render_target->SetDpi(dpi_x, dpi_y);
 
-        d2d1_render_target->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
         d2d1_render_target->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
 
         hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
@@ -147,6 +146,13 @@ namespace hmgui {
     void window_main::update_rect() {
         GetClientRect(handle_window, &client_area_rect);
         client_area_rectf = rect_to_rectf(client_area_rect);
+        BOOL is_dwm_enabled = FALSE;
+        if (SUCCEEDED(DwmIsCompositionEnabled(&is_dwm_enabled)) && is_dwm_enabled) {
+            DwmGetWindowAttribute(handle_window, DWMWA_EXTENDED_FRAME_BOUNDS, &window_area_rect, sizeof(RECT));
+        } else {
+            GetWindowRect(handle_window, &window_area_rect);
+        }
+        window_area_rectf = rect_to_rectf(window_area_rect);
         grid_area_rectf = D2D1::RectF(
             config_ref.margin,
             config_ref.margin,
@@ -188,7 +194,7 @@ namespace hmgui {
     }
 
     void window_main::update_config() {
-        scroll_speed = config_ref.grid_spacing / 0.5f;
+        scroll_speed = config_ref.grid_spacing / 0.3f;
     }
 
     void window_main::initialize_scroll() {
@@ -627,6 +633,7 @@ namespace hmgui {
             d2d1_brush
         );
 
+        d2d1_brush->SetColor(black_color);
         layout_rect.left += config_ref.kifu_turn_size_x + config_ref.kifu_spacing;
         std::wstring move_str = L"投了";
         d2d1_render_target->DrawText(
@@ -917,8 +924,6 @@ namespace hmgui {
         FLOAT dpi_y = static_cast<FLOAT>(dpi);
         d2d1_render_target->SetDpi(dpi_x, dpi_y);
 
-        d2d1_render_target->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-
         hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
         if (FAILED(hr)) return false;
 
@@ -1015,7 +1020,6 @@ namespace hmgui {
         FLOAT dpi_y = static_cast<FLOAT>(dpi);
         d2d1_render_target->SetDpi(dpi_x, dpi_y);
 
-        d2d1_render_target->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
         d2d1_render_target->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
 
         hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
@@ -1032,6 +1036,8 @@ namespace hmgui {
             &text_format_default
         );
         if (FAILED(hr)) return false;
+
+        text_format_default->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
 
         return true;
     }
@@ -1074,5 +1080,45 @@ namespace hmgui {
             d2d1_brush,
             2.0f
         );
+
+        float center_x = settings_area_rectf.left + (settings_area_rectf.right - settings_area_rectf.left) / 2;
+
+        d2d1_render_target->DrawLine(
+            D2D1::Point2F(center_x, settings_area_rectf.top),
+            D2D1::Point2F(center_x, settings_area_rectf.bottom),
+            d2d1_brush,
+            2.0f
+        );
+
+        d2d1_render_target->PushAxisAlignedClip(
+            settings_area_rectf,
+            D2D1_ANTIALIAS_MODE_PER_PRIMITIVE
+        );
+
+        int index = 0;
+        for (auto it = settings_items.begin(); it != settings_items.end(); ++it, ++index) {
+            float line_y = settings_area_rectf.top + settings_item_spacing * (index + 1);
+            d2d1_render_target->DrawLine(
+                D2D1::Point2F(settings_area_rectf.left, line_y),
+                D2D1::Point2F(settings_area_rectf.right, line_y),
+                d2d1_brush,
+                1.0f
+            );
+            float item_y = settings_area_rectf.top + settings_item_spacing * index;
+            d2d1_render_target->DrawText(
+                it->first.c_str(),
+                static_cast<UINT32>(it->first.size()),
+                text_format_default,
+                D2D1::RectF(
+                    settings_area_rectf.left + config_ref.padding,
+                    item_y + config_ref.padding,
+                    center_x - config_ref.padding,
+                    line_y + config_ref.padding
+                ),
+                d2d1_brush
+            );
+        }
+
+        d2d1_render_target->PopAxisAlignedClip();
     }
 }

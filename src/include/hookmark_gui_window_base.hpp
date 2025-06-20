@@ -19,6 +19,8 @@
 #include <dwmapi.h>
 #include <shobjidl.h>
 #include <cmath>
+#include <map>
+#include <string>
 
 namespace hmgui {
     class window_base {

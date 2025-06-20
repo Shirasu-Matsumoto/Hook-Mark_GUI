@@ -76,7 +76,7 @@ namespace hmgui {
             IDWriteTextFormat *text_format_label;
             IDWriteTextFormat *text_format_config;
             IDWriteTextFormat *text_format_game_control_button_label;
-            float scroll_speed = 15.0f;
+            float scroll_speed = 10.0f;
             RECT client_area_rect;
             D2D1_RECT_F client_area_rectf;
             RECT window_area_rect;
@@ -114,14 +114,6 @@ namespace hmgui {
             float initial_grid_size = 0.0f;
             float initial_kifu_size = 0.0f;
             float initial_grid_and_kifu_size_y = 0.0f;
-
-            D2D1_COLOR_F red_color = D2D1::ColorF(D2D1::ColorF::Red);
-            D2D1_COLOR_F blue_color = D2D1::ColorF(D2D1::ColorF::Blue);
-            D2D1_COLOR_F black_color = D2D1::ColorF(D2D1::ColorF::Black);
-            D2D1_COLOR_F kifu_edge_color = D2D1::ColorF(0x176ff7);
-            D2D1_COLOR_F kifu_bg_color = D2D1::ColorF(0x689be9);
-            D2D1_COLOR_F gray_color = D2D1::ColorF(D2D1::ColorF::Gray);
-            D2D1_COLOR_F yellow_color = D2D1::ColorF(D2D1::ColorF::Yellow);
 
             bool is_gaming = false;
 
@@ -218,6 +210,18 @@ namespace hmgui {
             RECT client_area_rect;
             D2D1_RECT_F settings_area_rectf;
             RECT settings_area_rect;
+            float settings_item_spacing = 40.0f;
+
+            std::map<std::wstring, float &> settings_items = {
+                { L"盤面グリッドの間隔", config_ref.grid_spacing },
+                { L"棋譜の行間隔", config_ref.kifu_spacing },
+                { L"盤面のラベルサイズ", config_ref.label_size },
+                { L"盤面のサイズ", config_ref.grid_size_x },
+                { L"棋譜のサイズ", config_ref.kifu_size_x },
+                { L"縦分割のサイズ", config_ref.kifu_turn_size_x },
+                { L"マージン", config_ref.margin },
+                { L"パディング", config_ref.padding }
+            };
 
             window_settings() {};
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);

@@ -209,7 +209,6 @@ namespace hm {
                                     if (!match) break;
                                 }
                                 if (match) {
-                                    throw std::wstring(L"Win: player=" + std::to_wstring(player) + L", at=(" + std::to_wstring(x) + L"," + std::to_wstring(y) + L"), rotate_index=" + std::to_wstring(rotate_index));
                                     return player;
                                 }
                             }
