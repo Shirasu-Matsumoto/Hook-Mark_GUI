@@ -1031,7 +1031,7 @@ namespace hmgui {
             DWRITE_FONT_WEIGHT_NORMAL,
             DWRITE_FONT_STYLE_NORMAL,
             DWRITE_FONT_STRETCH_NORMAL,
-            config_ref.kifu_spacing * 0.8f,
+            settings_item_spacing * 0.7f,
             L"ja-JP",
             &text_format_default
         );
@@ -1111,12 +1111,25 @@ namespace hmgui {
                 text_format_default,
                 D2D1::RectF(
                     settings_area_rectf.left + config_ref.padding,
-                    item_y + config_ref.padding,
+                    item_y,
                     center_x - config_ref.padding,
-                    line_y + config_ref.padding
+                    line_y
                 ),
                 d2d1_brush
             );
+
+            d2d1_render_target->DrawText(
+                it->second,
+                static_cast<UINT32>(it->second.size()),
+                text_format_default,
+                D2D1::RectF(
+                    center_x + config_ref.padding,
+                    item_y,
+                    settings_area_rectf.right - config_ref.padding,
+                    line_y
+                ),
+                d2d1_brush
+            )
         }
 
         d2d1_render_target->PopAxisAlignedClip();
