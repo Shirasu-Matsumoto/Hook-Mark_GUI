@@ -1031,7 +1031,7 @@ namespace hmgui {
             DWRITE_FONT_WEIGHT_NORMAL,
             DWRITE_FONT_STYLE_NORMAL,
             DWRITE_FONT_STRETCH_NORMAL,
-            config_ref.kifu_spacing * 0.8f,
+            settings_item_spacing * 0.7f,
             L"ja-JP",
             &text_format_default
         );
@@ -1096,7 +1096,7 @@ namespace hmgui {
         );
 
         int index = 0;
-        for (auto it = settings_items.begin(); it != settings_items.end(); ++it, ++index) {
+        for (const auto &item_key : settings_item_keys) {
             float line_y = settings_area_rectf.top + settings_item_spacing * (index + 1);
             d2d1_render_target->DrawLine(
                 D2D1::Point2F(settings_area_rectf.left, line_y),
@@ -1106,17 +1106,19 @@ namespace hmgui {
             );
             float item_y = settings_area_rectf.top + settings_item_spacing * index;
             d2d1_render_target->DrawText(
-                it->first.c_str(),
-                static_cast<UINT32>(it->first.size()),
+                item_key.c_str(),
+                static_cast<UINT32>(item_key.size()),
                 text_format_default,
                 D2D1::RectF(
                     settings_area_rectf.left + config_ref.padding,
-                    item_y + config_ref.padding,
+                    item_y,
                     center_x - config_ref.padding,
-                    line_y + config_ref.padding
+                    line_y
                 ),
                 d2d1_brush
             );
+
+            index++;
         }
 
         d2d1_render_target->PopAxisAlignedClip();

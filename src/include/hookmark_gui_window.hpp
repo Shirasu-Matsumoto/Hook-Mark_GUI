@@ -210,17 +210,17 @@ namespace hmgui {
             RECT client_area_rect;
             D2D1_RECT_F settings_area_rectf;
             RECT settings_area_rect;
-            float settings_item_spacing = 40.0f;
+            float settings_item_spacing = 25.0f;
 
-            std::map<std::wstring, float &> settings_items = {
-                { L"盤面グリッドの間隔", config_ref.grid_spacing },
-                { L"棋譜の行間隔", config_ref.kifu_spacing },
-                { L"盤面のラベルサイズ", config_ref.label_size },
-                { L"盤面のサイズ", config_ref.grid_size_x },
-                { L"棋譜のサイズ", config_ref.kifu_size_x },
-                { L"縦分割のサイズ", config_ref.kifu_turn_size_x },
-                { L"マージン", config_ref.margin },
-                { L"パディング", config_ref.padding }
+            std::vector<std::wstring> settings_item_keys = {
+                L"盤面グリッドの間隔",
+                L"棋譜の行間隔",
+                L"盤面のラベルサイズ",
+                L"盤面のサイズ",
+                L"棋譜のサイズ",
+                L"縦分割のサイズ",
+                L"マージン",
+                L"パディング"
             };
 
             window_settings() {};
