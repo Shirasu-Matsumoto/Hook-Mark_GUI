@@ -210,7 +210,7 @@ namespace hmgui {
             RECT client_area_rect;
             D2D1_RECT_F settings_area_rectf;
             RECT settings_area_rect;
-            float settings_item_spacing = 25.0f;
+            float settings_item_spacing = 40.0f;
 
             std::map<std::wstring, float &> settings_items = {
                 { L"盤面グリッドの間隔", config_ref.grid_spacing },
