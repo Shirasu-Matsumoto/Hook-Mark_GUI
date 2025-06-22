@@ -1,11 +1,13 @@
 ﻿#include <hookmark.hpp>
 #include <hookmark_gui_window.hpp>
 
-hmgui::window_main main_window;
+hmgui::window_conf grobal_config;
+
+hmgui::window_main main_window(grobal_config);
 hmgui::wc_main main_window_class;
-hmgui::window_newgame newgame_window;
+hmgui::window_newgame newgame_window(grobal_config);
 hmgui::wc_newgame newgame_window_class;
-hmgui::window_settings settings_window;
+hmgui::window_settings settings_window(grobal_config);
 hmgui::wc_settings settings_window_class;
 hmgui::menu_main main_menu;
 hmgui::menu_item_popup  main_menu_file,
@@ -32,7 +34,6 @@ hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
                         main_menu_game_resign(ID_MENU_GAME_RESIGN),
                         main_menu_help_version(ID_MENU_HELP_VERSION);
 
-hmgui::window_conf grobal_config;
 ID2D1Factory *grobal_d2d1_factory;
 IDWriteFactory *grobal_d2d1_dwrite_factory;
 
@@ -111,28 +112,28 @@ namespace hmgui {
 
         if (!file.is_open()) return;
 
-        file << "[Hook-Mark GUI Window Initialize Config]\r\n\r\n#Main window\r\n";
-        file << "window_pos_x = " << grobal_config.window_pos_x << "\r\n";
-        file << "window_pos_y = " << grobal_config.window_pos_y << "\r\n";
-        file << "margin = " << grobal_config.margin << "\r\n";
-        file << "padding = " << grobal_config.padding << "\r\n";
-        file << "window_size_x = " << grobal_config.window_size_x << "\r\n";
-        file << "window_size_y = " << grobal_config.window_size_y << "\r\n";
-        file << "grid_spacing = " << grobal_config.grid_spacing << "\r\n";
-        file << "kifu_spacing = " << grobal_config.kifu_spacing << "\r\n";
-        file << "grid_size_x = " << grobal_config.grid_size_x << "\r\n";
-        file << "kifu_size_x = " << grobal_config.kifu_size_x << "\r\n";
-        file << "kifu_turn_size_x = " << grobal_config.kifu_turn_size_x << "\r\n";
-        file << "grid_and_kifu_size_y = " << grobal_config.grid_and_kifu_size_y << "\r\n";
-        file << "open_file = " << grobal_config.open_file << "\r\n";
-        file << "label_size = " << grobal_config.label_size << "\r\n\r\n#New game window\r\n";
-        file << "first_name = " << grobal_config.first_name << "\r\n";
-        file << "second_name = " << grobal_config.second_name << "\r\n";
-        file << "first_time = " << grobal_config.first_time << "\r\n";
-        file << "second_time = " << grobal_config.second_time << "\r\n";
-        file << "first_countdown = " << grobal_config.first_countdown << "\r\n";
-        file << "second_countdown = " << grobal_config.second_countdown << "\r\n";
-        file << "lose_time_runs_out = " << (grobal_config.lose_time_runs_out ? "true" : "false") << "\r\n";
+        file << "[Hook-Mark GUI Window Initialize Config]\n\n#Main window\n";
+        file << "window_pos_x = " << grobal_config.window_pos_x << "\n";
+        file << "window_pos_y = " << grobal_config.window_pos_y << "\n";
+        file << "margin = " << grobal_config.margin << "\n";
+        file << "padding = " << grobal_config.padding << "\n";
+        file << "window_size_x = " << grobal_config.window_size_x << "\n";
+        file << "window_size_y = " << grobal_config.window_size_y << "\n";
+        file << "grid_spacing = " << grobal_config.grid_spacing << "\n";
+        file << "kifu_spacing = " << grobal_config.kifu_spacing << "\n";
+        file << "grid_size_x = " << grobal_config.grid_size_x << "\n";
+        file << "kifu_size_x = " << grobal_config.kifu_size_x << "\n";
+        file << "kifu_turn_size_x = " << grobal_config.kifu_turn_size_x << "\n";
+        file << "grid_and_kifu_size_y = " << grobal_config.grid_and_kifu_size_y << "\n";
+        file << "open_file = " << grobal_config.open_file << "\n";
+        file << "label_size = " << grobal_config.label_size << "\n\n#New game window\n";
+        file << "first_name = " << grobal_config.first_name << "\n";
+        file << "second_name = " << grobal_config.second_name << "\n";
+        file << "first_time = " << grobal_config.first_time << "\n";
+        file << "second_time = " << grobal_config.second_time << "\n";
+        file << "first_countdown = " << grobal_config.first_countdown << "\n";
+        file << "second_countdown = " << grobal_config.second_countdown << "\n";
+        file << "lose_time_runs_out = " << (grobal_config.lose_time_runs_out ? "true" : "false") << "\n";
 
         file.close();
     }
@@ -217,6 +218,7 @@ namespace hmgui {
                         }
                     }
                 }
+                save_config();
                 handle_exit();
                 return 0;
             }
@@ -248,7 +250,6 @@ namespace hmgui {
                 return 0;
             }
             case WM_DESTROY: {
-                save_config();
                 KillTimer(handle_window, timer_id);
                 newgame_window.release();
                 handle_exit();
@@ -580,6 +581,7 @@ namespace hmgui {
                     ReleaseCapture();
                     return 0;
                 }
+
                 if (do_over_button_state == 2) {
                     if (!is_gaming) return 0;
                     if (kifu_current_turn > -1) {
@@ -696,15 +698,18 @@ namespace hmgui {
                 return 0;
             }
             case WM_MOVE: {
+                grobal_config.window_pos_x = static_cast<float>(LOWORD(l_param));
+                grobal_config.window_pos_y = static_cast<float>(HIWORD(l_param));
                 update_rect();
                 return 0;
             }
             case WM_SIZE: {
+                grobal_config.window_size_x = static_cast<float>(LOWORD(l_param));
+                grobal_config.window_size_y = static_cast<float>(HIWORD(l_param));
                 update_rect();
                 UINT width = LOWORD(l_param);
                 UINT height = HIWORD(l_param);
-                if (d2d1_render_target)
-                {
+                if (d2d1_render_target) {
                     D2D1_SIZE_U size = D2D1::SizeU(width, height);
                     d2d1_render_target->Resize(size);
                 }
@@ -784,6 +789,7 @@ namespace hmgui {
             }
             case WM_CLOSE: {
                 handle_exit();
+                main_window.update_rect();
                 return 0;
             }
             case WM_DPICHANGED: {
@@ -838,12 +844,10 @@ int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
     hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&grobal_d2d1_dwrite_factory));
     if (FAILED(hr)) return false;
 
-    main_window.initialize(grobal_config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
-    newgame_window.initialize(grobal_config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
-    settings_window.initialize(grobal_config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
+    main_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
+    newgame_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
+    settings_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
     main_window.show_window();
-    newgame_window.show_window(SW_HIDE);
-    settings_window.show_window(SW_HIDE);
 
     SetMenu(main_window, main_menu);
 

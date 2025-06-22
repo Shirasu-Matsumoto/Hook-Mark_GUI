@@ -63,7 +63,7 @@ namespace hmgui {
     class window_main final : public window_base {
         public:
             wc_main window_class;
-            window_conf config_ref;
+            window_conf &config_ref;
             std::wstring current_kifu_path;
             hm::board_state board;
             hm::kifu_ver1 current_kifu;
@@ -120,9 +120,9 @@ namespace hmgui {
             int do_over_button_state = 0;
             int resign_button_state = 0;
 
-            window_main() {}
+            window_main(window_conf &config) : config_ref(config) {}
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
-            void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
+            void initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void update_rect();
             void update_config();
             void initialize_scroll();
@@ -169,7 +169,7 @@ namespace hmgui {
     class window_newgame final : public window_base {
         public:
             wc_newgame window_class;
-            window_conf config_ref;
+            window_conf &config_ref;
 
             ID2D1Factory *d2d1_factory;
             IDWriteFactory *d2d1_dwrite_factory;
@@ -179,9 +179,9 @@ namespace hmgui {
 
             HWND handle_newgame_button = nullptr;
 
-            window_newgame() {};
+            window_newgame(window_conf &config) : config_ref(config) {};
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
-            void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window);
+            void initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window);
             void create_window(HWND handle_parent_window);
             void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT);
             void redraw();
@@ -199,7 +199,7 @@ namespace hmgui {
     class window_settings final : public window_base {
         public:
             wc_settings window_class;
-            window_conf config_ref;
+            window_conf &config_ref;
 
             ID2D1Factory *d2d1_factory;
             IDWriteFactory *d2d1_dwrite_factory;
@@ -216,16 +216,19 @@ namespace hmgui {
                 L"盤面グリッドの間隔",
                 L"棋譜の行間隔",
                 L"盤面のラベルサイズ",
-                L"盤面のサイズ",
-                L"棋譜のサイズ",
+                L"盤面の横幅",
+                L"棋譜の横幅",
                 L"縦分割のサイズ",
                 L"マージン",
                 L"パディング"
             };
+            std::vector<HWND> edit_controls;
 
-            window_settings() {};
+            window_settings(window_conf &config) : config_ref(config) {};
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
-            void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window);
+            void initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window);
+            void create_edit_controls();
+            void update_config();
             void update_rect();
             void create_window(HWND handle_parent_window);
             void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT);

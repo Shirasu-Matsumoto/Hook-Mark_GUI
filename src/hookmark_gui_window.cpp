@@ -203,8 +203,7 @@ namespace hmgui {
         config_scroll_offset = D2D1::Point2F();
     }
 
-    void window_main::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
-        config_ref = config;
+    void window_main::initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
         initialize_scroll();
         window_class.register_class();
         create_window();
@@ -887,8 +886,7 @@ namespace hmgui {
         UpdateWindow(handle_window);
     }
 
-    void window_newgame::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window) {
-        config_ref = config;
+    void window_newgame::initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window) {
         window_class.register_class();
         create_window(handle_parent_window);
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
@@ -1042,11 +1040,65 @@ namespace hmgui {
         return true;
     }
 
-    void window_settings::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window) {
-        config_ref = config;
+    void window_settings::initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window) {
         window_class.register_class();
+        edit_controls.resize(settings_item_keys.size());
         create_window(handle_parent_window);
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
+    }
+
+    void window_settings::create_edit_controls() {
+        edit_controls.clear();
+        edit_controls.resize(settings_item_keys.size());
+        float center_x = settings_area_rectf.left + (settings_area_rectf.right - settings_area_rectf.left) / 2;
+        for (int i = 0; i < settings_item_keys.size(); i++) {
+            HWND edit_handle = CreateWindowExW(
+                0, L"EDIT", L"",
+                WS_CHILD | WS_VISIBLE,
+                static_cast<int>(center_x) + 1, static_cast<int>(config_ref.margin + settings_item_spacing * i) + 1,
+                static_cast<int>((settings_area_rectf.right - settings_area_rectf.left) / 2) - 2, static_cast<int>(settings_item_spacing) - 2,
+                handle_window, nullptr, GetModuleHandle(nullptr), nullptr
+            );
+            HFONT handle_font = CreateFontW(
+                static_cast<int>(settings_item_spacing * 0.7f),
+                0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+                DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI"
+            );
+            ShowWindow(edit_handle, SW_SHOW);
+            SetWindowFont(edit_handle, handle_font, TRUE);
+            edit_controls[i] = edit_handle;
+        }
+
+        SetWindowTextW(edit_controls[0], std::to_wstring(config_ref.grid_spacing).c_str());
+        SetWindowTextW(edit_controls[1], std::to_wstring(config_ref.kifu_spacing).c_str());
+        SetWindowTextW(edit_controls[2], std::to_wstring(config_ref.label_size).c_str());
+        SetWindowTextW(edit_controls[3], std::to_wstring(config_ref.grid_size_x).c_str());
+        SetWindowTextW(edit_controls[4], std::to_wstring(config_ref.kifu_size_x).c_str());
+        SetWindowTextW(edit_controls[5], std::to_wstring(config_ref.grid_and_kifu_size_y).c_str());
+        SetWindowTextW(edit_controls[6], std::to_wstring(config_ref.margin).c_str());
+        SetWindowTextW(edit_controls[7], std::to_wstring(config_ref.padding).c_str());
+    }
+
+    void window_settings::update_config() {
+        wchar_t buffer[256];
+
+        GetWindowTextW(edit_controls[0], buffer, 256);
+        config_ref.grid_spacing = std::stof(buffer);
+        GetWindowTextW(edit_controls[1], buffer, 256);
+        config_ref.kifu_spacing = std::stof(buffer);
+        GetWindowTextW(edit_controls[2], buffer, 256);
+        config_ref.label_size = std::stof(buffer);
+        GetWindowTextW(edit_controls[3], buffer, 256);
+        config_ref.grid_size_x = std::stof(buffer);
+        GetWindowTextW(edit_controls[4], buffer, 256);
+        config_ref.kifu_size_x = std::stof(buffer);
+        GetWindowTextW(edit_controls[5], buffer, 256);
+        config_ref.grid_and_kifu_size_y = std::stof(buffer);
+        GetWindowTextW(edit_controls[6], buffer, 256);
+        config_ref.margin = std::stof(buffer);
+        GetWindowTextW(edit_controls[7], buffer, 256);
+        config_ref.padding = std::stof(buffer);
     }
 
     void window_settings::update_rect() {
@@ -1062,11 +1114,16 @@ namespace hmgui {
     }
 
     void window_settings::handle_exit() {
+        update_config();
         show_window(SW_HIDE);
     }
 
     void window_settings::show_window(int show_command, float x, float y) {
         ShowWindow(handle_window, show_command);
+        UpdateWindow(handle_window);
+        if (show_command == SW_SHOW) {
+            create_edit_controls();
+        }
         SetWindowPos(handle_window, nullptr, static_cast<int>(x), static_cast<int>(y), 0, 0, SWP_NOZORDER | SWP_NOSIZE);
         UpdateWindow(handle_window);
     }

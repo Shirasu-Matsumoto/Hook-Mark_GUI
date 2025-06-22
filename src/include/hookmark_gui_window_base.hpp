@@ -21,6 +21,7 @@
 #include <cmath>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace hmgui {
     class window_base {
