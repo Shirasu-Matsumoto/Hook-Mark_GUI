@@ -9,6 +9,8 @@ hmgui::window_newgame newgame_window(grobal_config);
 hmgui::wc_newgame newgame_window_class;
 hmgui::window_settings settings_window(grobal_config);
 hmgui::wc_settings settings_window_class;
+hmgui::window_version version_window;
+hmgui::wc_version version_window_class;
 hmgui::menu_main main_menu;
 hmgui::menu_item_popup  main_menu_file,
                         main_menu_edit,
@@ -445,6 +447,7 @@ namespace hmgui {
                         break;
                     }
                     case ID_MENU_HELP_VERSION: {
+                        version_window.show_window(SW_SHOW, window_area_rectf.left + 30.0f, window_area_rectf.top + 30.0f);
                         break;
                     }
                 }
@@ -789,6 +792,7 @@ namespace hmgui {
             }
             case WM_CLOSE: {
                 handle_exit();
+                main_window.d2d1_initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
                 main_window.update_rect();
                 return 0;
             }
@@ -834,6 +838,61 @@ namespace hmgui {
         }
         return DefWindowProcW(handle_window, message, w_param, l_param);
     }
+
+    LRESULT CALLBACK window_version::handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) {
+        switch (message) {
+            case WM_PAINT: {
+                PAINTSTRUCT ps;
+                HDC handle_device_context = BeginPaint(handle_window, &ps);
+                d2d1_render_target->BeginDraw();
+                redraw();
+                d2d1_render_target->EndDraw();
+                EndPaint(handle_window, &ps);
+                return 0;
+            }
+            case WM_CLOSE: {
+                handle_exit();
+                main_window.d2d1_initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
+                main_window.update_rect();
+                return 0;
+            }
+            case WM_DPICHANGED: {
+                UINT dpi_x = HIWORD(w_param);
+                UINT dpi_y = LOWORD(w_param);
+
+                RECT* suggested_rect = (RECT*)l_param;
+                SetWindowPos(handle_window,
+                            NULL,
+                            suggested_rect->left,
+                            suggested_rect->top,
+                            suggested_rect->right - suggested_rect->left,
+                            suggested_rect->bottom - suggested_rect->top,
+                            SWP_NOZORDER | SWP_NOACTIVATE);
+
+                if (d2d1_render_target) {
+                    d2d1_render_target->SetDpi((FLOAT)dpi_x, (FLOAT)dpi_y);
+                }
+
+                InvalidateRect(handle_window, NULL, TRUE);
+                return 0;
+            }
+            case WM_SIZE: {
+                UINT width = LOWORD(l_param);
+                UINT height = HIWORD(l_param);
+                if (d2d1_render_target)
+                {
+                    D2D1_SIZE_U size = D2D1::SizeU(width, height);
+                    d2d1_render_target->Resize(size);
+                }
+                InvalidateRect(handle_window, nullptr, FALSE);
+                return 0;
+            }
+            default: {
+                return DefWindowProcW(handle_window, message, w_param, l_param);
+            }
+        }
+        return DefWindowProcW(handle_window, message, w_param, l_param);
+    }
 }
 
 int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
@@ -847,6 +906,7 @@ int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
     main_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
     newgame_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
     settings_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
+    version_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
     main_window.show_window();
 
     SetMenu(main_window, main_menu);

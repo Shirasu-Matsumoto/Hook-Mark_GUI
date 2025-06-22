@@ -3,6 +3,7 @@
 
 #include <hookmark_gui_window_base.hpp>
 #include <hookmark_gui_id.hpp>
+#include <hookmark_gui_version.hpp>
 
 namespace hmgui {
     struct window_conf {
@@ -230,6 +231,32 @@ namespace hmgui {
             void create_edit_controls();
             void update_config();
             void update_rect();
+            void create_window(HWND handle_parent_window);
+            void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT);
+            void redraw();
+            void handle_exit();
+            LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
+    };
+
+    class wc_version final : public wc_base {
+        public:
+            wc_version();
+            ATOM register_class() override;
+    };
+
+    class window_version final : public window_base {
+        public:
+            wc_version window_class;
+
+            ID2D1Factory *d2d1_factory;
+            IDWriteFactory *d2d1_dwrite_factory;
+            ID2D1HwndRenderTarget *d2d1_render_target;
+            ID2D1SolidColorBrush *d2d1_brush;
+            IDWriteTextFormat *text_format_default;
+
+            window_version() {};
+            bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
+            void initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window);
             void create_window(HWND handle_parent_window);
             void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT);
             void redraw();

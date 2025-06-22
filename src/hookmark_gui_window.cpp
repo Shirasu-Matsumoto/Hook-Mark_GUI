@@ -10,12 +10,12 @@ namespace hmgui {
             window_proc,
             0, 0,
             GetModuleHandle(nullptr),
-            LoadIconW(nullptr, MAKEINTRESOURCEW(32512)),
+            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
             LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
             (HBRUSH)(COLOR_WINDOW + 1),
             nullptr,
             L"Hook-Mark_GUI_Main",
-            LoadIconW(nullptr, MAKEINTRESOURCEW(32512))
+            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
         };
         return RegisterClassExW(&window_class);
     }
@@ -114,9 +114,6 @@ namespace hmgui {
         if (label_width.size() <= i) {
             label_width.resize(i + 1, 0.0f);
             label_height.resize(i + 1, 0.0f);
-        }
-        else if (label_width[i] != 0.0f) {
-            return;
         }
 
         std::wstring txt(i, L'0');
@@ -853,12 +850,12 @@ namespace hmgui {
             window_proc,
             0, 0,
             GetModuleHandle(nullptr),
-            LoadIconW(nullptr, MAKEINTRESOURCEW(32512)),
+            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
             LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
             (HBRUSH)(COLOR_WINDOW + 1),
             nullptr,
             L"Hook-Mark_GUI_NewGame",
-            LoadIconW(nullptr, MAKEINTRESOURCEW(32512))
+            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
         };
         return RegisterClassExW(&window_class);
     }
@@ -963,12 +960,12 @@ namespace hmgui {
             window_proc,
             0, 0,
             GetModuleHandle(nullptr),
-            LoadIconW(nullptr, MAKEINTRESOURCEW(32512)),
+            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
             LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
             (HBRUSH)(COLOR_WINDOW + 1),
             nullptr,
             L"Hook-Mark_GUI_Settings",
-            LoadIconW(nullptr, MAKEINTRESOURCEW(32512))
+            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
         };
 
         return RegisterClassExW(&window_class);
@@ -1179,5 +1176,115 @@ namespace hmgui {
         }
 
         d2d1_render_target->PopAxisAlignedClip();
+    }
+
+    wc_version::wc_version() : wc_base() {}
+
+    ATOM wc_version::register_class() {
+        window_class = {
+            sizeof(WNDCLASSEXW),
+            CS_HREDRAW | CS_VREDRAW,
+            window_proc,
+            0, 0,
+            GetModuleHandle(nullptr),
+            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
+            LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
+            (HBRUSH)(COLOR_WINDOW + 1),
+            nullptr,
+            L"Hook-Mark_GUI_Version",
+            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
+        };
+
+        return RegisterClassExW(&window_class);
+    }
+
+    void window_version::create_window(HWND handle_parent_window) {
+        handle_window = CreateWindowExW(
+            0,
+            L"Hook-Mark_GUI_Version",
+            L"バージョン情報 - Hook-Mark GUI",
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+            CW_USEDEFAULT, CW_USEDEFAULT,
+            600, 600,
+            handle_parent_window, NULL, GetModuleHandle(nullptr), NULL
+        );
+
+        DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;
+        DwmSetWindowAttribute(handle_window, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
+
+        SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+    }
+
+    void window_version::initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window) {
+        window_class.register_class();
+        create_window(handle_parent_window);
+        d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
+    }
+
+    bool window_version::d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
+        d2d1_factory = i_d2d1_factory;
+        d2d1_factory->AddRef();
+        d2d1_dwrite_factory = i_d2d1_dwrite_factory;
+        d2d1_dwrite_factory->AddRef();
+
+        RECT rect;
+        GetClientRect(handle_window, &rect);
+
+        D2D1_SIZE_U size = D2D1::SizeU(rect.right - rect.left, rect.bottom - rect.top);
+
+        D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties();
+
+        D2D1_HWND_RENDER_TARGET_PROPERTIES handle_window_props = D2D1::HwndRenderTargetProperties(handle_window, size);
+
+        HRESULT hr = d2d1_factory->CreateHwndRenderTarget(props, handle_window_props, &d2d1_render_target);
+        if (FAILED(hr)) return false;
+
+        UINT dpi = 96;
+        if (IsWindows10OrGreater()) {
+            dpi = GetDpiForWindow(handle_window);
+        }
+
+        FLOAT dpi_x = static_cast<FLOAT>(dpi);
+        FLOAT dpi_y = static_cast<FLOAT>(dpi);
+        d2d1_render_target->SetDpi(dpi_x, dpi_y);
+
+        hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
+        if (FAILED(hr)) return false;
+
+        hr = d2d1_dwrite_factory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_NORMAL,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            18.0f,
+            L"ja-JP",
+            &text_format_default
+        );
+
+        return SUCCEEDED(hr);
+    }
+
+    void window_version::show_window(int show_command, float x, float y) {
+        ShowWindow(handle_window, show_command);
+        SetWindowPos(handle_window, nullptr, static_cast<int>(x), static_cast<int>(y), 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+        UpdateWindow(handle_window);
+    }
+
+    void window_version::redraw() {
+        if (!d2d1_render_target || !d2d1_brush) return;
+        d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
+
+        d2d1_render_target->DrawText(
+            HOOKMARK_GUI_VERSION_TEXT,
+            static_cast<UINT32>(std::wcslen(HOOKMARK_GUI_VERSION_TEXT)),
+            text_format_default,
+            D2D1::RectF(10.0f, 10.0f, 590.0f, 590.0f),
+            d2d1_brush
+        );
+    }
+
+    void window_version::handle_exit() {
+        show_window(SW_HIDE);
     }
 }

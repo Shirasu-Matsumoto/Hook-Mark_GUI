@@ -15,6 +15,7 @@ include_directories(
 add_executable(Hook-Mark_GUI WIN32
     hookmark_gui_main.cpp
     hookmark_gui_window.cpp
+    hookmark_gui.rc
 )
 
 target_link_libraries(Hook-Mark_GUI
