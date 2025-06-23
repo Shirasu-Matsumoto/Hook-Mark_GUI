@@ -18,7 +18,7 @@ namespace hmgui {
         float grid_size_x;
         float kifu_size_x;
         float kifu_turn_size_x;
-        float grid_and_kifu_size_y;
+        float vertical_size;
         std::string open_file;
         float label_size;
 
@@ -42,7 +42,7 @@ namespace hmgui {
               grid_size_x(500.0f),
               kifu_size_x(400.0f),
               kifu_turn_size_x(100.0f),
-              grid_and_kifu_size_y(500.0f),
+              vertical_size(500.0f),
               open_file(""),
               label_size(12.0f),
               first_name(""),

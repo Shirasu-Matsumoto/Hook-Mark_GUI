@@ -154,31 +154,31 @@ namespace hmgui {
             config_ref.margin,
             config_ref.margin,
             config_ref.grid_size_x - config_ref.margin,
-            config_ref.grid_and_kifu_size_y - config_ref.margin
+            config_ref.vertical_size - config_ref.margin
         );
         kifu_area_rectf = D2D1::RectF(
             config_ref.grid_size_x + config_ref.margin,
             config_ref.margin,
             config_ref.grid_size_x + config_ref.kifu_size_x - config_ref.margin,
-            config_ref.grid_and_kifu_size_y - config_ref.margin
+            config_ref.vertical_size - config_ref.margin
         );
         config_area_rectf = D2D1::RectF(
             config_ref.grid_size_x + config_ref.kifu_size_x + config_ref.margin,
             config_ref.margin,
             client_area_rectf.right - config_ref.margin,
-            config_ref.grid_and_kifu_size_y - config_ref.margin
+            config_ref.vertical_size - config_ref.margin
         );
         do_over_button_area_rectf = D2D1::RectF(
             config_ref.margin,
-            config_ref.grid_and_kifu_size_y + config_ref.margin,
+            config_ref.vertical_size + config_ref.margin,
             100.0f - config_ref.margin,
-            config_ref.grid_and_kifu_size_y + 50.0f - config_ref.margin
+            config_ref.vertical_size + 50.0f - config_ref.margin
         );
         resign_button_area_rectf = D2D1::RectF(
             100.0f + config_ref.margin,
-            config_ref.grid_and_kifu_size_y + config_ref.margin,
+            config_ref.vertical_size + config_ref.margin,
             200.0f - config_ref.margin,
-            config_ref.grid_and_kifu_size_y + 50.0f - config_ref.margin
+            config_ref.vertical_size + 50.0f - config_ref.margin
         );
         grid_area_rect = rectf_to_rect(grid_area_rectf);
         kifu_area_rect = rectf_to_rect(kifu_area_rectf);
@@ -195,7 +195,7 @@ namespace hmgui {
     }
 
     void window_main::initialize_scroll() {
-        grid_scroll_offset = D2D1::Point2F(-(config_ref.grid_size_x - config_ref.margin * 2) / 2 + config_ref.grid_spacing / 2, (config_ref.grid_and_kifu_size_y - config_ref.margin * 2) / 2 - config_ref.grid_spacing / 2);
+        grid_scroll_offset = D2D1::Point2F(-(config_ref.grid_size_x - config_ref.margin * 2) / 2 + config_ref.grid_spacing / 2, (config_ref.vertical_size - config_ref.margin * 2) / 2 - config_ref.grid_spacing / 2);
         kifu_scroll_offset = D2D1::Point2F();
         config_scroll_offset = D2D1::Point2F();
     }
@@ -1072,7 +1072,7 @@ namespace hmgui {
         SetWindowTextW(edit_controls[2], std::to_wstring(config_ref.label_size).c_str());
         SetWindowTextW(edit_controls[3], std::to_wstring(config_ref.grid_size_x).c_str());
         SetWindowTextW(edit_controls[4], std::to_wstring(config_ref.kifu_size_x).c_str());
-        SetWindowTextW(edit_controls[5], std::to_wstring(config_ref.grid_and_kifu_size_y).c_str());
+        SetWindowTextW(edit_controls[5], std::to_wstring(config_ref.vertical_size).c_str());
         SetWindowTextW(edit_controls[6], std::to_wstring(config_ref.margin).c_str());
         SetWindowTextW(edit_controls[7], std::to_wstring(config_ref.padding).c_str());
     }
@@ -1091,7 +1091,7 @@ namespace hmgui {
         GetWindowTextW(edit_controls[4], buffer, 256);
         config_ref.kifu_size_x = std::stof(buffer);
         GetWindowTextW(edit_controls[5], buffer, 256);
-        config_ref.grid_and_kifu_size_y = std::stof(buffer);
+        config_ref.vertical_size = std::stof(buffer);
         GetWindowTextW(edit_controls[6], buffer, 256);
         config_ref.margin = std::stof(buffer);
         GetWindowTextW(edit_controls[7], buffer, 256);
