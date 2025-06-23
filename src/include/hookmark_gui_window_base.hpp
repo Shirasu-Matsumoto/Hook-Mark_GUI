@@ -131,6 +131,9 @@ namespace hmgui {
             operator UINT_PTR() {
                 return id;
             }
+            operator UINT() {
+                return static_cast<UINT>(id);
+            }
     };
 }
 

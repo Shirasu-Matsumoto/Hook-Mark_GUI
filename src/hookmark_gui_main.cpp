@@ -23,6 +23,8 @@ hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
                         main_menu_file_save_as(ID_MENU_FILE_SAVE_AS),
                         main_menu_file_close(ID_MENU_FILE_CLOSE),
                         main_menu_file_settings(ID_MENU_FILE_SETTINGS),
+                        main_menu_file_save_config(ID_MENU_FILE_SAVE_CONFIG),
+                        main_menu_file_clear_config(ID_MENU_FILE_CLEAR_CONFIG),
                         main_menu_file_exit(ID_MENU_FILE_EXIT),
                         main_menu_edit_move_forward(ID_MENU_EDIT_MOVE_FORWARD),
                         main_menu_edit_step_back(ID_MENU_EDIT_STEP_BACK),
@@ -140,6 +142,17 @@ namespace hmgui {
         file.close();
     }
 
+    void clear_config() {
+        wchar_t path[MAX_PATH];
+        GetModuleFileNameW(NULL, path, MAX_PATH);
+        std::filesystem::path exe_path(utf16_to_utf8(path));
+        std::filesystem::path dir = exe_path.parent_path();
+        std::filesystem::path config_path = dir / "config" / "init.cfg";
+        if (std::filesystem::exists(config_path)) {
+            std::filesystem::remove(config_path);
+        }
+    }
+
     int check_nosave() {
         int ret = MessageBoxW(
             main_window,
@@ -168,6 +181,8 @@ namespace hmgui {
             AppendMenuW(main_menu_file, MF_STRING, main_menu_file_close, L"閉じる");
             AppendMenuW(main_menu_file, MF_SEPARATOR, 0, NULL);
             AppendMenuW(main_menu_file, MF_STRING, main_menu_file_settings, L"設定(&S)");
+            AppendMenuW(main_menu_file, MF_STRING, main_menu_file_save_config, L"設定を保存");
+            AppendMenuW(main_menu_file, MF_STRING, main_menu_file_clear_config, L"設定をクリア");
             AppendMenuW(main_menu_file, MF_SEPARATOR, 0, NULL);
             AppendMenuW(main_menu_file, MF_STRING, main_menu_file_exit, L"終了");
 
@@ -220,7 +235,6 @@ namespace hmgui {
                         }
                     }
                 }
-                save_config();
                 handle_exit();
                 return 0;
             }
@@ -293,6 +307,7 @@ namespace hmgui {
                         }
                         kifu_current_turn = current_kifu.size() - 1;
                         kifu_saved = true;
+                        config_ref.open_file = filepath;
                         hm::kifuver1_to_board(current_kifu, board, current_kifu.size() - 1);
                         update_title();
                         initialize_scroll();
@@ -354,7 +369,12 @@ namespace hmgui {
                         current_kifu.clear();
                         kifu_current_turn = 0;
                         board.clear();
+                        is_gaming = false;
+                        EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
+                        EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
+                        DrawMenuBar(main_window);
                         kifu_saved = true;
+                        config_ref.open_file.clear();
                         update_title();
                         initialize_scroll();
                         InvalidateRect(handle_window, nullptr, FALSE);
@@ -362,6 +382,14 @@ namespace hmgui {
                     }
                     case ID_MENU_FILE_SETTINGS: {
                         settings_window.show_window(SW_SHOW, window_area_rectf.left + 30.0f, window_area_rectf.top + 30.0f);
+                        break;
+                    }
+                    case ID_MENU_FILE_SAVE_CONFIG: {
+                        save_config();
+                        break;
+                    }
+                    case ID_MENU_FILE_CLEAR_CONFIG: {
+                        clear_config();
                         break;
                     }
                     case ID_MENU_FILE_EXIT: {
@@ -437,6 +465,9 @@ namespace hmgui {
                             }
                             InvalidateRect(handle_window, nullptr, FALSE);
                         }
+                        EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
+                        EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
+                        DrawMenuBar(main_window);
                         return 0;
                     }
                     case ID_MENU_GAME_RESIGN: {
@@ -505,13 +536,15 @@ namespace hmgui {
                         return 0;
                     }
                     try {
-                        main_window.board.progress(x, y);
-                        kifu_current_turn = current_kifu.size();
-                        current_kifu.add(x, y);
-                        hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
-                        kifu_saved = false;
-                        InvalidateRect(handle_window, nullptr, FALSE);
-                        if (board.is_win()) SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_GAME_RESIGN, 0), 0);
+                        if (!hm::kifuver1_to_board(current_kifu).has_piece(x, y)) {
+                            main_window.board.progress(x, y);
+                            kifu_current_turn = current_kifu.size();
+                            current_kifu.add(x, y);
+                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
+                            kifu_saved = false;
+                            InvalidateRect(handle_window, nullptr, FALSE);
+                            if (board.is_win()) SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_GAME_RESIGN, 0), 0);
+                        }
                     } catch (...) {
                         return 0;
                     }
@@ -749,6 +782,9 @@ namespace hmgui {
                         main_window.current_kifu.clear();
                         main_window.kifu_current_turn = 0;
                         main_window.is_gaming = true;
+                        EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_ENABLED);
+                        EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_ENABLED);
+                        DrawMenuBar(main_window);
                         main_window.kifu_saved = false;
                         main_window.current_kifu_path.clear();
                         main_window.initialize_scroll();
@@ -897,12 +933,12 @@ namespace hmgui {
 
 int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
     hmgui::load_config();
-    main_menu.create_menu();
     HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &grobal_d2d1_factory);
     if (FAILED(hr)) return false;
     hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&grobal_d2d1_dwrite_factory));
     if (FAILED(hr)) return false;
 
+    main_menu.create_menu();
     main_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
     newgame_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
     settings_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
@@ -910,7 +946,9 @@ int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
     main_window.show_window();
 
     SetMenu(main_window, main_menu);
-
+    EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
+    EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
+    DrawMenuBar(main_window);
     timer_id = SetTimer(main_window, timer_id, 16, nullptr);
 
     MSG message;

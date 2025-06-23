@@ -209,6 +209,7 @@ namespace hm {
                                     if (!match) break;
                                 }
                                 if (match) {
+                                    throw "Debug: Player: " + std::to_string(player) + ", Win at (" + std::to_string(x) + ", " + std::to_string(y) + "), Rotate: " + std::to_string(rotate_index);
                                     return player;
                                 }
                             }
