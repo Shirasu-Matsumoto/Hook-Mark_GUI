@@ -26,10 +26,9 @@ namespace hmgui {
         d2d1_dwrite_factory = i_d2d1_dwrite_factory;
         d2d1_dwrite_factory->AddRef();
 
-        RECT rect;
-        GetClientRect(handle_window, &rect);
+        GetClientRect(handle_window, &client_area_rect);
 
-        D2D1_SIZE_U size = D2D1::SizeU(rect.right - rect.left, rect.bottom - rect.top);
+        D2D1_SIZE_U size = D2D1::SizeU(client_area_rect.right - client_area_rect.left, client_area_rect.bottom - client_area_rect.top);
 
         D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties();
 
@@ -190,7 +189,7 @@ namespace hmgui {
         config_area_clip_rectf = cliped_rectf(config_area_rectf);
     }
 
-    void window_main::update_config() {
+    void window_main::update_scroll_speed() {
         scroll_speed = config_ref.grid_spacing / 0.3f;
     }
 
@@ -898,10 +897,10 @@ namespace hmgui {
         d2d1_dwrite_factory = i_d2d1_dwrite_factory;
         d2d1_dwrite_factory->AddRef();
 
-        RECT rect;
-        GetClientRect(handle_window, &rect);
+        RECT client_area_rect;
+        GetClientRect(handle_window, &client_area_rect);
 
-        D2D1_SIZE_U size = D2D1::SizeU(rect.right - rect.left, rect.bottom - rect.top);
+        D2D1_SIZE_U size = D2D1::SizeU(client_area_rect.right - client_area_rect.left, client_area_rect.bottom - client_area_rect.top);
 
         D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties();
 
@@ -994,10 +993,9 @@ namespace hmgui {
         d2d1_dwrite_factory = i_d2d1_dwrite_factory;
         d2d1_dwrite_factory->AddRef();
 
-        RECT rect;
-        GetClientRect(handle_window, &rect);
+        GetClientRect(handle_window, &client_area_rect);
 
-        D2D1_SIZE_U size = D2D1::SizeU(rect.right - rect.left, rect.bottom - rect.top);
+        D2D1_SIZE_U size = D2D1::SizeU(client_area_rect.right - client_area_rect.left, client_area_rect.bottom - client_area_rect.top);
 
         D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties();
 
@@ -1227,10 +1225,10 @@ namespace hmgui {
         d2d1_dwrite_factory = i_d2d1_dwrite_factory;
         d2d1_dwrite_factory->AddRef();
 
-        RECT rect;
-        GetClientRect(handle_window, &rect);
+        RECT client_area_rect;
+        GetClientRect(handle_window, &client_area_rect);
 
-        D2D1_SIZE_U size = D2D1::SizeU(rect.right - rect.left, rect.bottom - rect.top);
+        D2D1_SIZE_U size = D2D1::SizeU(client_area_rect.right - client_area_rect.left, client_area_rect.bottom - client_area_rect.top);
 
         D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties();
 
@@ -1286,5 +1284,374 @@ namespace hmgui {
 
     void window_version::handle_exit() {
         show_window(SW_HIDE);
+    }
+
+    wc_sep_board::wc_sep_board() : wc_base() {}
+
+    ATOM wc_sep_board::register_class() {
+        window_class = {
+            sizeof(WNDCLASSEXW),
+            CS_HREDRAW | CS_VREDRAW,
+            window_proc,
+            0, 0,
+            GetModuleHandle(nullptr),
+            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
+            LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
+            (HBRUSH)(COLOR_WINDOW + 1),
+            nullptr,
+            L"Hook-Mark_GUI_SepBoard",
+            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
+        };
+
+        return RegisterClassExW(&window_class);
+    }
+
+    void window_sep_board::add_label_size(int i) {
+        if (label_width.size() <= i) {
+            label_width.resize(i + 1, 0.0f);
+            label_height.resize(i + 1, 0.0f);
+        }
+
+        std::wstring txt(i, L'0');
+        Microsoft::WRL::ComPtr<IDWriteTextLayout> temp_layout;
+
+        HRESULT hr = d2d1_dwrite_factory->CreateTextLayout(
+            txt.c_str(),
+            static_cast<UINT32>(txt.size()),
+            text_format_label,
+            1000.0f,
+            1000.0f,
+            temp_layout.GetAddressOf()
+        );
+
+        float text_width = 0.0f, text_height = 0.0f;
+        if (SUCCEEDED(hr)) {
+            DWRITE_TEXT_METRICS metrics;
+            temp_layout->GetMetrics(&metrics);
+            text_width = metrics.width;
+            text_height = metrics.height;
+        }
+
+        label_width[i] = text_width;
+        label_height[i] = text_height;
+    }
+
+    void window_sep_board::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
+        config_ref = config;
+        window_class.register_class();
+        create_window();
+        d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
+        update_rect();
+    }
+
+    void window_sep_board::update_rect() {
+        GetClientRect(handle_window, &client_area_rect);
+        client_area_rectf = rect_to_rectf(client_area_rect);
+        grid_area_rectf = D2D1::RectF(
+            client_area_rectf.left + config_ref.margin,
+            client_area_rectf.top + config_ref.margin,
+            client_area_rectf.right - config_ref.margin,
+            client_area_rectf.bottom - config_ref.margin
+        );
+        grid_area_rect = rectf_to_rect(grid_area_rectf);
+        grid_area_clip_rectf = cliped_rectf(grid_area_rectf);
+    }
+
+    bool window_sep_board::d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
+        d2d1_factory = i_d2d1_factory;
+        d2d1_factory->AddRef();
+        d2d1_dwrite_factory = i_d2d1_dwrite_factory;
+        d2d1_dwrite_factory->AddRef();
+
+        GetClientRect(handle_window, &client_area_rect);
+
+        D2D1_SIZE_U size = D2D1::SizeU(client_area_rect.right - client_area_rect.left, client_area_rect.bottom - client_area_rect.top);
+
+        D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties();
+
+        D2D1_HWND_RENDER_TARGET_PROPERTIES handle_window_props = D2D1::HwndRenderTargetProperties(handle_window, size);
+
+        HRESULT hr = d2d1_factory->CreateHwndRenderTarget(props, handle_window_props, &d2d1_render_target);
+        if (FAILED(hr)) return false;
+
+        UINT dpi = 96;
+        if (IsWindows10OrGreater()) {
+            dpi = GetDpiForWindow(handle_window);
+        }
+
+        FLOAT dpi_x = static_cast<FLOAT>(dpi);
+        FLOAT dpi_y = static_cast<FLOAT>(dpi);
+        d2d1_render_target->SetDpi(dpi_x, dpi_y);
+
+        hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
+        if (FAILED(hr)) return false;
+
+        hr = d2d1_dwrite_factory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_NORMAL,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            config_ref.label_size,
+            L"ja-JP",
+            &text_format_label
+        );
+
+        return SUCCEEDED(hr);
+    }
+
+    void window_sep_board::create_window() {
+        handle_window = CreateWindowExW(
+            0,
+            L"Hook-Mark_GUI_SepBoard",
+            L"盤面 - Hook-Mark GUI",
+            WS_OVERLAPPEDWINDOW,
+            CW_USEDEFAULT, CW_USEDEFAULT,
+            600, 600,
+            NULL, NULL, GetModuleHandle(nullptr), NULL
+        );
+
+        DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;
+        DwmSetWindowAttribute(handle_window, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
+
+        SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+    }
+
+    void window_sep_board::show_window(int show_command, float x, float y, hm::board_state i_board, hm::kifu_ver1 i_kifu, unsigned int i_kifu_current_turn) {
+        board = i_board;
+        current_kifu = i_kifu;
+        kifu_current_turn = i_kifu_current_turn;
+        ShowWindow(handle_window, show_command);
+        SetWindowPos(handle_window, nullptr, static_cast<int>(x), static_cast<int>(y), 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+        UpdateWindow(handle_window);
+    }
+
+    void window_sep_board::redraw() {
+        if (!d2d1_render_target || !d2d1_brush) return;
+        d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
+        draw_grid();
+    }
+
+    void window_sep_board::update_scroll_speed() {
+        scroll_speed = config_ref.grid_spacing / 0.3f;
+    }
+
+    void window_sep_board::draw_grid() {
+        if (!d2d1_render_target || !d2d1_brush) return;
+
+        const float grid_spacing = config_ref.grid_spacing;
+
+        d2d1_render_target->DrawRectangle(
+            grid_area_rectf,
+            d2d1_brush,
+            2.0f
+        );
+
+        float offset_x_mod = std::round(fmodf(grid_scroll_offset.x, grid_spacing));
+        if (offset_x_mod < 0) offset_x_mod += grid_spacing;
+        float offset_y_mod = std::round(fmodf(grid_scroll_offset.y, grid_spacing));
+        if (offset_y_mod < 0) offset_y_mod += grid_spacing;
+        float start_x = grid_area_rectf.left + grid_spacing - offset_x_mod;
+        float start_y = grid_area_rectf.bottom - offset_y_mod;
+
+        for (float x = start_x; x < grid_area_rectf.right; x += grid_spacing) {
+            d2d1_render_target->DrawLine(
+                D2D1::Point2F(x, grid_area_rectf.top),
+                D2D1::Point2F(x, grid_area_rectf.bottom),
+                d2d1_brush,
+                1.0f
+            );
+        }
+        for (float y = start_y; y >= grid_area_rectf.top; y -= grid_spacing) {
+            d2d1_render_target->DrawLine(
+                D2D1::Point2F(grid_area_rectf.left, y),
+                D2D1::Point2F(grid_area_rectf.right, y),
+                d2d1_brush,
+                1.0f
+            );
+        }
+
+        float axis_x = grid_area_rectf.left + (0) * grid_spacing - grid_scroll_offset.x;
+        if (axis_x >= grid_area_rectf.left && axis_x <= grid_area_rectf.right) {
+            d2d1_render_target->DrawLine(
+                D2D1::Point2F(axis_x, grid_area_rectf.top),
+                D2D1::Point2F(axis_x, grid_area_rectf.bottom),
+                d2d1_brush,
+                2.0f
+            );
+        }
+
+        float axis_y = grid_area_rectf.bottom - (0) * grid_spacing - grid_scroll_offset.y;
+        if (axis_y >= grid_area_rectf.top && axis_y <= grid_area_rectf.bottom) {
+            d2d1_render_target->DrawLine(
+                D2D1::Point2F(grid_area_rectf.left, axis_y),
+                D2D1::Point2F(grid_area_rectf.right, axis_y),
+                d2d1_brush,
+                2.0f
+            );
+        }
+
+        float axis_x1 = grid_area_rectf.left + (1) * grid_spacing - grid_scroll_offset.x;
+        if (axis_x1 >= grid_area_rectf.left && axis_x1 <= grid_area_rectf.right) {
+            d2d1_render_target->DrawLine(
+                D2D1::Point2F(axis_x1, grid_area_rectf.top),
+                D2D1::Point2F(axis_x1, grid_area_rectf.bottom),
+                d2d1_brush,
+                2.0f
+            );
+        }
+
+        float axis_y1 = grid_area_rectf.bottom - (1) * grid_spacing - grid_scroll_offset.y;
+        if (axis_y1 >= grid_area_rectf.top && axis_y1 <= grid_area_rectf.bottom) {
+            d2d1_render_target->DrawLine(
+                D2D1::Point2F(grid_area_rectf.left, axis_y1),
+                D2D1::Point2F(grid_area_rectf.right, axis_y1),
+                d2d1_brush,
+                2.0f
+            );
+        }
+
+        d2d1_render_target->PushAxisAlignedClip(
+            grid_area_clip_rectf,
+            D2D1_ANTIALIAS_MODE_PER_PRIMITIVE
+        );
+
+        draw_board();
+
+        float grid_width  = grid_area_rectf.right - grid_area_rectf.left;
+        float grid_height = grid_area_rectf.bottom - grid_area_rectf.top;
+
+        int visible_x_min = static_cast<int>(std::ceil((grid_scroll_offset.x) / grid_spacing - 0.5f)) - 1;
+        int visible_x_max = static_cast<int>(std::floor((grid_scroll_offset.x + grid_width) / grid_spacing - 0.5f)) + 1;
+        for (int x = visible_x_min; x <= visible_x_max; ++x) {
+            float cx = grid_area_rectf.left + (x + 0.5f) * grid_spacing - grid_scroll_offset.x;
+            std::wstring txt = std::to_wstring(x);
+
+            add_label_size(static_cast<int>(txt.size()));
+
+            float new_left = cx - label_width[txt.size()] / 2;
+
+            D2D1_RECT_F layout = D2D1::RectF(
+                new_left,
+                grid_area_rectf.bottom - 17,
+                new_left + grid_spacing,
+                grid_area_rectf.bottom
+            );
+
+            d2d1_render_target->DrawText(
+                txt.c_str(),
+                static_cast<UINT32>(txt.size()),
+                text_format_label,
+                layout,
+                d2d1_brush
+            );
+        }
+
+        int visible_y_min = static_cast<int>(std::ceil(-0.5f - grid_scroll_offset.y / grid_spacing)) - 1;
+        int visible_y_max = static_cast<int>(std::floor((grid_height - grid_scroll_offset.y) / grid_spacing - 0.5f)) + 1;
+        for (int y = visible_y_max; y >= visible_y_min; --y) {
+            float cy = grid_area_rectf.bottom - (y + 0.5f) * grid_spacing - grid_scroll_offset.y;
+
+            std::wstring txt = std::to_wstring(y);
+            D2D1_RECT_F layout = D2D1::RectF(
+                grid_area_rectf.left + 7,
+                cy - label_height[txt.size()] / 2,
+                grid_area_rectf.left + grid_spacing * 10,
+                cy - label_height[txt.size()] / 2
+            );
+
+            d2d1_render_target->DrawText(
+                txt.c_str(),
+                static_cast<UINT32>(txt.size()),
+                text_format_label,
+                layout,
+                d2d1_brush
+            );
+        }
+
+        d2d1_render_target->PopAxisAlignedClip();
+    }
+
+    void window_sep_board::draw_board() {
+        const float grid_spacing = config_ref.grid_spacing;
+
+        auto &has_piece = board.has_piece();
+        auto &is_first = board.is_first();
+        auto x_range = has_piece.index_range();
+        for (int x = x_range.min; x <= x_range.max; ++x) {
+            if (has_piece.need_resize(x)) continue;
+            auto y_range = has_piece[x].index_range();
+            for (int y = y_range.min; y <= y_range.max; ++y) {
+                if (has_piece[x].need_resize(y)) continue;
+                if (!has_piece[x][y]) continue;
+
+                float cx = grid_area_rectf.left + (x + 0.5f) * grid_spacing - grid_scroll_offset.x;
+                float cy = grid_area_rectf.bottom - (y + 0.5f) * grid_spacing - grid_scroll_offset.y;
+                float r = grid_spacing * 0.4f;
+
+                if (cx + r < grid_area_rectf.left || cx - r > grid_area_rectf.right ||
+                    cy + r < grid_area_rectf.top  || cy - r > grid_area_rectf.bottom)
+                    continue;
+
+                if (is_first[x][y]) {
+                    d2d1_brush->SetColor(red_color);
+                    d2d1_render_target->DrawEllipse(
+                        D2D1::Ellipse(D2D1::Point2F(cx, cy), r, r),
+                        d2d1_brush,
+                        2.0f
+                    );
+                } else {
+                    d2d1_brush->SetColor(blue_color);
+                    float offset = r * 0.7f;
+                    d2d1_render_target->DrawLine(
+                        D2D1::Point2F(cx - offset, cy - offset),
+                        D2D1::Point2F(cx + offset, cy + offset),
+                        d2d1_brush,
+                        2.0f
+                    );
+                    d2d1_render_target->DrawLine(
+                        D2D1::Point2F(cx - offset, cy + offset),
+                        D2D1::Point2F(cx + offset, cy - offset),
+                        d2d1_brush,
+                        2.0f
+                    );
+                }
+            }
+        }
+
+        if (!current_kifu.empty()) {
+            hm::pos p = current_kifu[kifu_current_turn];
+            d2d1_brush->SetColor(yellow_color);
+            d2d1_render_target->DrawRectangle(
+                D2D1::RectF(
+                    grid_area_rectf.left + (p.x + 1.0f) * grid_spacing - grid_scroll_offset.x,
+                    grid_area_rectf.bottom - (p.y + 1.0f) * grid_spacing - grid_scroll_offset.y,
+                    grid_area_rectf.left + (p.x) * grid_spacing - grid_scroll_offset.x,
+                    grid_area_rectf.bottom - (p.y) * grid_spacing - grid_scroll_offset.y
+                ),
+                d2d1_brush,
+                3.0f
+            );
+        }
+
+        d2d1_brush->SetColor(black_color);
+    }
+
+    void window_sep_board::handle_exit() {
+        show_window(SW_HIDE);
+    }
+
+    void window_sep_board::grid_scroll(float dx, float dy) {
+        grid_scroll_offset.x += dx;
+        grid_scroll_offset.y += dy;
+    }
+
+    void window_sep_board::set_grid_scroll(float x, float y) {
+        grid_scroll_offset.x = x;
+        grid_scroll_offset.y = y;
+    }
+
+    D2D1_POINT_2F window_sep_board::get_grid_scroll() const {
+        return grid_scroll_offset;
     }
 }

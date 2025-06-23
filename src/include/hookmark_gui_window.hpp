@@ -125,7 +125,7 @@ namespace hmgui {
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void update_rect();
-            void update_config();
+            void update_scroll_speed();
             void initialize_scroll();
             void add_label_size(int i);
             void create_window();
@@ -260,6 +260,54 @@ namespace hmgui {
             void create_window(HWND handle_parent_window);
             void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT);
             void redraw();
+            void handle_exit();
+            LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
+    };
+
+    class wc_sep_board final : public wc_base {
+        public:
+            wc_sep_board();
+            ATOM register_class() override;
+    };
+
+    class window_sep_board final : public window_base {
+        public:
+            wc_sep_board window_class;
+            window_conf &config_ref;
+
+            ID2D1Factory *d2d1_factory;
+            IDWriteFactory *d2d1_dwrite_factory;
+            ID2D1HwndRenderTarget *d2d1_render_target;
+            ID2D1SolidColorBrush *d2d1_brush;
+            D2D1_RECT_F client_area_rectf;
+            RECT client_area_rect;
+            D2D1_RECT_F grid_area_rectf;
+            RECT grid_area_rect;
+            D2D1_RECT_F grid_area_clip_rectf;
+            D2D1_POINT_2F grid_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
+            std::vector<float> label_width;
+            std::vector<float> label_height;
+            IDWriteTextFormat *text_format_label;
+
+            hm::board_state board;
+            hm::kifu_ver1 current_kifu;
+            int kifu_current_turn = 0;
+            float scroll_speed = 10.0f;
+
+            window_sep_board(window_conf &config) : config_ref(config) {};
+            bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
+            void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
+            void create_window();
+            void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT, hm::board_state i_board = hm::board_state(), hm::kifu_ver1 i_kifu = hm::kifu_ver1(), unsigned int i_kifu_current_turn = 0);
+            void update_rect();
+            void redraw();
+            void add_label_size(int i);
+            void update_scroll_speed();
+            void draw_grid();
+            void draw_board();
+            void grid_scroll(float dx, float dy);
+            void set_grid_scroll(float x, float y);
+            D2D1_POINT_2F get_grid_scroll() const;
             void handle_exit();
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
     };

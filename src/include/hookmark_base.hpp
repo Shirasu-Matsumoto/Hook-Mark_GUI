@@ -92,6 +92,12 @@ namespace hm {
         public:
             board_state() {}
 
+            void operator=(const board_state &other) {
+                _has_piece = other._has_piece;
+                _is_first = other._is_first;
+                _current_turn = other._current_turn;
+            }
+
             void progress(int x, int y) {
                 ensure_size(x, y);
                 if (_has_piece[x][y]) {

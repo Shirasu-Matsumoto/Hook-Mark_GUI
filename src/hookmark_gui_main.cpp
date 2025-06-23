@@ -11,6 +11,8 @@ hmgui::window_settings settings_window(grobal_config);
 hmgui::wc_settings settings_window_class;
 hmgui::window_version version_window;
 hmgui::wc_version version_window_class;
+hmgui::window_sep_board sep_board_window(grobal_config);
+hmgui::wc_sep_board sep_board_window_class;
 hmgui::menu_main main_menu;
 hmgui::menu_item_popup  main_menu_file,
                         main_menu_edit,
@@ -43,7 +45,8 @@ IDWriteFactory *grobal_d2d1_dwrite_factory;
 
 bool ctrl_down = false;
 bool key_held[256] = {};
-UINT_PTR timer_id = 1;
+UINT_PTR main_timer_id = 1;
+UINT_PTR sep_board_timer_id = 2;
 
 namespace hmgui {
     void update_title() {
@@ -209,8 +212,9 @@ namespace hmgui {
     LRESULT CALLBACK window_main::handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) {
         switch (message) {
             case WM_TIMER: {
-                if (w_param == timer_id) {
+                if (w_param == main_timer_id) {
                     if (!ctrl_down) return 0;
+                    if (GetForegroundWindow() != handle_window) return 0;
                     if (key_held['H']) grid_scroll(-scroll_speed, 0);
                     if (key_held['L']) grid_scroll(scroll_speed, 0);
                     if (key_held['J']) grid_scroll(0, scroll_speed);
@@ -266,7 +270,7 @@ namespace hmgui {
                 return 0;
             }
             case WM_DESTROY: {
-                KillTimer(handle_window, timer_id);
+                KillTimer(handle_window, main_timer_id);
                 newgame_window.release();
                 handle_exit();
                 return 0;
@@ -447,6 +451,7 @@ namespace hmgui {
                         break;
                     }
                     case ID_MENU_VIEW_BOARD_SEPARATE_WINDOW: {
+                        sep_board_window.show_window(SW_SHOW, window_area_rectf.left + 30.0f, window_area_rectf.top + 30.0f, board, current_kifu, kifu_current_turn);
                         break;
                     }
                     case ID_MENU_GAME_NEW: {
@@ -970,6 +975,115 @@ namespace hmgui {
         }
         return DefWindowProcW(handle_window, message, w_param, l_param);
     }
+
+    LRESULT CALLBACK window_sep_board::handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) {
+        switch (message) {
+            case WM_PAINT: {
+                PAINTSTRUCT ps;
+                HDC handle_device_context = BeginPaint(handle_window, &ps);
+                d2d1_render_target->BeginDraw();
+                redraw();
+                d2d1_render_target->EndDraw();
+                EndPaint(handle_window, &ps);
+                return 0;
+            }
+            case WM_CLOSE: {
+                handle_exit();
+                main_window.d2d1_initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
+                main_window.update_rect();
+                return 0;
+            }
+            case WM_DPICHANGED: {
+                UINT dpi_x = HIWORD(w_param);
+                UINT dpi_y = LOWORD(w_param);
+                update_rect();
+
+                RECT* suggested_rect = (RECT*)l_param;
+                SetWindowPos(handle_window,
+                            NULL,
+                            suggested_rect->left,
+                            suggested_rect->top,
+                            suggested_rect->right - suggested_rect->left,
+                            suggested_rect->bottom - suggested_rect->top,
+                            SWP_NOZORDER | SWP_NOACTIVATE);
+
+                if (d2d1_render_target) {
+                    d2d1_render_target->SetDpi((FLOAT)dpi_x, (FLOAT)dpi_y);
+                }
+
+                InvalidateRect(handle_window, NULL, TRUE);
+                return 0;
+            }
+            case WM_SIZE: {
+                UINT width = LOWORD(l_param);
+                UINT height = HIWORD(l_param);
+                update_rect();
+                if (d2d1_render_target)
+                {
+                    D2D1_SIZE_U size = D2D1::SizeU(width, height);
+                    d2d1_render_target->Resize(size);
+                }
+                InvalidateRect(handle_window, nullptr, FALSE);
+                return 0;
+            }
+            case WM_MOUSEWHEEL: {
+                POINT point = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+                ScreenToClient(handle_window, &point);
+
+                if (PtInRect(&grid_area_rect, point)) {
+                    short delta = GET_WHEEL_DELTA_WPARAM(w_param);
+                    if (ctrl_down) {
+                        grid_scroll((float)-delta / 8, 0);
+                    }
+                    else {
+                        grid_scroll(0, (float)-delta / 8);
+                    }
+                    InvalidateRect(handle_window, nullptr, FALSE);
+                }
+                return 0;
+            }
+            case WM_MOUSEHWHEEL: {
+                POINT point = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+                ScreenToClient(handle_window, &point);
+
+                if (PtInRect(&grid_area_rect, point)) {
+                    short delta = GET_WHEEL_DELTA_WPARAM(w_param);
+                    grid_scroll((float)delta / 8, 0);
+                    InvalidateRect(handle_window, nullptr, FALSE);
+                }
+
+                return 0;
+            }
+            case WM_KEYDOWN: {
+                int virtual_key = static_cast<int>(w_param);
+                key_held[virtual_key] = true;
+                if (virtual_key == VK_CONTROL) ctrl_down = true;
+                return 0;
+            }
+            case WM_KEYUP: {
+                int virtual_key = static_cast<int>(w_param);
+                key_held[virtual_key] = false;
+                if (virtual_key == VK_CONTROL) ctrl_down = false;
+                return 0;
+            }
+            case WM_TIMER: {
+                if (w_param == sep_board_timer_id) {
+                    if (!ctrl_down) return 0;
+                    if (GetForegroundWindow() != handle_window) return 0;
+                    if (key_held['H']) grid_scroll(-scroll_speed, 0);
+                    if (key_held['L']) grid_scroll(scroll_speed, 0);
+                    if (key_held['J']) grid_scroll(0, scroll_speed);
+                    if (key_held['K']) grid_scroll(0, -scroll_speed);
+                    InvalidateRect(handle_window, nullptr, FALSE);
+                }
+                return 0;
+            }
+            default: {
+                return DefWindowProcW(handle_window, message, w_param, l_param);
+            }
+        }
+        return DefWindowProcW(handle_window, message, w_param, l_param);
+    }
 }
 
 int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
@@ -984,13 +1098,15 @@ int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
     newgame_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
     settings_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
     version_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
+    sep_board_window.initialize(grobal_config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
     main_window.show_window();
 
     SetMenu(main_window, main_menu);
     EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
     EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
     DrawMenuBar(main_window);
-    timer_id = SetTimer(main_window, timer_id, 16, nullptr);
+    main_timer_id = SetTimer(main_window, main_timer_id, 16, nullptr);
+    sep_board_timer_id = SetTimer(sep_board_window, sep_board_timer_id, 16, nullptr);
 
     MSG message;
     while (true) {
