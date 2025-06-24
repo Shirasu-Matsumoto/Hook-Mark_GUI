@@ -51,14 +51,10 @@ UINT_PTR sep_board_timer_id = 2;
 
 namespace hmgui {
     void update_title() {
-        if (main_window.current_kifu_path.empty()) {
-            SetWindowTextW(main_window, L"Hook-Mark GUI");
-        } else {
-            std::filesystem::path path(main_window.current_kifu_path);
-            std::wstring filename = path.filename().wstring();
-            std::wstring title = L"Hook-Mark GUI - " + filename + L"\0";
-            SetWindowTextW(main_window, title.c_str());
-        }
+        std::filesystem::path path(main_window.current_kifu_path);
+        std::wstring filename = path.filename().wstring();
+        std::wstring title = (main_window.current_kifu_path.empty() ? L"無題" : filename) + (main_window.kifu_saved ? L"" : L" *") + L" - Hook-Mark GUI" + L"\0";
+        SetWindowTextW(main_window, title.c_str());
     }
 
     float to_float(const std::string &str) {
@@ -883,6 +879,7 @@ namespace hmgui {
                 PAINTSTRUCT paint_struct;
                 HDC handle_device_context = BeginPaint(handle_window, &paint_struct);
                 d2d1_render_target->BeginDraw();
+                update_title();
                 redraw();
                 d2d1_render_target->EndDraw();
                 EndPaint(handle_window, &paint_struct);
