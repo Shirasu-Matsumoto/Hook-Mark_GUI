@@ -117,6 +117,7 @@ namespace hmgui {
             float initial_grid_and_kifu_size_y = 0.0f;
 
             bool is_gaming = false;
+            bool is_editing = false;
 
             int do_over_button_state = 0;
             int resign_button_state = 0;
@@ -177,14 +178,33 @@ namespace hmgui {
             ID2D1HwndRenderTarget *d2d1_render_target;
             ID2D1SolidColorBrush *d2d1_brush;
             IDWriteTextFormat *text_format_default;
+            IDWriteTextFormat *text_format_button_label;
+            D2D1_RECT_F client_area_rectf;
+            RECT client_area_rect;
+            D2D1_RECT_F newgame_button_area_rectf;
+            RECT newgame_button_area_rect;
 
-            HWND handle_newgame_button = nullptr;
+            std::vector<std::wstring> newgame_config_keys = {
+                L"現在の局面から開始"
+            };
+            std::vector<D2D1_RECT_F> newgame_config_area_rectf;
+            std::vector<RECT> newgame_config_area_rect;
+            std::vector<int> newgame_config_state;
+            size_t newgame_config_size = newgame_config_keys.size();
 
-            window_newgame(window_conf &config) : config_ref(config) {};
+            int newgame_button_state = 0;
+
+            window_newgame(window_conf &config)
+                : config_ref(config),
+                  newgame_config_area_rectf(newgame_config_size),
+                  newgame_config_state(newgame_config_size),
+                  newgame_config_area_rect(newgame_config_size)
+            {};
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window);
             void create_window(HWND handle_parent_window);
             void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT);
+            void update_rect();
             void redraw();
             void handle_exit();
             void release();
@@ -235,6 +255,7 @@ namespace hmgui {
             void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT);
             void redraw();
             void handle_exit();
+            void release();
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
     };
 
@@ -261,6 +282,7 @@ namespace hmgui {
             void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT);
             void redraw();
             void handle_exit();
+            void release();
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
     };
 
@@ -309,6 +331,7 @@ namespace hmgui {
             void set_grid_scroll(float x, float y);
             D2D1_POINT_2F get_grid_scroll() const;
             void handle_exit();
+            void release();
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
     };
 }

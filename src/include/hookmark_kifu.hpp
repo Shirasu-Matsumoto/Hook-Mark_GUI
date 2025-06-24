@@ -2,11 +2,13 @@
 #define __HOOKMARK_KIFU_HPP__
 
 #include <hookmark_kifu_base.hpp>
+#include <hookmark_base.hpp>
 
 namespace hm {
     class kifu_ver1 : public kifu_base {
         private:
             std::string _config;
+            bool _is_resigned;
 
         public:
             kifu_ver1() : kifu_base() {}
@@ -111,8 +113,17 @@ namespace hm {
                 ifs.close();
             }
 
+            void resign() {
+                _is_resigned = true;
+            }
+
+            bool is_resigned() {
+                return _is_resigned;
+            }
+
             void clear() override {
                 data().clear();
+                _is_resigned = false;
                 _config.clear();
             }
 

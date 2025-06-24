@@ -60,6 +60,11 @@ namespace hmgui {
             WNDCLASSEXW window_class;
 
             wc_base() {}
+            ~wc_base() {
+                if (window_class.hInstance) {
+                    UnregisterClassW(window_class.lpszClassName, window_class.hInstance);
+                }
+            }
             static LRESULT CALLBACK window_proc(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) {
                 window_base *this_window_ptr = reinterpret_cast<window_base *>(GetWindowLongPtr(handle_window, GWLP_USERDATA));
                 if (this_window_ptr) {
@@ -124,6 +129,11 @@ namespace hmgui {
             }
             menu_item(UINT_PTR _id) : id(_id) {
                 create_menu_item();
+            }
+            ~menu_item() {
+                if (handle_menu) {
+                    DestroyMenu(handle_menu);
+                }
             }
             virtual void create_menu_item() {
                 handle_menu = CreateMenu();

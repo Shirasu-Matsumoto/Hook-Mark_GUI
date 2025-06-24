@@ -31,6 +31,7 @@ hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
                         main_menu_edit_move_forward(ID_MENU_EDIT_MOVE_FORWARD),
                         main_menu_edit_step_back(ID_MENU_EDIT_STEP_BACK),
                         main_menu_edit_jump_to_first_move(ID_MENU_EDIT_JUMP_TO_FIRST_MOVE),
+                        main_menu_edit_board(ID_MENU_EDIT_BOARD),
                         main_menu_edit_comment(ID_MENU_EDIT_COMMENT),
                         main_menu_edit_kifu_info(ID_MENU_EDIT_KIFU_INFO),
                         main_menu_view_board_scroll_reset(ID_MENU_VIEW_BOARD_SCROLL_RESET),
@@ -168,6 +169,18 @@ namespace hmgui {
         else return 2;
     }
 
+    int check_resign() {
+        int ret = MessageBoxW(
+            main_window,
+            L"自動で投了されます。よろしいですか？",
+            L"確認",
+            MB_ICONWARNING | MB_YESNOCANCEL | MB_DEFBUTTON1
+        );
+        if (ret == IDYES) return 0;
+        else if (ret == IDNO) return 1;
+        else return 2;
+    }
+
     void menu_main::create_menu() {
         handle_menu = CreateMenu();
         if (handle_menu) {
@@ -192,6 +205,8 @@ namespace hmgui {
             AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_move_forward, L"一手進む");
             AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_step_back, L"一手戻る");
             AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_jump_to_first_move, L"初手に戻る");
+            AppendMenuW(main_menu_edit, MF_SEPARATOR, 0, NULL);
+            AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_board, L"局面編集を開始");
             AppendMenuW(main_menu_edit, MF_SEPARATOR, 0, NULL);
             AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_comment, L"コメントを編集");
             AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_kifu_info, L"棋譜情報を編集");
@@ -272,6 +287,9 @@ namespace hmgui {
             case WM_DESTROY: {
                 KillTimer(handle_window, main_timer_id);
                 newgame_window.release();
+                settings_window.release();
+                sep_board_window.release();
+                version_window.release();
                 handle_exit();
                 return 0;
             }
@@ -303,12 +321,16 @@ namespace hmgui {
                         if (filepath.empty()) {
                             break;
                         }
+                        if (is_editing) {
+                            SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), NULL);
+                        }
                         try {
                             current_kifu.kifu_load(filepath);
                         }
                         catch (const std::exception &e) {
                             MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
                         }
+                        current_kifu.resign();
                         kifu_current_turn = current_kifu.size() - 1;
                         kifu_saved = true;
                         config_ref.open_file = filepath;
@@ -323,6 +345,21 @@ namespace hmgui {
                             SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_SAVE_AS, 0), 0);
                         }
                         else {
+                            if (!current_kifu.is_resigned()) {
+                                int ret = check_resign();
+                                switch (ret) {
+                                    case 0: {
+                                        current_kifu.resign();
+                                        break;
+                                    }
+                                    case 1: {
+                                        return 0;
+                                    }
+                                    case 2: {
+                                        return 0;
+                                    }
+                                }
+                            }
                             try {
                                 current_kifu.kifu_save(utf16_to_utf8(current_kifu_path));
                                 kifu_saved = true;
@@ -336,6 +373,21 @@ namespace hmgui {
                     }
                     case ID_MENU_FILE_SAVE_AS: {
                         std::wstring result;
+                        if (!current_kifu.is_resigned()) {
+                            int ret = check_resign();
+                            switch (ret) {
+                                case 0: {
+                                    current_kifu.resign();
+                                    break;
+                                }
+                                case 1: {
+                                    return 0;
+                                }
+                                case 2: {
+                                    return 0;
+                                }
+                            }
+                        }
                         show_file_save_dialog(result);
                         current_kifu_path = result;
                         std::string filepath = utf16_to_utf8(result);
@@ -345,6 +397,9 @@ namespace hmgui {
                         try {
                             current_kifu.kifu_save(filepath);
                             kifu_saved = true;
+                            if (is_editing) {
+                                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), NULL);
+                            }
                         }
                         catch (const std::exception &e) {
                             MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(),
@@ -374,6 +429,9 @@ namespace hmgui {
                         kifu_current_turn = 0;
                         board.clear();
                         is_gaming = false;
+                        if (is_editing) {
+                            SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), NULL);
+                        }
                         EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
                         EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
                         DrawMenuBar(main_window);
@@ -439,6 +497,46 @@ namespace hmgui {
                         }
                         break;
                     }
+                    case ID_MENU_EDIT_BOARD: {
+                        is_editing = !is_editing;
+                        if (is_editing) {
+                            if (!kifu_saved) {
+                                int ret = check_nosave();
+                                switch (ret) {
+                                    case 0: {
+                                        SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                        break;
+                                    }
+                                    case 1: {
+                                        break;
+                                    }
+                                    case 2: {
+                                        return 0;
+                                    }
+                                }
+                            }
+                            is_gaming = false;
+                            current_kifu.clear();
+                            MENUITEMINFOW menu_item_info = {};
+                            menu_item_info.cbSize = sizeof(MENUITEMINFOW);
+                            menu_item_info.fMask = MIIM_STRING;
+                            menu_item_info.dwTypeData = const_cast<LPWSTR>(L"局面編集を終了");
+                            menu_item_info.cch = lstrlenW(L"局面編集を終了");
+                            SetMenuItemInfoW(main_menu_edit, main_menu_edit_board, FALSE, &menu_item_info);
+                            DrawMenuBar(main_window);
+                            InvalidateRect(handle_window, nullptr, FALSE);
+                        } else {
+                            MENUITEMINFOW menu_item_info = {};
+                            menu_item_info.cbSize = sizeof(MENUITEMINFOW);
+                            menu_item_info.fMask = MIIM_STRING;
+                            menu_item_info.dwTypeData = const_cast<LPWSTR>(L"局面編集を開始");
+                            menu_item_info.cch = lstrlenW(L"局面編集を開始");
+                            SetMenuItemInfoW(main_menu_edit, main_menu_edit_board, FALSE, &menu_item_info);
+                            DrawMenuBar(main_window);
+                            InvalidateRect(handle_window, nullptr, FALSE);
+                        }
+                        break;
+                    }
                     case ID_MENU_EDIT_COMMENT: {
                         break;
                     }
@@ -470,14 +568,15 @@ namespace hmgui {
                             }
                             InvalidateRect(handle_window, nullptr, FALSE);
                         }
-                        EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
-                        EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
                         DrawMenuBar(main_window);
                         return 0;
                     }
                     case ID_MENU_GAME_RESIGN: {
                         if (!is_gaming) return 0;
                         is_gaming = false;
+                        current_kifu.resign();
+                        EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
+                        EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
                         InvalidateRect(handle_window, nullptr, FALSE);
                         MessageBoxW(NULL, std::wstring(L"まで" + std::to_wstring(current_kifu.size()) + L"手で" + (((current_kifu.size() - 1) % 2 == 0) ? L"先手" : L"後手") + L"の勝ち").c_str(), L"", MB_OK);
                         break;
@@ -527,6 +626,25 @@ namespace hmgui {
 
                 return 0;
             }
+            case WM_RBUTTONDOWN: {
+                POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+
+                if (PtInRect(&grid_area_rect, pt) && is_editing) {
+                    float gx = static_cast<float>(pt.x);
+                    float gy = static_cast<float>(pt.y);
+                    float fx = (gx - grid_area_rectf.left + main_window.grid_scroll_offset.x) / config_ref.grid_spacing - 0.5f;
+                    float fy = (grid_area_rectf.bottom - main_window.grid_scroll_offset.y - gy) / config_ref.grid_spacing - 0.5f;
+                    int x = static_cast<int>(std::round(fx));
+                    int y = static_cast<int>(std::round(fy));
+                    try {
+                        main_window.board.set(x, y, 0);
+                        InvalidateRect(handle_window, nullptr, FALSE);
+                    } catch (...) {
+                        return 0;
+                    }
+                    return 0;
+                }
+            }
             case WM_LBUTTONDOWN: {
                 POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
 
@@ -549,6 +667,27 @@ namespace hmgui {
                             kifu_saved = false;
                             InvalidateRect(handle_window, nullptr, FALSE);
                             if (board.is_win()) SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_GAME_RESIGN, 0), 0);
+                        }
+                    } catch (...) {
+                        return 0;
+                    }
+                    return 0;
+                }
+                if (PtInRect(&grid_area_rect, pt) && is_editing) {
+                    float gx = static_cast<float>(pt.x);
+                    float gy = static_cast<float>(pt.y);
+                    float fx = (gx - grid_area_rectf.left + main_window.grid_scroll_offset.x) / config_ref.grid_spacing - 0.5f;
+                    float fy = (grid_area_rectf.bottom - main_window.grid_scroll_offset.y - gy) / config_ref.grid_spacing - 0.5f;
+                    int x = static_cast<int>(std::round(fx));
+                    int y = static_cast<int>(std::round(fy));
+                    try {
+                        if (ctrl_down) {
+                            main_window.board.set(x, y, 2);
+                            InvalidateRect(handle_window, nullptr, FALSE);
+                        }
+                        else {
+                            main_window.board.set(x, y, 1);
+                            InvalidateRect(handle_window, nullptr, FALSE);
                         }
                     } catch (...) {
                         return 0;
@@ -641,9 +780,13 @@ namespace hmgui {
                 if (resign_button_state == 2) {
                     if (!is_gaming) return 0;
                     is_gaming = false;
+                    current_kifu.resign();
+                    EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
+                    EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
+                    resign_button_state = 1;
                     InvalidateRect(handle_window, nullptr, FALSE);
                     MessageBoxW(NULL, std::wstring(L"まで" + std::to_wstring(current_kifu.size()) + L"手で" + (((current_kifu.size() - 1) % 2 == 0) ? L"先手" : L"後手") + L"の勝ち").c_str(), L"", MB_OK);
-                    resign_button_state = 1;
+                    return 0;
                 }
 
                 break;
@@ -807,38 +950,73 @@ namespace hmgui {
 
     LRESULT CALLBACK window_newgame::handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) {
         switch (message) {
-            case WM_COMMAND: {
-                switch (LOWORD(w_param)) {
-                    case ID_NEWGAME_BUTTON: {
-                        if (!main_window.kifu_saved) {
-                            int ret = check_nosave();
-                            switch (ret) {
-                                case 0: {
-                                    SendMessageW(main_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
-                                }
-                                case 1: {
-                                    break;
-                                }
-                                case 2: {
-                                    return 0;
-                                }
+            case WM_MOUSEMOVE: {
+                POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+
+                if (PtInRect(&newgame_button_area_rect, pt)) {
+                    newgame_button_state = 1;
+                }
+                else {
+                    newgame_button_state = 0;
+                }
+                InvalidateRect(handle_window, nullptr, FALSE);
+                return 0;
+            }
+            case WM_LBUTTONDOWN: {
+                POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+
+                if (PtInRect(&newgame_button_area_rect, pt)) {
+                    newgame_button_state = 2;
+                    InvalidateRect(handle_window, nullptr, FALSE);
+                    return 0;
+                }
+
+                for (int i = 0; i < newgame_config_keys.size(); i++) {
+                    if (PtInRect(&newgame_config_area_rect[i], pt)) {
+                        newgame_config_state[i] = !newgame_config_state[i];
+                        InvalidateRect(handle_window, nullptr, FALSE);
+                        return 0;
+                    }
+                }
+                return 0;
+            }
+            case WM_LBUTTONUP: {
+                POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
+
+                if (PtInRect(&newgame_button_area_rect, pt)) {
+                    if (!main_window.kifu_saved) {
+                        int ret = check_nosave();
+                        switch (ret) {
+                            case 0: {
+                                SendMessageW(main_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                            }
+                            case 1: {
+                                break;
+                            }
+                            case 2: {
+                                return 0;
                             }
                         }
-                        main_window.board.clear();
-                        main_window.current_kifu.clear();
-                        main_window.kifu_current_turn = 0;
-                        main_window.is_gaming = true;
-                        EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_ENABLED);
-                        EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_ENABLED);
-                        DrawMenuBar(main_window);
-                        main_window.kifu_saved = false;
-                        main_window.current_kifu_path.clear();
-                        main_window.initialize_scroll();
-                        update_title();
-                        InvalidateRect(main_window, nullptr, FALSE);
-                        handle_exit();
-                        break;
                     }
+                    if (main_window.is_editing) {
+                        SendMessageW(main_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), NULL);
+                    }
+                    main_window.board.clear();
+                    main_window.current_kifu.clear();
+                    main_window.kifu_current_turn = 0;
+                    main_window.is_gaming = true;
+                    EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_ENABLED);
+                    EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_ENABLED);
+                    DrawMenuBar(main_window);
+                    main_window.kifu_saved = false;
+                    main_window.current_kifu_path.clear();
+                    main_window.initialize_scroll();
+                    update_title();
+                    InvalidateRect(main_window, nullptr, FALSE);
+                    handle_exit();
+                    newgame_button_state = 1;
+                    InvalidateRect(handle_window, nullptr, FALSE);
+                    return 0;
                 }
             }
             case WM_PAINT: {

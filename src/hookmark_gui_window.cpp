@@ -48,7 +48,7 @@ namespace hmgui {
 
         d2d1_render_target->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
 
-        hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
+        hr = d2d1_render_target->CreateSolidColorBrush(black_color, &d2d1_brush);
         if (FAILED(hr)) return false;
 
         hr = d2d1_dwrite_factory->CreateTextFormat(
@@ -309,7 +309,7 @@ namespace hmgui {
 
     void window_main::redraw() {
         if (!d2d1_render_target || !d2d1_brush) return;
-        d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
+        d2d1_render_target->Clear(white_color);
         this->draw_grid();
         this->draw_kifu();
         this->draw_config();
@@ -661,7 +661,7 @@ namespace hmgui {
             draw_kifu_single(moves[i], i);
         }
 
-        if (!moves.size() == 0 && !is_gaming) draw_kifu_single_last(static_cast<unsigned int>(moves.size()));
+        if (current_kifu.is_resigned()) draw_kifu_single_last(static_cast<unsigned int>(moves.size()));
 
         d2d1_render_target->PopAxisAlignedClip();
     }
@@ -704,15 +704,15 @@ namespace hmgui {
         D2D1_COLOR_F color;
         switch (do_over_button_state) {
             case 0: {
-                color = D2D1::ColorF(D2D1::ColorF::White);
+                color = white_color;
                 break;
             }
             case 1: {
-                color = D2D1::ColorF(D2D1::ColorF::WhiteSmoke);
+                color = white_smoke_color;
                 break;
             }
             case 2: {
-                color = D2D1::ColorF(D2D1::ColorF::LightGray);
+                color = light_gray_color;
                 break;
             }
         }
@@ -720,15 +720,15 @@ namespace hmgui {
         d2d1_render_target->FillRectangle(do_over_button_area_rectf, d2d1_brush);
         switch (resign_button_state) {
             case 0: {
-                color = D2D1::ColorF(D2D1::ColorF::White);
+                color = white_color;
                 break;
             }
             case 1: {
-                color = D2D1::ColorF(D2D1::ColorF::WhiteSmoke);
+                color = white_smoke_color;
                 break;
             }
             case 2: {
-                color = D2D1::ColorF(D2D1::ColorF::LightGray);
+                color = light_gray_color;
                 break;
             }
         }
@@ -770,7 +770,7 @@ namespace hmgui {
         kifu_scroll_offset.y += dy;
 
         const auto &moves = current_kifu.data();
-        float total_height = static_cast<float>(moves.size() + 1) * config_ref.kifu_spacing + config_ref.padding;
+        float total_height = static_cast<float>(moves.size() + static_cast<int>(!is_gaming)) * config_ref.kifu_spacing + config_ref.padding;
         float view_height = kifu_area_rectf.bottom - kifu_area_rectf.top;
 
         if (kifu_scroll_offset.y < 0.0f) {
@@ -883,12 +883,13 @@ namespace hmgui {
     }
 
     void window_newgame::initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window) {
+        newgame_config_area_rect.resize(newgame_config_size);
+        newgame_config_area_rectf.resize(newgame_config_size);
+        newgame_config_state.resize(newgame_config_size);
         window_class.register_class();
         create_window(handle_parent_window);
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
-
-        handle_newgame_button = CreateWindowExW(NULL, L"BUTTON", L"対局開始", WS_CHILD | WS_VISIBLE, 10, 10, 300, 25, handle_window, reinterpret_cast<HMENU>(static_cast<uintptr_t>(ID_NEWGAME_BUTTON)), GetModuleHandleW(nullptr), nullptr);
-        ShowWindow(handle_newgame_button, SW_SHOW);
+        update_rect();
     }
 
     bool window_newgame::d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
@@ -918,7 +919,7 @@ namespace hmgui {
         FLOAT dpi_y = static_cast<FLOAT>(dpi);
         d2d1_render_target->SetDpi(dpi_x, dpi_y);
 
-        hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
+        hr = d2d1_render_target->CreateSolidColorBrush(black_color, &d2d1_brush);
         if (FAILED(hr)) return false;
 
         hr = d2d1_dwrite_factory->CreateTextFormat(
@@ -933,11 +934,108 @@ namespace hmgui {
         );
         if (FAILED(hr)) return false;
 
-        return true;
+        hr = d2d1_dwrite_factory->CreateTextFormat(
+            L"Segoe UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_NORMAL,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            18.0f,
+            L"ja-JP",
+            &text_format_button_label
+        );
+        if (FAILED(hr)) return false;
+
+        text_format_button_label->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+        text_format_button_label->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+
+        text_format_default->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+
+        return SUCCEEDED(hr);
+    }
+
+    void window_newgame::update_rect() {
+        GetClientRect(handle_window, &client_area_rect);
+        client_area_rectf = rect_to_rectf(client_area_rect);
+        newgame_button_area_rectf = D2D1::RectF(
+            client_area_rectf.right / 2 - 50.0f + config_ref.margin,
+            client_area_rectf.bottom - 50.0f + config_ref.margin,
+            client_area_rectf.right / 2 + 50.0f - config_ref.margin,
+            client_area_rectf.bottom - config_ref.margin
+        );
+        newgame_button_area_rect = rectf_to_rect(newgame_button_area_rectf);
+        for (int i = 0; i < newgame_config_size; i++) {
+            newgame_config_area_rectf[i] = D2D1::RectF(
+                8.0f,
+                8.0f + i * 25.0f,
+                22.0f,
+                22.0f + i * 25.0f
+            );
+            newgame_config_area_rect[i] = rectf_to_rect(newgame_config_area_rectf[i]);
+        }
     }
 
     void window_newgame::redraw() {
-        d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
+        D2D1_COLOR_F color;
+
+        d2d1_render_target->Clear(white_color);
+
+        for (int i = 0; i < newgame_config_size; i++) {
+            d2d1_render_target->DrawEllipse(
+                D2D1::Ellipse({ 15.0f, 15.0f + i * 25.0f }, 7.0f, 7.0f),
+                d2d1_brush,
+                2.0f
+            );
+
+            if (newgame_config_state[i]) {
+                d2d1_render_target->FillEllipse(
+                    D2D1::Ellipse({ 15.0f, 15.0f + i * 25.0f }, 4.0f, 4.0f),
+                    d2d1_brush
+                );
+            }
+
+            d2d1_render_target->DrawText(
+                newgame_config_keys[i].c_str(),
+                static_cast<UINT32>(newgame_config_keys[i].size()),
+                text_format_default,
+                D2D1::RectF(
+                    30.0f,
+                    8.0f + i * 25.0f,
+                    570.0f,
+                    22.0f + i * 25.0f
+                ),
+                d2d1_brush
+            );
+        }
+
+        switch (newgame_button_state) {
+            case 0: {
+                color = white_color;
+                break;
+            }
+            case 1: {
+                color = white_smoke_color;
+                break;
+            }
+            case 2: {
+                color = light_gray_color;
+                break;
+            }
+        }
+        d2d1_brush->SetColor(color);
+        d2d1_render_target->FillRectangle(newgame_button_area_rectf, d2d1_brush);
+
+        d2d1_brush->SetColor(black_color);
+
+        d2d1_render_target->DrawRectangle(newgame_button_area_rectf, d2d1_brush, 2.0f);
+        d2d1_render_target->DrawText(
+            L"対局開始",
+            4,
+            text_format_button_label,
+            newgame_button_area_rectf,
+            d2d1_brush
+        );
+
         return;
     }
 
@@ -1015,7 +1113,7 @@ namespace hmgui {
 
         d2d1_render_target->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
 
-        hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
+        hr = d2d1_render_target->CreateSolidColorBrush(black_color, &d2d1_brush);
         if (FAILED(hr)) return false;
 
         hr = d2d1_dwrite_factory->CreateTextFormat(
@@ -1113,6 +1211,16 @@ namespace hmgui {
         show_window(SW_HIDE);
     }
 
+    void window_settings::release() {
+        DestroyWindow(handle_window);
+        for (auto &edit_handle : edit_controls) {
+            DestroyWindow(edit_handle);
+        }
+        text_format_default->Release();
+        d2d1_brush->Release();
+        d2d1_render_target->Release();
+    }
+
     void window_settings::show_window(int show_command, float x, float y) {
         ShowWindow(handle_window, show_command);
         UpdateWindow(handle_window);
@@ -1125,7 +1233,7 @@ namespace hmgui {
 
     void window_settings::redraw() {
         if (!d2d1_render_target || !d2d1_brush) return;
-        d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
+        d2d1_render_target->Clear(white_color);
 
         d2d1_render_target->DrawRectangle(
             settings_area_rectf,
@@ -1246,7 +1354,7 @@ namespace hmgui {
         FLOAT dpi_y = static_cast<FLOAT>(dpi);
         d2d1_render_target->SetDpi(dpi_x, dpi_y);
 
-        hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
+        hr = d2d1_render_target->CreateSolidColorBrush(black_color, &d2d1_brush);
         if (FAILED(hr)) return false;
 
         hr = d2d1_dwrite_factory->CreateTextFormat(
@@ -1271,7 +1379,7 @@ namespace hmgui {
 
     void window_version::redraw() {
         if (!d2d1_render_target || !d2d1_brush) return;
-        d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
+        d2d1_render_target->Clear(white_color);
 
         d2d1_render_target->DrawText(
             HOOKMARK_GUI_VERSION_TEXT,
@@ -1284,6 +1392,13 @@ namespace hmgui {
 
     void window_version::handle_exit() {
         show_window(SW_HIDE);
+    }
+
+    void window_version::release() {
+        DestroyWindow(handle_window);
+        text_format_default->Release();
+        d2d1_brush->Release();
+        d2d1_render_target->Release();
     }
 
     wc_sep_board::wc_sep_board() : wc_base() {}
@@ -1383,7 +1498,7 @@ namespace hmgui {
         FLOAT dpi_y = static_cast<FLOAT>(dpi);
         d2d1_render_target->SetDpi(dpi_x, dpi_y);
 
-        hr = d2d1_render_target->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &d2d1_brush);
+        hr = d2d1_render_target->CreateSolidColorBrush(black_color, &d2d1_brush);
         if (FAILED(hr)) return false;
 
         hr = d2d1_dwrite_factory->CreateTextFormat(
@@ -1428,7 +1543,7 @@ namespace hmgui {
 
     void window_sep_board::redraw() {
         if (!d2d1_render_target || !d2d1_brush) return;
-        d2d1_render_target->Clear(D2D1::ColorF(D2D1::ColorF::White));
+        d2d1_render_target->Clear(white_color);
         draw_grid();
     }
 
@@ -1639,6 +1754,13 @@ namespace hmgui {
 
     void window_sep_board::handle_exit() {
         show_window(SW_HIDE);
+    }
+
+    void window_sep_board::release() {
+        DestroyWindow(handle_window);
+        d2d1_brush->Release();
+        d2d1_render_target->Release();
+        text_format_label->Release();
     }
 
     void window_sep_board::grid_scroll(float dx, float dy) {
