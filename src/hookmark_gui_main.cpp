@@ -574,6 +574,9 @@ namespace hmgui {
                         EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
                         EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
                         InvalidateRect(handle_window, nullptr, FALSE);
+                        if (HIWORD(w_param) == 1) {
+                            MessageBoxW(NULL, std::wstring(L"まで" + std::to_wstring(current_kifu.size()) + L"手で" + ((l_param == 1) ? L"先手" : L"後手") + L"の勝ち").c_str(), L"", MB_OK);
+                        }
                         MessageBoxW(NULL, std::wstring(L"まで" + std::to_wstring(current_kifu.size()) + L"手で" + (((current_kifu.size() - 1) % 2 == 0) ? L"先手" : L"後手") + L"の勝ち").c_str(), L"", MB_OK);
                         break;
                     }
@@ -662,7 +665,11 @@ namespace hmgui {
                             hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
                             kifu_saved = false;
                             InvalidateRect(handle_window, nullptr, FALSE);
-                            if (board.is_win()) SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_GAME_RESIGN, 0), 0);
+                            std::string debug_info;
+                            unsigned int res = board.is_win();
+                            if (res) {
+                                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_GAME_RESIGN, 1), res);
+                            }
                         }
                     } catch (...) {
                         return 0;

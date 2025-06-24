@@ -182,22 +182,29 @@ namespace hm {
             }
 
             unsigned int is_win() const {
+                int min_y = INT_MAX, max_y = INT_MIN;
+                auto x_range = _has_piece.index_range();
+                for (int x = x_range.min; x <= x_range.max; ++x) {
+                    if (_has_piece.need_resize(x)) continue;
+                    auto y_range = _has_piece[x].index_range();
+                    min_y = std::min(min_y, y_range.min);
+                    max_y = std::max(max_y, y_range.max);
+                }
+
                 for (int rotate_index = 0; rotate_index < 4; rotate_index++) {
                     const auto &mask = hookmark[rotate_index];
                     int mask_height = static_cast<int>(mask.size());
                     int mask_width = static_cast<int>(mask[0].size());
 
-                    auto x_range = _has_piece.index_range();
                     for (int x = x_range.min; x <= x_range.max - mask_width + 1; ++x) {
-                        auto y_range = _has_piece[x].index_range();
-                        for (int y = y_range.min; y <= y_range.max - mask_height + 1; ++y) {
+                        for (int y = min_y; y <= max_y - mask_height + 1; ++y) {
                             for (unsigned int player = 1; player <= 2; ++player) {
                                 bool match = true;
                                 for (int dy = 0; dy < mask_height; ++dy) {
                                     for (int dx = 0; dx < mask_width; ++dx) {
                                         if (!mask[dy][dx]) continue;
                                         int bx = x + dx;
-                                        int by = y + dy;
+                                        int by = y + (mask_height - 1 - dy);
                                         if (_has_piece.need_resize(bx) || _has_piece[bx].need_resize(by)) {
                                             match = false;
                                             break;
@@ -215,7 +222,6 @@ namespace hm {
                                     if (!match) break;
                                 }
                                 if (match) {
-                                    throw "Debug: Player: " + std::to_string(player) + ", Win at (" + std::to_string(x) + ", " + std::to_string(y) + "), Rotate: " + std::to_string(rotate_index);
                                     return player;
                                 }
                             }
