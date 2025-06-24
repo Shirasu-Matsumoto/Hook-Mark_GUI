@@ -72,10 +72,16 @@ namespace hmgui {
 
     void load_config() {
         wchar_t path[MAX_PATH];
+        GetEnvironmentVariableW(L"APPDATA", path, MAX_PATH);
+        std::filesystem::path dir = std::filesystem::path(utf16_to_utf8(path)) / L"Hook-Mark_GUI";
+        if (!std::filesystem::exists(dir / "config")) {
+            std::filesystem::create_directories(dir / "config");
+        }
+        std::string init_path = (dir / "config" / "init.cfg").string();
+
         GetModuleFileNameW(NULL, path, MAX_PATH);
         std::filesystem::path exe_path(utf16_to_utf8(path));
-        std::filesystem::path dir = exe_path.parent_path();
-        std::string init_path = (dir / "config" / "init.cfg").string();
+        dir = exe_path.parent_path();
         std::string default_path = (dir / "config" / "default.cfg").string();
         std::unordered_map<std::string, std::string> um_config;
         if (std::filesystem::exists(default_path)) {
@@ -109,9 +115,11 @@ namespace hmgui {
 
     void save_config() {
         wchar_t path[MAX_PATH];
-        GetModuleFileNameW(NULL, path, MAX_PATH);
-        std::filesystem::path exe_path(utf16_to_utf8(path));
-        std::filesystem::path dir = exe_path.parent_path();
+        GetEnvironmentVariableW(L"APPDATA", path, MAX_PATH);
+        std::filesystem::path dir = std::filesystem::path(utf16_to_utf8(path)) / L"Hook-Mark_GUI";
+        if (!std::filesystem::exists(dir / "config")) {
+            std::filesystem::create_directories(dir / "config");
+        }
         std::ofstream file(dir / "config" / "init.cfg");
 
         if (!file.is_open()) return;
@@ -144,9 +152,12 @@ namespace hmgui {
 
     void clear_config() {
         wchar_t path[MAX_PATH];
-        GetModuleFileNameW(NULL, path, MAX_PATH);
-        std::filesystem::path exe_path(utf16_to_utf8(path));
-        std::filesystem::path dir = exe_path.parent_path();
+        GetEnvironmentVariableW(L"APPDATA", path, MAX_PATH);
+        std::filesystem::path dir = std::filesystem::path(utf16_to_utf8(path)) / L"Hook-Mark_GUI";
+        if (!std::filesystem::exists(dir / "config")) {
+            std::filesystem::create_directories(dir / "config");
+        }
+        std::ofstream file(dir / "config" / "init.cfg");
         std::filesystem::path config_path = dir / "config" / "init.cfg";
         if (std::filesystem::exists(config_path)) {
             std::filesystem::remove(config_path);
@@ -324,7 +335,7 @@ namespace hmgui {
                             current_kifu.kifu_load(filepath);
                         }
                         catch (const std::exception &e) {
-                            MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
+                            MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"エラー", MB_OK | MB_ICONERROR);
                         }
                         current_kifu.resign();
                         kifu_current_turn = current_kifu.size() - 1;
@@ -362,7 +373,7 @@ namespace hmgui {
                             }
                             catch (const std::exception &e) {
                                 MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(),
-                                            L"Error", MB_OK | MB_ICONERROR);
+                                            L"エラー", MB_OK | MB_ICONERROR);
                             }
                         }
                         break;
@@ -399,7 +410,7 @@ namespace hmgui {
                         }
                         catch (const std::exception &e) {
                             MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(),
-                                        L"Error", MB_OK | MB_ICONERROR);
+                                        L"エラー", MB_OK | MB_ICONERROR);
                         }
                         update_title();
                         break;
@@ -665,7 +676,6 @@ namespace hmgui {
                             hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
                             kifu_saved = false;
                             InvalidateRect(handle_window, nullptr, FALSE);
-                            std::string debug_info;
                             unsigned int res = board.is_win();
                             if (res) {
                                 SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_GAME_RESIGN, 1), res);
