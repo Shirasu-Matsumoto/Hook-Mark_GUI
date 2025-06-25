@@ -116,6 +116,19 @@ namespace hm {
                 return _is_first;
             }
 
+            bool empty() const {
+                return _has_piece.empty();
+            }
+
+            bool need_resize(int x, int y) const {
+                if (_has_piece.need_resize(x)) {
+                    return true;
+                }
+                else {
+                    return _has_piece[x].need_resize(y);
+                }
+            }
+
             bool has_piece(int x, int y) {
                 ensure_size(x, y);
                 return _has_piece[x][y];

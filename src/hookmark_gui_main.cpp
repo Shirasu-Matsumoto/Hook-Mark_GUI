@@ -323,7 +323,6 @@ namespace hmgui {
                         }
                         std::wstring result;
                         show_file_load_dialog(result);
-                        current_kifu_path = result;
                         std::string filepath = utf16_to_utf8(result);
                         if (filepath.empty()) {
                             break;
@@ -331,17 +330,21 @@ namespace hmgui {
                         if (is_editing) {
                             SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), MAKELPARAM(NULL, NULL));
                         }
+                        hm::kifu_ver1 temp;
                         try {
-                            current_kifu.kifu_load(filepath);
+                            temp.kifu_load(filepath);
                         }
                         catch (const std::exception &e) {
                             MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"エラー", MB_OK | MB_ICONERROR);
+                            break;
                         }
+                        current_kifu = temp;
+                        current_kifu_path = result;
                         current_kifu.resign();
                         kifu_current_turn = current_kifu.size() - 1;
                         kifu_saved = true;
                         config_ref.open_file = filepath;
-                        hm::kifuver1_to_board(current_kifu, board, current_kifu.size() - 1);
+                        hm::kifuver1_to_board(current_kifu, board);
                         update_title();
                         initialize_scroll();
                         InvalidateRect(handle_window, nullptr, FALSE);
@@ -523,6 +526,7 @@ namespace hmgui {
                                 }
                             }
                             is_gaming = false;
+                            current_kifu_path.clear();
                             current_kifu.clear();
                             MENUITEMINFOW menu_item_info = {};
                             menu_item_info.cbSize = sizeof(MENUITEMINFOW);
@@ -588,7 +592,9 @@ namespace hmgui {
                         if (HIWORD(w_param) == 1) {
                             MessageBoxW(NULL, std::wstring(L"まで" + std::to_wstring(current_kifu.size()) + L"手で" + ((l_param == 1) ? L"先手" : L"後手") + L"の勝ち").c_str(), L"", MB_OK);
                         }
-                        MessageBoxW(NULL, std::wstring(L"まで" + std::to_wstring(current_kifu.size()) + L"手で" + (((current_kifu.size() - 1) % 2 == 0) ? L"先手" : L"後手") + L"の勝ち").c_str(), L"", MB_OK);
+                        else {
+                            MessageBoxW(NULL, std::wstring(L"まで" + std::to_wstring(current_kifu.size()) + L"手で" + (((current_kifu.size() - 1) % 2 == 0) ? L"先手" : L"後手") + L"の勝ち").c_str(), L"", MB_OK);
+                        }
                         break;
                     }
                     case ID_MENU_HELP_VERSION: {
@@ -1039,8 +1045,11 @@ namespace hmgui {
                     if (main_window.is_editing) {
                         SendMessageW(main_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), MAKELPARAM(NULL, NULL));
                     }
-                    main_window.board.clear();
                     main_window.current_kifu.clear();
+                    if (newgame_config_state[0] == 1) {
+                        main_window.current_kifu.set_config_struct({ "", "", main_window.board });
+                    }
+                    hm::kifuver1_to_board(main_window.current_kifu, main_window.board);
                     main_window.kifu_current_turn = 0;
                     main_window.is_gaming = true;
                     EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_ENABLED);

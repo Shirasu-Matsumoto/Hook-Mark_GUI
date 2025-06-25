@@ -3,11 +3,19 @@
 
 #include <hookmark_kifu_base.hpp>
 #include <hookmark_base.hpp>
+#include <windows.h>
 
 namespace hm {
+    struct kifu_config {
+        std::string first;
+        std::string second;
+        board_state initial_board;
+    };
+
     class kifu_ver1 : public kifu_base {
         private:
             std::string _config;
+            kifu_config _config_struct;
             bool _is_resigned;
 
         public:
@@ -19,11 +27,49 @@ namespace hm {
                     throw std::runtime_error("Failed to open file for writing");
                 }
 
-                ofs << "Hook-Mark Kifu File Version 1.0\r\n#Config\r\n" << _config << "\r\n#End\r\n#Begin\r\n";
-                for (const auto &move : data()) {
-                    ofs << move.x << ", " << move.y << "\r\n";
+                ofs << "Hook-Mark Kifu File Version 1.0\n#Config\n";
+                if (!_config.empty()) {
+                    ofs << _config;
+                    if (_config.back() != '\n' && _config.back() != '\r') ofs << "\n";
                 }
-                ofs << "#End\r\n";
+                const auto &bs = _config_struct.initial_board;
+                if (!bs.empty()) {
+                    auto [x_range, y_range] = bs.board_range();
+                    int min_x = x_range.min, max_x = x_range.max;
+                    int min_y = y_range.min, max_y = y_range.max;
+                    if (min_x <= max_x && min_y <= max_y) {
+                        ofs << "~Initial\n";
+                        ofs << min_x << ", " << min_y << "\n";
+                        for (int y = min_y; y <= max_y; ++y) {
+                            bool first = true;
+                            for (int x = min_x; x <= max_x; ++x) {
+                                int v = 0;
+                                if (!bs.need_resize(x, y) && bs.has_piece()[x][y]) {
+                                    v = bs.is_first()[x][y] ? 1 : 2;
+                                }
+                                if (!first) ofs << ", ";
+                                ofs << v;
+                                first = false;
+                            }
+                            ofs << "\n";
+                        }
+                        ofs << "~End\n";
+                    }
+                }
+
+                if (!_config_struct.first.empty() && !_config_struct.second.empty()) {
+                    ofs << "~Players\n";
+                    ofs << _config_struct.first << "\n";
+                    ofs << _config_struct.second << "\n";
+                    ofs << "~End\n";
+                }
+
+                ofs << "#End\n#Begin\n";
+
+                for (const auto &move : data()) {
+                    ofs << move.x << ", " << move.y << "\n";
+                }
+                ofs << "#End\n";
                 ofs.close();
             }
 
@@ -39,6 +85,12 @@ namespace hm {
                 bool header_found = false;
                 std::string line;
                 _config.clear();
+                _config_struct = config_struct();
+
+                std::vector<std::string> config_lines;
+                bool in_initial = false, in_players = false;
+                std::vector<std::string> initial_lines;
+                std::vector<std::string> players_lines;
 
                 while (std::getline(ifs, line)) {
                     std::string trimmed_line = line;
@@ -57,6 +109,7 @@ namespace hm {
                     }
 
                     if (trimmed_line == "#Config") {
+                        in_kifu = false;
                         in_config = true;
                         continue;
                     }
@@ -74,7 +127,34 @@ namespace hm {
                     }
 
                     if (in_config) {
-                        _config += line + "\r\n";
+                        if (trimmed_line == "~Initial") {
+                            in_initial = true;
+                            in_players = false;
+                            initial_lines.clear();
+                            continue;
+                        }
+                        if (trimmed_line == "~Players") {
+                            in_players = true;
+                            in_initial = false;
+                            players_lines.clear();
+                            continue;
+                        }
+                        if (trimmed_line == "~End") {
+                            in_initial = false;
+                            in_players = false;
+                            continue;
+                        }
+                        if (in_initial) {
+                            if (!trimmed_line.empty())
+                                initial_lines.push_back(trimmed_line);
+                            continue;
+                        }
+                        if (in_players) {
+                            if (!trimmed_line.empty())
+                                players_lines.push_back(trimmed_line);
+                            continue;
+                        }
+                        _config += line + "\n";
                         continue;
                     }
 
@@ -98,6 +178,63 @@ namespace hm {
                             data().emplace_back(x, y);
                         } catch (...) {
                             continue;
+                        }
+                    }
+                }
+
+                if (!players_lines.empty()) {
+                    if (players_lines.size() != 2) {
+                        throw std::runtime_error("The only players allowed to play are first or second.");
+                    }
+                    _config_struct.first = players_lines[0];
+                    _config_struct.second = players_lines[1];
+                }
+
+                if (!initial_lines.empty()) {
+                    if (initial_lines.size() < 2) {
+                        throw std::runtime_error("~Initial must have at least 2 non-empty lines");
+                    }
+
+                    int base_x = 0, base_y = 0;
+                    {
+                        std::istringstream iss(initial_lines[0]);
+                        char comma;
+                        if (!(iss >> base_x >> comma >> base_y) || comma != ',') {
+                            throw std::runtime_error("Invalid ~Initial base coordinate");
+                        }
+                    }
+
+                    std::vector<std::vector<int>> board_rows;
+                    size_t row_length = 0;
+                    for (size_t i = 1; i < initial_lines.size(); ++i) {
+                        std::vector<int> row;
+                        std::istringstream iss(initial_lines[i]);
+                        int v;
+                        char c;
+                        while (iss >> v) {
+                            row.push_back(v);
+                            if (iss >> c && c != ',') iss.unget();
+                        }
+                        if (row.empty()) {
+                            throw std::runtime_error("Empty row in ~Initial board");
+                        }
+                        if (i == 1) row_length = row.size();
+                        else if (row.size() != row_length) {
+                            throw std::runtime_error("Non-rectangular ~Initial board");
+                        }
+                        board_rows.push_back(row);
+                    }
+
+                    hm::board_state &bs = _config_struct.initial_board;
+                    bs.clear();
+                    size_t height = board_rows.size();
+                    for (size_t dy = 0; dy < height; ++dy) {
+                        for (size_t dx = 0; dx < board_rows[dy].size(); ++dx) {
+                            int v = board_rows[dy][dx];
+                            if (v == 0) continue;
+                            int x = base_x + static_cast<int>(dx);
+                            int y = base_y + static_cast<int>(height - 1 - dy);
+                            bs.set(x, y, v);
                         }
                     }
                 }
@@ -131,12 +268,20 @@ namespace hm {
                 return _config;
             }
 
+            kifu_config config_struct() {
+                return _config_struct;
+            }
+
             void set_config(const std::string &config_str) {
                 _config = config_str;
             }
 
             void add_config(const std::string &config_str) {
                 _config += config_str;
+            }
+
+            void set_config_struct(const kifu_config &cs) {
+                _config_struct = cs;
             }
     };
 }
