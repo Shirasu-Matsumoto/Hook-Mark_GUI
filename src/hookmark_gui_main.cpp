@@ -329,7 +329,7 @@ namespace hmgui {
                             break;
                         }
                         if (is_editing) {
-                            SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), NULL);
+                            SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), MAKELPARAM(NULL, NULL));
                         }
                         try {
                             current_kifu.kifu_load(filepath);
@@ -405,7 +405,7 @@ namespace hmgui {
                             current_kifu.kifu_save(filepath);
                             kifu_saved = true;
                             if (is_editing) {
-                                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), NULL);
+                                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), MAKELPARAM(NULL, NULL));
                             }
                         }
                         catch (const std::exception &e) {
@@ -437,7 +437,7 @@ namespace hmgui {
                         board.clear();
                         is_gaming = false;
                         if (is_editing) {
-                            SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), NULL);
+                            SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), MAKELPARAM(NULL, NULL));
                         }
                         EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
                         EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
@@ -1037,7 +1037,7 @@ namespace hmgui {
                         }
                     }
                     if (main_window.is_editing) {
-                        SendMessageW(main_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), NULL);
+                        SendMessageW(main_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), MAKELPARAM(NULL, NULL));
                     }
                     main_window.board.clear();
                     main_window.current_kifu.clear();

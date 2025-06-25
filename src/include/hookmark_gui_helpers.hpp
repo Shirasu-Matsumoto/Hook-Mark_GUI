@@ -7,6 +7,7 @@
 #include <dwmapi.h>
 #include <unordered_map>
 #include <fstream>
+#include <cmath>
 
 namespace hmgui {
     inline D2D1_COLOR_F red_color = D2D1::ColorF(D2D1::ColorF::Red);
