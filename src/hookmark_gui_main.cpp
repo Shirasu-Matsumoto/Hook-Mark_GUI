@@ -658,6 +658,48 @@ namespace hmgui {
             case WM_LBUTTONDOWN: {
                 POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
 
+                if (std::abs(pt.x - boundary_grid) <= tol && pt.y > config_ref.margin && pt.y < config_ref.vertical_size - config_ref.margin) {
+                    is_resizing = true;
+                    cr_resize_region = resize_region::grid_kifu;
+                    resize_start = pt;
+                    initial_grid_size = config_ref.grid_size_x;
+                    initial_kifu_size = config_ref.kifu_size_x;
+                    SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
+                    SetCapture(handle_window);
+                    return 0;
+                }
+                else if (std::abs(pt.x - boundary_kifu) <= tol && pt.y > config_ref.margin && pt.y < config_ref.vertical_size - config_ref.margin) {
+                    is_resizing = true;
+                    cr_resize_region = resize_region::kifu_config;
+                    resize_start = pt;
+                    initial_kifu_size = config_ref.kifu_size_x;
+                    SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
+                    SetCapture(handle_window);
+                    return 0;
+                }
+                else if (std::abs(pt.x - boundary_kifu_turn) <= tol && pt.y > config_ref.margin && pt.y < config_ref.vertical_size - config_ref.margin) {
+                    is_resizing = true;
+                    cr_resize_region = resize_region::kifu_turn_move;
+                    resize_start = pt;
+                    initial_kifu_turn_size = config_ref.kifu_turn_size_x;
+                    SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
+                    SetCapture(handle_window);
+                    return 0;
+                }
+                else if (std::abs(pt.y - config_ref.vertical_size) <= tol) {
+                    is_resizing = true;
+                    cr_resize_region = resize_region::vertical;
+                    resize_start = pt;
+                    initial_vertical_size = config_ref.vertical_size;
+                    SetCursor(LoadCursor(nullptr, IDC_SIZENS));
+                    SetCapture(handle_window);
+                    return 0;
+                }
+                else {
+                    is_resizing = false;
+                    cr_resize_region = resize_region::none;
+                }
+
                 if (PtInRect(&grid_area_rect, pt) && is_gaming) {
                     float gx = static_cast<float>(pt.x);
                     float gy = static_cast<float>(pt.y);
@@ -728,42 +770,6 @@ namespace hmgui {
                     }
                 }
 
-                const int tol = 5;
-                float boundary1 = config_ref.grid_size_x;
-                float boundary2 = config_ref.grid_size_x + config_ref.kifu_size_x;
-
-                if (std::abs(pt.x - boundary1) <= tol && pt.y > config_ref.margin && pt.y < config_ref.vertical_size - config_ref.margin) {
-                    is_resizing = true;
-                    cr_resize_region = resize_region::grid_kifu;
-                    resize_start = pt;
-                    initial_grid_size = config_ref.grid_size_x;
-                    initial_kifu_size = config_ref.kifu_size_x;
-                    SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
-                    SetCapture(handle_window);
-                    return 0;
-                }
-                else if (std::abs(pt.x - boundary2) <= tol && pt.y > config_ref.margin && pt.y < config_ref.vertical_size - config_ref.margin) {
-                    is_resizing = true;
-                    cr_resize_region = resize_region::kifu_config;
-                    resize_start = pt;
-                    initial_kifu_size = config_ref.kifu_size_x;
-                    SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
-                    SetCapture(handle_window);
-                    return 0;
-                }
-                else if (std::abs(pt.y - config_ref.vertical_size) <= tol) {
-                    is_resizing = true;
-                    cr_resize_region = resize_region::vertical;
-                    resize_start = pt;
-                    initial_grid_and_kifu_size_y = config_ref.vertical_size;
-                    SetCursor(LoadCursor(nullptr, IDC_SIZENS));
-                    SetCapture(handle_window);
-                    return 0;
-                } else {
-                    is_resizing = false;
-                    cr_resize_region = resize_region::none;
-                }
-
                 InvalidateRect(handle_window, nullptr, FALSE);
                 return 0;
             }
@@ -821,6 +827,10 @@ namespace hmgui {
                                 new_kifu_size = 100.0f;
                                 new_grid_size = initial_grid_size + (initial_kifu_size - new_kifu_size);
                             }
+                            if (new_kifu_size - config_ref.kifu_turn_size_x < 50.0f) {
+                                new_grid_size = initial_grid_size + (initial_kifu_size - (config_ref.kifu_turn_size_x + 50.0f));
+                                new_kifu_size = config_ref.kifu_turn_size_x + 50.0f;
+                            }
                             config_ref.grid_size_x = new_grid_size;
                             config_ref.kifu_size_x = new_kifu_size;
                             break;
@@ -838,13 +848,30 @@ namespace hmgui {
                                 new_config_size = 100.0f;
                                 new_kifu_size = config_ref.window_size_x - config_ref.grid_size_x - new_config_size;
                             }
+                            if (new_kifu_size - config_ref.kifu_turn_size_x < 50.0f) {
+                                new_kifu_size = config_ref.kifu_turn_size_x + 50.0f;
+                                new_config_size = config_ref.window_size_x - config_ref.grid_size_x - new_kifu_size;
+                            }
                             config_ref.kifu_size_x = new_kifu_size;
+                            break;
+                        }
+                        case resize_region::kifu_turn_move: {
+                            SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
+                            int dx = pt.x - resize_start.x;
+                            float new_kifu_turn_size = initial_kifu_turn_size + dx;
+                            if (new_kifu_turn_size < 50.0f) {
+                                new_kifu_turn_size = 50.0f;
+                            }
+                            if (config_ref.kifu_size_x - new_kifu_turn_size < 50.0f) {
+                                new_kifu_turn_size = config_ref.kifu_size_x - 50.0f;
+                            }
+                            config_ref.kifu_turn_size_x = new_kifu_turn_size;
                             break;
                         }
                         case resize_region::vertical: {
                             SetCursor(LoadCursor(nullptr, IDC_SIZENS));
                             int dy = pt.y - resize_start.y;
-                            float new_vertical_size = initial_grid_and_kifu_size_y + dy;
+                            float new_vertical_size = initial_vertical_size + dy;
                             if (new_vertical_size < 100.0f) {
                                 new_vertical_size = 100.0f;
                             }
@@ -876,10 +903,7 @@ namespace hmgui {
                     resign_button_state = 0;
                 }
 
-                const int tol = 5;
-                float boundary1 = config_ref.grid_size_x;
-                float boundary2 = config_ref.grid_size_x + config_ref.kifu_size_x;
-                if ((std::abs(pt.x - boundary1) <= tol || std::abs(pt.x - boundary2) <= tol) && config_ref.margin < static_cast<float>(pt.y) && config_ref.vertical_size - config_ref.margin > static_cast<float>(pt.y)) {
+                if ((std::abs(pt.x - boundary_grid) <= tol || std::abs(pt.x - boundary_kifu) <= tol || std::abs(pt.x - boundary_kifu_turn) <= tol) && config_ref.margin < static_cast<float>(pt.y) && config_ref.vertical_size - config_ref.margin > static_cast<float>(pt.y)) {
                     SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
                 }
                 else if (std::abs(pt.y - config_ref.vertical_size) <= tol) {

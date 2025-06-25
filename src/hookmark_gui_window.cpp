@@ -187,6 +187,9 @@ namespace hmgui {
         grid_area_clip_rectf = cliped_rectf(grid_area_rectf);
         kifu_area_clip_rectf = cliped_rectf(kifu_area_rectf);
         config_area_clip_rectf = cliped_rectf(config_area_rectf);
+        boundary_grid = config_ref.grid_size_x;
+        boundary_kifu = config_ref.grid_size_x + config_ref.kifu_size_x;
+        boundary_kifu_turn = config_ref.grid_size_x + config_ref.kifu_turn_size_x;
     }
 
     void window_main::update_scroll_speed() {
@@ -662,6 +665,13 @@ namespace hmgui {
         }
 
         if (current_kifu.is_resigned()) draw_kifu_single_last(static_cast<unsigned int>(moves.size()));
+
+        d2d1_render_target->DrawLine(
+            D2D1::Point2F(config_ref.grid_size_x + config_ref.kifu_turn_size_x, config_ref.margin),
+            D2D1::Point2F(config_ref.grid_size_x + config_ref.kifu_turn_size_x, config_ref.vertical_size - config_ref.margin),
+            d2d1_brush,
+            2.0f
+        );
 
         d2d1_render_target->PopAxisAlignedClip();
     }
@@ -1141,9 +1151,20 @@ namespace hmgui {
     }
 
     void window_settings::create_edit_controls() {
-        edit_controls.clear();
+        if (!edit_controls.empty()) {
+            for (HWND handle_edit_control : edit_controls) {
+                DestroyWindow(handle_edit_control);
+            }
+            edit_controls.clear();
+        }
         edit_controls.resize(settings_item_keys.size());
         float center_x = settings_area_rectf.left + (settings_area_rectf.right - settings_area_rectf.left) / 2;
+        HFONT handle_font = CreateFontW(
+            static_cast<int>(settings_item_spacing * 0.7f),
+            0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+            DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+            DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI"
+        );
         for (int i = 0; i < settings_item_keys.size(); i++) {
             HWND edit_handle = CreateWindowExW(
                 0, L"EDIT", L"",
@@ -1151,12 +1172,6 @@ namespace hmgui {
                 static_cast<int>(center_x) + 1, static_cast<int>(config_ref.margin + settings_item_spacing * i) + 1,
                 static_cast<int>((settings_area_rectf.right - settings_area_rectf.left) / 2) - 2, static_cast<int>(settings_item_spacing) - 2,
                 handle_window, nullptr, GetModuleHandle(nullptr), nullptr
-            );
-            HFONT handle_font = CreateFontW(
-                static_cast<int>(settings_item_spacing * 0.7f),
-                0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-                DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
-                DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI"
             );
             ShowWindow(edit_handle, SW_SHOW);
             SetWindowFont(edit_handle, handle_font, TRUE);
@@ -1168,9 +1183,10 @@ namespace hmgui {
         SetWindowTextW(edit_controls[2], std::to_wstring(config_ref.label_size).c_str());
         SetWindowTextW(edit_controls[3], std::to_wstring(config_ref.grid_size_x).c_str());
         SetWindowTextW(edit_controls[4], std::to_wstring(config_ref.kifu_size_x).c_str());
-        SetWindowTextW(edit_controls[5], std::to_wstring(config_ref.vertical_size).c_str());
-        SetWindowTextW(edit_controls[6], std::to_wstring(config_ref.margin).c_str());
-        SetWindowTextW(edit_controls[7], std::to_wstring(config_ref.padding).c_str());
+        SetWindowTextW(edit_controls[5], std::to_wstring(config_ref.kifu_turn_size_x).c_str());
+        SetWindowTextW(edit_controls[6], std::to_wstring(config_ref.vertical_size).c_str());
+        SetWindowTextW(edit_controls[7], std::to_wstring(config_ref.margin).c_str());
+        SetWindowTextW(edit_controls[8], std::to_wstring(config_ref.padding).c_str());
     }
 
     void window_settings::update_config() {
@@ -1187,10 +1203,12 @@ namespace hmgui {
         GetWindowTextW(edit_controls[4], buffer, 256);
         config_ref.kifu_size_x = std::stof(buffer);
         GetWindowTextW(edit_controls[5], buffer, 256);
-        config_ref.vertical_size = std::stof(buffer);
+        config_ref.kifu_turn_size_x= std::stof(buffer);
         GetWindowTextW(edit_controls[6], buffer, 256);
-        config_ref.margin = std::stof(buffer);
+        config_ref.vertical_size = std::stof(buffer);
         GetWindowTextW(edit_controls[7], buffer, 256);
+        config_ref.margin = std::stof(buffer);
+        GetWindowTextW(edit_controls[8], buffer, 256);
         config_ref.padding = std::stof(buffer);
     }
 

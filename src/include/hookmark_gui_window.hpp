@@ -107,14 +107,20 @@ namespace hmgui {
                 none,
                 grid_kifu,
                 kifu_config,
-                vertical
+                vertical,
+                kifu_turn_move
             };
             resize_region cr_resize_region = resize_region::none;
             bool is_resizing = false;
+            float tol = 5.0f;
+            float boundary_grid = config_ref.grid_size_x;
+            float boundary_kifu = config_ref.grid_size_x + config_ref.kifu_size_x;
+            float boundary_kifu_turn = config_ref.grid_size_x + config_ref.kifu_turn_size_x;
             POINT resize_start = { 0, 0 };
             float initial_grid_size = 0.0f;
             float initial_kifu_size = 0.0f;
-            float initial_grid_and_kifu_size_y = 0.0f;
+            float initial_kifu_turn_size = 0.0f;
+            float initial_vertical_size = 0.0f;
 
             bool is_gaming = false;
             bool is_editing = false;
@@ -239,6 +245,7 @@ namespace hmgui {
                 L"盤面のラベルサイズ",
                 L"盤面の横幅",
                 L"棋譜の横幅",
+                L"棋譜の手数の横幅",
                 L"縦分割のサイズ",
                 L"マージン",
                 L"パディング"
