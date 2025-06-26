@@ -851,9 +851,9 @@ namespace hmgui {
                         } else {
                             hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
                         }
-                        InvalidateRect(handle_window, nullptr, FALSE);
                     }
                     do_over_button.current_state = 1;
+                    InvalidateRect(handle_window, nullptr, FALSE);
                     return 0;
                 }
                 if (resign_button.current_state == 2) {
