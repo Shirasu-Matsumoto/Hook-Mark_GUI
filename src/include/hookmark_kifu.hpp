@@ -40,7 +40,7 @@ namespace hm {
                     if (min_x <= max_x && min_y <= max_y) {
                         ofs << "~Initial\n";
                         ofs << min_x << ", " << min_y << "\n";
-                        for (int y = min_y; y <= max_y; ++y) {
+                        for (int y = max_y; y >= min_y; --y) {
                             bool first = true;
                             for (int x = min_x; x <= max_x; ++x) {
                                 int v = 0;

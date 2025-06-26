@@ -157,10 +157,14 @@ namespace hmgui {
         if (!std::filesystem::exists(dir / "config")) {
             std::filesystem::create_directories(dir / "config");
         }
-        std::ofstream file(dir / "config" / "init.cfg");
         std::filesystem::path config_path = dir / "config" / "init.cfg";
-        if (std::filesystem::exists(config_path)) {
-            std::filesystem::remove(config_path);
+        try {
+            if (std::filesystem::exists(config_path)) {
+                std::filesystem::remove(config_path);
+            }
+        }
+        catch (std::exception &e) {
+            MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"エラー", MB_OK | MB_ICONERROR);
         }
     }
 
@@ -526,6 +530,8 @@ namespace hmgui {
                                 }
                             }
                             is_gaming = false;
+                            EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
+                            EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
                             current_kifu_path.clear();
                             current_kifu.clear();
                             MENUITEMINFOW menu_item_info = {};
@@ -722,7 +728,6 @@ namespace hmgui {
                             kifu_current_turn = current_kifu.size();
                             current_kifu.add(x, y);
                             hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
-                            kifu_saved = false;
                             InvalidateRect(handle_window, nullptr, FALSE);
                             unsigned int res = board.is_win();
                             if (res) {
@@ -898,15 +903,19 @@ namespace hmgui {
 
                 if (PtInRect(&do_over_button_area_rect, pt)) {
                     do_over_button_state = 1;
+                    InvalidateRect(handle_window, nullptr, FALSE);
                 }
                 else {
                     do_over_button_state = 0;
+                    InvalidateRect(handle_window, nullptr, FALSE);
                 }
                 if (PtInRect(&resign_button_area_rect, pt)) {
                     resign_button_state = 1;
+                    InvalidateRect(handle_window, nullptr, FALSE);
                 }
                 else {
                     resign_button_state = 0;
+                    InvalidateRect(handle_window, nullptr, FALSE);
                 }
 
                 if ((std::abs(pt.x - boundary_grid) <= tol || std::abs(pt.x - boundary_kifu) <= tol || std::abs(pt.x - boundary_kifu_turn) <= tol) && config_ref.margin < static_cast<float>(pt.y) && config_ref.vertical_size - config_ref.margin > static_cast<float>(pt.y)) {
@@ -919,7 +928,6 @@ namespace hmgui {
                     SetCursor(LoadCursor(nullptr, IDC_ARROW));
                 }
 
-                InvalidateRect(handle_window, nullptr, FALSE);
                 return 0;
             }
             case WM_PAINT: {
@@ -1049,6 +1057,9 @@ namespace hmgui {
                     if (newgame_config_state[0] == 1) {
                         main_window.current_kifu.set_config_struct({ "", "", main_window.board });
                     }
+                    else {
+                        main_window.current_kifu.set_config_struct({ "", "", hm::board_state() });
+                    }
                     hm::kifuver1_to_board(main_window.current_kifu, main_window.board);
                     main_window.kifu_current_turn = 0;
                     main_window.is_gaming = true;
@@ -1062,6 +1073,10 @@ namespace hmgui {
                     InvalidateRect(main_window, nullptr, FALSE);
                     handle_exit();
                     newgame_button_state = 1;
+                    unsigned int res = main_window.board.is_win();
+                    if (res) {
+                        SendMessageW(main_window, WM_COMMAND, MAKEWPARAM(ID_MENU_GAME_RESIGN, 1), res);
+                    }
                     InvalidateRect(handle_window, nullptr, FALSE);
                     return 0;
                 }
@@ -1330,6 +1345,8 @@ int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
     EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
     EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
     DrawMenuBar(main_window);
+    DragAcceptFiles(main_window, TRUE);
+
     main_timer_id = SetTimer(main_window, main_timer_id, 16, nullptr);
     sep_board_timer_id = SetTimer(sep_board_window, sep_board_timer_id, 16, nullptr);
 
