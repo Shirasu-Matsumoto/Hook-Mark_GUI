@@ -22,6 +22,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <functional>
 
 namespace hmgui {
     class window_base {
@@ -143,6 +144,65 @@ namespace hmgui {
             }
             operator UINT() {
                 return static_cast<UINT>(id);
+            }
+    };
+
+    class d2d1_button {
+        public:
+            ID2D1Factory *d2d1_factory;
+            IDWriteFactory *d2d1_dwrite_factory;
+            ID2D1HwndRenderTarget *d2d1_render_target;
+            ID2D1SolidColorBrush *d2d1_brush;
+            IDWriteTextFormat *text_format;
+            std::wstring label_text;
+            D2D1_RECT_F button_area_rectf;
+            RECT button_area_rect;
+            int current_state;
+
+            d2d1_button() {}
+
+            void initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, ID2D1HwndRenderTarget *i_d2d1_render_target,
+                            ID2D1SolidColorBrush *i_d2d1_brush, IDWriteTextFormat *i_text_format, const std::wstring &i_label_text) {
+                d2d1_factory = i_d2d1_factory;
+                d2d1_dwrite_factory = i_d2d1_dwrite_factory;
+                d2d1_render_target = i_d2d1_render_target;
+                d2d1_brush = i_d2d1_brush;
+                text_format = i_text_format;
+                label_text = i_label_text;
+                d2d1_factory->AddRef();
+                d2d1_dwrite_factory->AddRef();
+                d2d1_render_target->AddRef();
+                d2d1_brush->AddRef();
+                text_format->AddRef();
+            }
+
+            void redraw() {
+                D2D1_COLOR_F color;
+                switch (current_state) {
+                    case 0: {
+                        color = white_color;
+                        break;
+                    }
+                    case 1: {
+                        color = white_smoke_color;
+                        break;
+                    }
+                    case 2: {
+                        color = light_gray_color;
+                        break;
+                    }
+                }
+                d2d1_brush->SetColor(color);
+                d2d1_render_target->FillRectangle(button_area_rectf, d2d1_brush);
+                d2d1_brush->SetColor(black_color);
+                d2d1_render_target->DrawRectangle(button_area_rectf, d2d1_brush, 2.0f);
+                d2d1_render_target->DrawText(
+                    label_text.c_str(),
+                    static_cast<UINT32>(label_text.size()),
+                    text_format,
+                    button_area_rectf,
+                    d2d1_brush
+                );
             }
     };
 }

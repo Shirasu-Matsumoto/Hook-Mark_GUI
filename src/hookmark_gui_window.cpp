@@ -95,12 +95,12 @@ namespace hmgui {
             DWRITE_FONT_STRETCH_NORMAL,
             20.0f,
             L"ja-JP",
-            &text_format_game_control_button_label
+            &text_format_button_label
         );
         if (FAILED(hr)) return false;
 
-        text_format_game_control_button_label->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
-        text_format_game_control_button_label->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+        text_format_button_label->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+        text_format_button_label->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
 
         for (int i = 1; i < 6; i++) {
             add_label_size(i);
@@ -167,13 +167,13 @@ namespace hmgui {
             client_area_rectf.right - config_ref.margin,
             config_ref.vertical_size - config_ref.margin
         );
-        do_over_button_area_rectf = D2D1::RectF(
+        do_over_button.button_area_rectf = D2D1::RectF(
             config_ref.margin,
             config_ref.vertical_size + config_ref.margin,
             100.0f - config_ref.margin,
             config_ref.vertical_size + 50.0f - config_ref.margin
         );
-        resign_button_area_rectf = D2D1::RectF(
+        resign_button.button_area_rectf = D2D1::RectF(
             100.0f + config_ref.margin,
             config_ref.vertical_size + config_ref.margin,
             200.0f - config_ref.margin,
@@ -182,8 +182,8 @@ namespace hmgui {
         grid_area_rect = rectf_to_rect(grid_area_rectf);
         kifu_area_rect = rectf_to_rect(kifu_area_rectf);
         config_area_rect = rectf_to_rect(config_area_rectf);
-        do_over_button_area_rect = rectf_to_rect(do_over_button_area_rectf);
-        resign_button_area_rect = rectf_to_rect(resign_button_area_rectf);
+        do_over_button.button_area_rect = rectf_to_rect(do_over_button.button_area_rectf);
+        resign_button.button_area_rect = rectf_to_rect(resign_button.button_area_rectf);
         grid_area_clip_rectf = cliped_rectf(grid_area_rectf);
         kifu_area_clip_rectf = cliped_rectf(kifu_area_rectf);
         config_area_clip_rectf = cliped_rectf(config_area_rectf);
@@ -207,6 +207,8 @@ namespace hmgui {
         window_class.register_class();
         create_window();
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
+        do_over_button.initialize(d2d1_factory, d2d1_dwrite_factory, d2d1_render_target, d2d1_brush, text_format_button_label, L"待った");
+        resign_button.initialize(d2d1_factory, d2d1_dwrite_factory, d2d1_render_target, d2d1_brush, text_format_button_label, L"投了");
         update_rect();
     }
 
@@ -711,54 +713,8 @@ namespace hmgui {
     }
 
     void window_main::draw_game_control() {
-        D2D1_COLOR_F color;
-        switch (do_over_button_state) {
-            case 0: {
-                color = white_color;
-                break;
-            }
-            case 1: {
-                color = white_smoke_color;
-                break;
-            }
-            case 2: {
-                color = light_gray_color;
-                break;
-            }
-        }
-        d2d1_brush->SetColor(color);
-        d2d1_render_target->FillRectangle(do_over_button_area_rectf, d2d1_brush);
-        switch (resign_button_state) {
-            case 0: {
-                color = white_color;
-                break;
-            }
-            case 1: {
-                color = white_smoke_color;
-                break;
-            }
-            case 2: {
-                color = light_gray_color;
-                break;
-            }
-        }
-        d2d1_brush->SetColor(color);
-        d2d1_render_target->FillRectangle(resign_button_area_rectf, d2d1_brush);
-        d2d1_brush->SetColor(black_color);
-        d2d1_render_target->DrawRectangle(do_over_button_area_rectf, d2d1_brush, 2.0f);
-        d2d1_render_target->DrawRectangle(resign_button_area_rectf, d2d1_brush, 2.0f);
-        d2d1_render_target->DrawText(
-            L"待った", 3,
-            text_format_game_control_button_label,
-            &do_over_button_area_rectf,
-            d2d1_brush
-        );
-        d2d1_render_target->DrawText(
-            L"投了", 2,
-            text_format_game_control_button_label,
-            &resign_button_area_rectf,
-            d2d1_brush
-        );
+        do_over_button.redraw();
+        resign_button.redraw();
     }
 
     void window_main::grid_scroll(float dx, float dy) {
@@ -899,6 +855,7 @@ namespace hmgui {
         window_class.register_class();
         create_window(handle_parent_window);
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
+        newgame_button.initialize(d2d1_factory, d2d1_dwrite_factory, d2d1_render_target, d2d1_brush, text_format_button_label, L"対局開始");
         update_rect();
     }
 
@@ -967,13 +924,13 @@ namespace hmgui {
     void window_newgame::update_rect() {
         GetClientRect(handle_window, &client_area_rect);
         client_area_rectf = rect_to_rectf(client_area_rect);
-        newgame_button_area_rectf = D2D1::RectF(
+        newgame_button.button_area_rectf = D2D1::RectF(
             client_area_rectf.right / 2 - 50.0f + config_ref.margin,
             client_area_rectf.bottom - 50.0f + config_ref.margin,
             client_area_rectf.right / 2 + 50.0f - config_ref.margin,
             client_area_rectf.bottom - config_ref.margin
         );
-        newgame_button_area_rect = rectf_to_rect(newgame_button_area_rectf);
+        newgame_button.button_area_rect = rectf_to_rect(newgame_button.button_area_rectf);
         for (int i = 0; i < newgame_config_size; i++) {
             newgame_config_area_rectf[i] = D2D1::RectF(
                 8.0f,
@@ -986,8 +943,6 @@ namespace hmgui {
     }
 
     void window_newgame::redraw() {
-        D2D1_COLOR_F color;
-
         d2d1_render_target->Clear(white_color);
 
         for (int i = 0; i < newgame_config_size; i++) {
@@ -1018,33 +973,7 @@ namespace hmgui {
             );
         }
 
-        switch (newgame_button_state) {
-            case 0: {
-                color = white_color;
-                break;
-            }
-            case 1: {
-                color = white_smoke_color;
-                break;
-            }
-            case 2: {
-                color = light_gray_color;
-                break;
-            }
-        }
-        d2d1_brush->SetColor(color);
-        d2d1_render_target->FillRectangle(newgame_button_area_rectf, d2d1_brush);
-
-        d2d1_brush->SetColor(black_color);
-
-        d2d1_render_target->DrawRectangle(newgame_button_area_rectf, d2d1_brush, 2.0f);
-        d2d1_render_target->DrawText(
-            L"対局開始",
-            4,
-            text_format_button_label,
-            newgame_button_area_rectf,
-            d2d1_brush
-        );
+        newgame_button.redraw();
 
         return;
     }
@@ -1178,38 +1107,18 @@ namespace hmgui {
             edit_controls[i] = edit_handle;
         }
 
-        SetWindowTextW(edit_controls[0], std::to_wstring(config_ref.grid_spacing).c_str());
-        SetWindowTextW(edit_controls[1], std::to_wstring(config_ref.kifu_spacing).c_str());
-        SetWindowTextW(edit_controls[2], std::to_wstring(config_ref.label_size).c_str());
-        SetWindowTextW(edit_controls[3], std::to_wstring(config_ref.grid_size_x).c_str());
-        SetWindowTextW(edit_controls[4], std::to_wstring(config_ref.kifu_size_x).c_str());
-        SetWindowTextW(edit_controls[5], std::to_wstring(config_ref.kifu_turn_size_x).c_str());
-        SetWindowTextW(edit_controls[6], std::to_wstring(config_ref.vertical_size).c_str());
-        SetWindowTextW(edit_controls[7], std::to_wstring(config_ref.margin).c_str());
-        SetWindowTextW(edit_controls[8], std::to_wstring(config_ref.padding).c_str());
+        for (int i = 0; i < settings_item_references.size(); i++) {
+            SetWindowTextW(edit_controls[i], std::to_wstring(settings_item_references[i]).c_str());
+        }
     }
 
     void window_settings::update_config() {
         wchar_t buffer[256];
 
-        GetWindowTextW(edit_controls[0], buffer, 256);
-        config_ref.grid_spacing = std::stof(buffer);
-        GetWindowTextW(edit_controls[1], buffer, 256);
-        config_ref.kifu_spacing = std::stof(buffer);
-        GetWindowTextW(edit_controls[2], buffer, 256);
-        config_ref.label_size = std::stof(buffer);
-        GetWindowTextW(edit_controls[3], buffer, 256);
-        config_ref.grid_size_x = std::stof(buffer);
-        GetWindowTextW(edit_controls[4], buffer, 256);
-        config_ref.kifu_size_x = std::stof(buffer);
-        GetWindowTextW(edit_controls[5], buffer, 256);
-        config_ref.kifu_turn_size_x= std::stof(buffer);
-        GetWindowTextW(edit_controls[6], buffer, 256);
-        config_ref.vertical_size = std::stof(buffer);
-        GetWindowTextW(edit_controls[7], buffer, 256);
-        config_ref.margin = std::stof(buffer);
-        GetWindowTextW(edit_controls[8], buffer, 256);
-        config_ref.padding = std::stof(buffer);
+        for (int i = 0; i < settings_item_references.size(); i++) {
+            GetWindowTextW(edit_controls[i], buffer, 256);
+            settings_item_references[i].get() = std::stof(buffer);
+        }
     }
 
     void window_settings::update_rect() {

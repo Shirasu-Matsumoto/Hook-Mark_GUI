@@ -610,6 +610,55 @@ namespace hmgui {
                 }
                 return 0;
             }
+            case WM_DROPFILES: {
+                HDROP handle_drop = reinterpret_cast<HDROP>(w_param);
+
+                wchar_t filepath[MAX_PATH];
+                if (DragQueryFileW(handle_drop, 0, filepath, MAX_PATH)) {
+                    if (!kifu_saved) {
+                        int ret = check_nosave();
+                        switch (ret) {
+                            case 0: {
+                                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                break;
+                            }
+                            case 1: {
+                                break;
+                            }
+                            case 2: {
+                                return 0;
+                            }
+                        }
+                    }
+                    if (std::wstring(filepath).empty()) {
+                        break;
+                    }
+                    if (is_editing) {
+                        SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), MAKELPARAM(NULL, NULL));
+                    }
+                    hm::kifu_ver1 temp;
+                    try {
+                        temp.kifu_load(utf16_to_utf8(filepath));
+                    }
+                    catch (const std::exception &e) {
+                        MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"エラー", MB_OK | MB_ICONERROR);
+                        break;
+                    }
+                    current_kifu = temp;
+                    current_kifu_path = filepath;
+                    current_kifu.resign();
+                    kifu_current_turn = current_kifu.size() - 1;
+                    kifu_saved = true;
+                    config_ref.open_file = utf16_to_utf8(filepath);
+                    hm::kifuver1_to_board(current_kifu, board);
+                    update_title();
+                    initialize_scroll();
+                    InvalidateRect(handle_window, nullptr, FALSE);
+                    DragFinish(handle_drop);
+                    return 0;
+                }
+                return 0;
+            }
             case WM_MOUSEWHEEL: {
                 POINT point = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
                 ScreenToClient(handle_window, &point);
@@ -760,13 +809,13 @@ namespace hmgui {
                     }
                     return 0;
                 }
-                if (PtInRect(&do_over_button_area_rect, pt)) {
-                    do_over_button_state = 2;
+                if (PtInRect(&do_over_button.button_area_rect, pt)) {
+                    do_over_button.current_state = 2;
                     InvalidateRect(handle_window, nullptr, FALSE);
                     return 0;
                 }
-                if (PtInRect(&resign_button_area_rect, pt)) {
-                    resign_button_state = 2;
+                if (PtInRect(&resign_button.button_area_rect, pt)) {
+                    resign_button.current_state = 2;
                     InvalidateRect(handle_window, nullptr, FALSE);
                     return 0;
                 }
@@ -792,7 +841,7 @@ namespace hmgui {
                     return 0;
                 }
 
-                if (do_over_button_state == 2) {
+                if (do_over_button.current_state == 2) {
                     if (!is_gaming) return 0;
                     if (kifu_current_turn > -1) {
                         kifu_current_turn = current_kifu.size() - 2;
@@ -804,16 +853,16 @@ namespace hmgui {
                         }
                         InvalidateRect(handle_window, nullptr, FALSE);
                     }
-                    do_over_button_state = 1;
+                    do_over_button.current_state = 1;
                     return 0;
                 }
-                if (resign_button_state == 2) {
+                if (resign_button.current_state == 2) {
                     if (!is_gaming) return 0;
                     is_gaming = false;
                     current_kifu.resign();
                     EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
                     EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
-                    resign_button_state = 1;
+                    resign_button.current_state = 1;
                     InvalidateRect(handle_window, nullptr, FALSE);
                     MessageBoxW(NULL, std::wstring(L"まで" + std::to_wstring(current_kifu.size()) + L"手で" + (((current_kifu.size() - 1) % 2 == 0) ? L"先手" : L"後手") + L"の勝ち").c_str(), L"", MB_OK);
                     return 0;
@@ -901,20 +950,20 @@ namespace hmgui {
                     return 0;
                 }
 
-                if (PtInRect(&do_over_button_area_rect, pt)) {
-                    do_over_button_state = 1;
+                if (PtInRect(&do_over_button.button_area_rect, pt)) {
+                    do_over_button.current_state = 1;
                     InvalidateRect(handle_window, nullptr, FALSE);
                 }
                 else {
-                    do_over_button_state = 0;
+                    do_over_button.current_state = 0;
                     InvalidateRect(handle_window, nullptr, FALSE);
                 }
-                if (PtInRect(&resign_button_area_rect, pt)) {
-                    resign_button_state = 1;
+                if (PtInRect(&resign_button.button_area_rect, pt)) {
+                    resign_button.current_state = 1;
                     InvalidateRect(handle_window, nullptr, FALSE);
                 }
                 else {
-                    resign_button_state = 0;
+                    resign_button.current_state = 0;
                     InvalidateRect(handle_window, nullptr, FALSE);
                 }
 
@@ -1005,11 +1054,11 @@ namespace hmgui {
             case WM_MOUSEMOVE: {
                 POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
 
-                if (PtInRect(&newgame_button_area_rect, pt)) {
-                    newgame_button_state = 1;
+                if (PtInRect(&newgame_button.button_area_rect, pt)) {
+                    newgame_button.current_state = 1;
                 }
                 else {
-                    newgame_button_state = 0;
+                    newgame_button.current_state = 0;
                 }
                 InvalidateRect(handle_window, nullptr, FALSE);
                 return 0;
@@ -1017,8 +1066,8 @@ namespace hmgui {
             case WM_LBUTTONDOWN: {
                 POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
 
-                if (PtInRect(&newgame_button_area_rect, pt)) {
-                    newgame_button_state = 2;
+                if (PtInRect(&newgame_button.button_area_rect, pt)) {
+                    newgame_button.current_state = 2;
                     InvalidateRect(handle_window, nullptr, FALSE);
                     return 0;
                 }
@@ -1035,7 +1084,7 @@ namespace hmgui {
             case WM_LBUTTONUP: {
                 POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
 
-                if (PtInRect(&newgame_button_area_rect, pt)) {
+                if (PtInRect(&newgame_button.button_area_rect, pt)) {
                     if (!main_window.kifu_saved) {
                         int ret = check_nosave();
                         switch (ret) {
@@ -1072,7 +1121,7 @@ namespace hmgui {
                     update_title();
                     InvalidateRect(main_window, nullptr, FALSE);
                     handle_exit();
-                    newgame_button_state = 1;
+                    newgame_button.current_state = 1;
                     unsigned int res = main_window.board.is_win();
                     if (res) {
                         SendMessageW(main_window, WM_COMMAND, MAKEWPARAM(ID_MENU_GAME_RESIGN, 1), res);

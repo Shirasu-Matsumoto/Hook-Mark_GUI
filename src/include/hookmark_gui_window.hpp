@@ -76,7 +76,7 @@ namespace hmgui {
             IDWriteTextFormat *text_format_kifu;
             IDWriteTextFormat *text_format_label;
             IDWriteTextFormat *text_format_config;
-            IDWriteTextFormat *text_format_game_control_button_label;
+            IDWriteTextFormat *text_format_button_label;
             float scroll_speed = 10.0f;
             RECT client_area_rect;
             D2D1_RECT_F client_area_rectf;
@@ -91,10 +91,6 @@ namespace hmgui {
             RECT config_area_rect;
             D2D1_RECT_F config_area_rectf;
             D2D1_RECT_F config_area_clip_rectf;
-            RECT do_over_button_area_rect;
-            D2D1_RECT_F do_over_button_area_rectf;
-            RECT resign_button_area_rect;
-            D2D1_RECT_F resign_button_area_rectf;
             D2D1_POINT_2F grid_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             D2D1_POINT_2F kifu_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             D2D1_POINT_2F config_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
@@ -102,6 +98,8 @@ namespace hmgui {
             std::vector<float> label_height;
             int kifu_current_turn = 0;
             bool kifu_saved = true;
+            d2d1_button do_over_button;
+            d2d1_button resign_button;
 
             enum class resize_region {
                 none,
@@ -124,9 +122,6 @@ namespace hmgui {
 
             bool is_gaming = false;
             bool is_editing = false;
-
-            int do_over_button_state = 0;
-            int resign_button_state = 0;
 
             window_main(window_conf &config) : config_ref(config) {}
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
@@ -187,8 +182,6 @@ namespace hmgui {
             IDWriteTextFormat *text_format_button_label;
             D2D1_RECT_F client_area_rectf;
             RECT client_area_rect;
-            D2D1_RECT_F newgame_button_area_rectf;
-            RECT newgame_button_area_rect;
 
             std::vector<std::wstring> newgame_config_keys = {
                 L"現在の局面から開始"
@@ -198,7 +191,7 @@ namespace hmgui {
             std::vector<int> newgame_config_state;
             size_t newgame_config_size = newgame_config_keys.size();
 
-            int newgame_button_state = 0;
+            d2d1_button newgame_button;
 
             window_newgame(window_conf &config)
                 : config_ref(config),
@@ -249,6 +242,17 @@ namespace hmgui {
                 L"縦分割のサイズ",
                 L"マージン",
                 L"パディング"
+            };
+            std::vector<std::reference_wrapper<float>> settings_item_references = {
+                config_ref.grid_spacing,
+                config_ref.kifu_spacing,
+                config_ref.label_size,
+                config_ref.grid_size_x,
+                config_ref.kifu_size_x,
+                config_ref.kifu_turn_size_x,
+                config_ref.vertical_size,
+                config_ref.margin,
+                config_ref.padding
             };
             std::vector<HWND> edit_controls;
 
