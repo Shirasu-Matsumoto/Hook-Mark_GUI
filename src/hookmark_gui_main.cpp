@@ -166,6 +166,7 @@ namespace hmgui {
         catch (std::exception &e) {
             MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"エラー", MB_OK | MB_ICONERROR);
         }
+        grobal_config = window_conf();
     }
 
     int check_nosave() {
@@ -465,6 +466,7 @@ namespace hmgui {
                     }
                     case ID_MENU_FILE_CLEAR_CONFIG: {
                         clear_config();
+                        d2d1_update_text_format();
                         break;
                     }
                     case ID_MENU_FILE_EXIT: {
