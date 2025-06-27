@@ -69,31 +69,31 @@ namespace hmgui {
             hm::board_state board;
             hm::kifu_ver1 current_kifu;
 
-            ID2D1Factory *d2d1_factory;
-            ID2D1HwndRenderTarget *d2d1_render_target;
-            ID2D1SolidColorBrush *d2d1_brush;
-            IDWriteFactory *d2d1_dwrite_factory;
-            IDWriteTextFormat *text_format_kifu;
-            IDWriteTextFormat *text_format_label;
-            IDWriteTextFormat *text_format_config;
-            IDWriteTextFormat *text_format_button_label;
+            ID2D1Factory *d2d1_factory = nullptr;
+            ID2D1HwndRenderTarget *d2d1_render_target = nullptr;
+            ID2D1SolidColorBrush *d2d1_brush = nullptr;
+            IDWriteFactory *d2d1_dwrite_factory = nullptr;
+            IDWriteTextFormat *text_format_kifu = nullptr;
+            IDWriteTextFormat *text_format_label = nullptr;
+            IDWriteTextFormat *text_format_config = nullptr;
+            IDWriteTextFormat *text_format_button_label = nullptr;
             float scroll_speed = 10.0f;
-            RECT client_area_rect;
-            D2D1_RECT_F client_area_rectf;
-            RECT window_area_rect;
-            D2D1_RECT_F window_area_rectf;
-            RECT grid_area_rect;
-            D2D1_RECT_F grid_area_rectf;
-            D2D1_RECT_F grid_area_clip_rectf;
-            RECT kifu_area_rect;
-            D2D1_RECT_F kifu_area_rectf;
-            D2D1_RECT_F kifu_area_clip_rectf;
-            RECT config_area_rect;
-            D2D1_RECT_F config_area_rectf;
-            D2D1_RECT_F config_area_clip_rectf;
-            D2D1_POINT_2F grid_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
-            D2D1_POINT_2F kifu_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
-            D2D1_POINT_2F config_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
+            RECT client_area_rect = { 0, 0, 0, 0 };
+            D2D1_RECT_F client_area_rectf = D2D1::RectF();
+            RECT window_area_rect = { 0, 0, 0, 0 };
+            D2D1_RECT_F window_area_rectf = D2D1::RectF();
+            RECT grid_area_rect = { 0, 0, 0, 0 };
+            D2D1_RECT_F grid_area_rectf = D2D1::RectF();
+            D2D1_RECT_F grid_area_clip_rectf = D2D1::RectF();
+            RECT kifu_area_rect = { 0, 0, 0, 0 };
+            D2D1_RECT_F kifu_area_rectf = D2D1::RectF();
+            D2D1_RECT_F kifu_area_clip_rectf = D2D1::RectF();
+            RECT config_area_rect = { 0, 0, 0, 0 };
+            D2D1_RECT_F config_area_rectf = D2D1::RectF();
+            D2D1_RECT_F config_area_clip_rectf = D2D1::RectF();
+            D2D1_POINT_2F grid_scroll_offset = D2D1::Point2F();
+            D2D1_POINT_2F kifu_scroll_offset = D2D1::Point2F();
+            D2D1_POINT_2F config_scroll_offset = D2D1::Point2F();
             std::vector<float> label_width;
             std::vector<float> label_height;
             int kifu_current_turn = 0;
@@ -123,8 +123,9 @@ namespace hmgui {
             bool is_gaming = false;
             bool is_editing = false;
 
-            window_main(window_conf &config) : config_ref(config) {}
+            window_main(window_conf& config) : config_ref(config) {}
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
+            bool d2d1_update_text_format();
             void initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void update_rect();
             void update_scroll_speed();
@@ -156,8 +157,8 @@ namespace hmgui {
 
     class menu_main final : public menu_base {
         public:
-            HMENU handle_menu_file;
-            HMENU handle_menu_edit;
+            HMENU handle_menu_file = nullptr;
+            HMENU handle_menu_edit = nullptr;
 
             menu_main() : menu_base() {}
             void create_menu() override;
@@ -174,15 +175,17 @@ namespace hmgui {
             wc_newgame window_class;
             window_conf &config_ref;
 
-            ID2D1Factory *d2d1_factory;
-            IDWriteFactory *d2d1_dwrite_factory;
-            ID2D1HwndRenderTarget *d2d1_render_target;
-            ID2D1SolidColorBrush *d2d1_brush;
-            IDWriteTextFormat *text_format_default;
-            IDWriteTextFormat *text_format_button_label;
-            D2D1_RECT_F client_area_rectf;
-            RECT client_area_rect;
+            ID2D1Factory *d2d1_factory = nullptr;
+            IDWriteFactory *d2d1_dwrite_factory = nullptr;
+            ID2D1HwndRenderTarget *d2d1_render_target = nullptr;
+            ID2D1SolidColorBrush *d2d1_brush = nullptr;
+            IDWriteTextFormat *text_format_default = nullptr;
+            IDWriteTextFormat *text_format_button_label = nullptr;
+            D2D1_RECT_F client_area_rectf = D2D1::RectF();
+            RECT client_area_rect = { 0, 0, 0, 0 };
 
+            HFONT handle_font = nullptr;
+            std::pair<HWND, HWND> players_name_edit = { nullptr, nullptr };
             std::vector<std::wstring> newgame_config_keys = {
                 L"現在の局面から開始"
             };
@@ -221,15 +224,15 @@ namespace hmgui {
             wc_settings window_class;
             window_conf &config_ref;
 
-            ID2D1Factory *d2d1_factory;
-            IDWriteFactory *d2d1_dwrite_factory;
-            ID2D1HwndRenderTarget *d2d1_render_target;
-            ID2D1SolidColorBrush *d2d1_brush;
-            IDWriteTextFormat *text_format_default;
-            D2D1_RECT_F client_area_rectf;
-            RECT client_area_rect;
-            D2D1_RECT_F settings_area_rectf;
-            RECT settings_area_rect;
+            ID2D1Factory* d2d1_factory = nullptr;
+            IDWriteFactory *d2d1_dwrite_factory = nullptr;
+            ID2D1HwndRenderTarget *d2d1_render_target = nullptr;
+            ID2D1SolidColorBrush *d2d1_brush = nullptr;
+            IDWriteTextFormat *text_format_default = nullptr;
+            D2D1_RECT_F client_area_rectf = D2D1::RectF();
+            RECT client_area_rect = { 0, 0, 0, 0 };
+            D2D1_RECT_F settings_area_rectf = D2D1::RectF();
+            RECT settings_area_rect = { 0, 0, 0, 0 };
             float settings_item_spacing = 25.0f;
 
             std::vector<std::wstring> settings_item_keys = {
@@ -253,6 +256,9 @@ namespace hmgui {
                 config_ref.vertical_size,
                 config_ref.margin,
                 config_ref.padding
+            };
+            std::vector<float> settings_item_default = {
+                50.0f, 30.0f, 12.0f, 500.0f, 400.0f, 100.0f, 500.0f, 3.0f, 5.0f
             };
             std::vector<HWND> edit_controls;
 
@@ -280,11 +286,11 @@ namespace hmgui {
         public:
             wc_version window_class;
 
-            ID2D1Factory *d2d1_factory;
-            IDWriteFactory *d2d1_dwrite_factory;
-            ID2D1HwndRenderTarget *d2d1_render_target;
-            ID2D1SolidColorBrush *d2d1_brush;
-            IDWriteTextFormat *text_format_default;
+            ID2D1Factory *d2d1_factory = nullptr;
+            IDWriteFactory *d2d1_dwrite_factory = nullptr;
+            ID2D1HwndRenderTarget *d2d1_render_target = nullptr;
+            ID2D1SolidColorBrush *d2d1_brush = nullptr;
+            IDWriteTextFormat *text_format_default = nullptr;
 
             window_version() {};
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
@@ -308,19 +314,19 @@ namespace hmgui {
             wc_sep_board window_class;
             window_conf &config_ref;
 
-            ID2D1Factory *d2d1_factory;
-            IDWriteFactory *d2d1_dwrite_factory;
-            ID2D1HwndRenderTarget *d2d1_render_target;
-            ID2D1SolidColorBrush *d2d1_brush;
-            D2D1_RECT_F client_area_rectf;
-            RECT client_area_rect;
-            D2D1_RECT_F grid_area_rectf;
-            RECT grid_area_rect;
-            D2D1_RECT_F grid_area_clip_rectf;
+            ID2D1Factory *d2d1_factory = nullptr;
+            IDWriteFactory *d2d1_dwrite_factory = nullptr;
+            ID2D1HwndRenderTarget *d2d1_render_target = nullptr;
+            ID2D1SolidColorBrush *d2d1_brush = nullptr;
+            D2D1_RECT_F client_area_rectf = D2D1::RectF();
+            RECT client_area_rect = { 0, 0, 0, 0 };
+            D2D1_RECT_F grid_area_rectf = D2D1::RectF();
+            RECT grid_area_rect = { 0, 0, 0, 0 };
+            D2D1_RECT_F grid_area_clip_rectf = D2D1::RectF();
             D2D1_POINT_2F grid_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
             std::vector<float> label_width;
             std::vector<float> label_height;
-            IDWriteTextFormat *text_format_label;
+            IDWriteTextFormat *text_format_label = nullptr;
 
             hm::board_state board;
             hm::kifu_ver1 current_kifu;

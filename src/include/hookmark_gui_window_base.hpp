@@ -27,7 +27,7 @@
 namespace hmgui {
     class window_base {
         public:
-            HWND handle_window;
+            HWND handle_window = nullptr;
 
             window_base() {}
             virtual ~window_base() {
@@ -58,7 +58,7 @@ namespace hmgui {
 
     class wc_base {
         public:
-            WNDCLASSEXW window_class;
+            WNDCLASSEXW window_class = {};
 
             wc_base() {}
             ~wc_base() {
@@ -149,15 +149,15 @@ namespace hmgui {
 
     class d2d1_button {
         public:
-            ID2D1Factory *d2d1_factory;
-            IDWriteFactory *d2d1_dwrite_factory;
-            ID2D1HwndRenderTarget *d2d1_render_target;
-            ID2D1SolidColorBrush *d2d1_brush;
-            IDWriteTextFormat *text_format;
+            ID2D1Factory *d2d1_factory = nullptr;
+            IDWriteFactory *d2d1_dwrite_factory = nullptr;
+            ID2D1HwndRenderTarget *d2d1_render_target = nullptr;
+            ID2D1SolidColorBrush *d2d1_brush = nullptr;
+            IDWriteTextFormat *text_format = nullptr;
             std::wstring label_text;
-            D2D1_RECT_F button_area_rectf;
-            RECT button_area_rect;
-            int current_state;
+            D2D1_RECT_F button_area_rectf = D2D1::RectF();
+            RECT button_area_rect = { 0, 0, 0, 0 };
+            int current_state = 0;
 
             d2d1_button() {}
 

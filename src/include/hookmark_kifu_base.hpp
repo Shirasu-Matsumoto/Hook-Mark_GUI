@@ -31,9 +31,9 @@ namespace hm {
                 _kifu.clear();
             }
 
-            virtual void kifu_save(const std::string &filename) const {}
+            virtual void kifu_save(const std::filesystem::path &filename) const {}
 
-            virtual void kifu_load(const std::string &filename) {}
+            virtual void kifu_load(const std::filesystem::path &filename) {}
 
             virtual pos &at(unsigned int index) {
                 if (index >= _kifu.size()) {

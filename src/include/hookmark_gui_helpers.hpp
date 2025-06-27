@@ -14,7 +14,7 @@ namespace hmgui {
     inline D2D1_COLOR_F blue_color = D2D1::ColorF(D2D1::ColorF::Blue);
     inline D2D1_COLOR_F black_color = D2D1::ColorF(D2D1::ColorF::Black);
     inline D2D1_COLOR_F kifu_edge_color = D2D1::ColorF(0x176ff7);
-    inline D2D1_COLOR_F kifu_bg_color = D2D1::ColorF(0x689be9);
+    inline D2D1_COLOR_F kifu_bg_color = D2D1::ColorF(0x689be9, 0.6f);
     inline D2D1_COLOR_F gray_color = D2D1::ColorF(D2D1::ColorF::Gray);
     inline D2D1_COLOR_F yellow_color = D2D1::ColorF(0xeeee11);
     inline D2D1_COLOR_F white_color = D2D1::ColorF(D2D1::ColorF::White);

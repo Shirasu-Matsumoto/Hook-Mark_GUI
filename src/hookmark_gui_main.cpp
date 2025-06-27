@@ -327,8 +327,7 @@ namespace hmgui {
                         }
                         std::wstring result;
                         show_file_load_dialog(result);
-                        std::string filepath = utf16_to_utf8(result);
-                        if (filepath.empty()) {
+                        if (result.empty()) {
                             break;
                         }
                         if (is_editing) {
@@ -336,7 +335,7 @@ namespace hmgui {
                         }
                         hm::kifu_ver1 temp;
                         try {
-                            temp.kifu_load(filepath);
+                            temp.kifu_load(result);
                         }
                         catch (const std::exception &e) {
                             MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(), L"エラー", MB_OK | MB_ICONERROR);
@@ -347,7 +346,7 @@ namespace hmgui {
                         current_kifu.resign();
                         kifu_current_turn = current_kifu.size() - 1;
                         kifu_saved = true;
-                        config_ref.open_file = filepath;
+                        config_ref.open_file = utf16_to_utf8(result);
                         hm::kifuver1_to_board(current_kifu, board);
                         update_title();
                         initialize_scroll();
@@ -375,7 +374,7 @@ namespace hmgui {
                                 }
                             }
                             try {
-                                current_kifu.kifu_save(utf16_to_utf8(current_kifu_path));
+                                current_kifu.kifu_save(current_kifu_path);
                                 kifu_saved = true;
                             }
                             catch (const std::exception &e) {
@@ -404,12 +403,11 @@ namespace hmgui {
                         }
                         show_file_save_dialog(result);
                         current_kifu_path = result;
-                        std::string filepath = utf16_to_utf8(result);
-                        if (filepath.empty()) {
+                        if (result.empty()) {
                             break;
                         }
                         try {
-                            current_kifu.kifu_save(filepath);
+                            current_kifu.kifu_save(result);
                             kifu_saved = true;
                             if (is_editing) {
                                 SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), MAKELPARAM(NULL, NULL));
@@ -715,6 +713,8 @@ namespace hmgui {
                     }
                     return 0;
                 }
+
+                return 0;
             }
             case WM_LBUTTONDOWN: {
                 POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
@@ -935,8 +935,8 @@ namespace hmgui {
                             if (new_vertical_size < 100.0f) {
                                 new_vertical_size = 100.0f;
                             }
-                            if (new_vertical_size > config_ref.window_size_y - 50) {
-                                new_vertical_size = config_ref.window_size_y - 50;
+                            if (new_vertical_size > config_ref.window_size_y - 40.0f) {
+                                new_vertical_size = config_ref.window_size_y - 40.0f;
                             }
                             config_ref.vertical_size = new_vertical_size;
                             break;
@@ -1030,7 +1030,7 @@ namespace hmgui {
             }
             case WM_GETMINMAXINFO: {
                 MINMAXINFO *minmax_info = reinterpret_cast<MINMAXINFO *>(l_param);
-                float min_client_height = config_ref.vertical_size + 50.0f;
+                float min_client_height = config_ref.vertical_size + 40.0f;
                 RECT window_rect = {0, 0, 100, static_cast<LONG>(min_client_height)};
                 AdjustWindowRectEx(&window_rect, GetWindowLong(handle_window, GWL_STYLE), TRUE, GetWindowLong(handle_window, GWL_EXSTYLE));
                 LONG min_total_height = window_rect.bottom - window_rect.top;
@@ -1056,11 +1056,13 @@ namespace hmgui {
 
                 if (PtInRect(&newgame_button.button_area_rect, pt)) {
                     newgame_button.current_state = 1;
+                    InvalidateRect(handle_window, nullptr, FALSE);
                 }
                 else {
                     newgame_button.current_state = 0;
+                    InvalidateRect(handle_window, nullptr, FALSE);
                 }
-                InvalidateRect(handle_window, nullptr, FALSE);
+
                 return 0;
             }
             case WM_LBUTTONDOWN: {
@@ -1074,7 +1076,7 @@ namespace hmgui {
 
                 for (int i = 0; i < newgame_config_keys.size(); i++) {
                     if (PtInRect(&newgame_config_area_rect[i], pt)) {
-                        newgame_config_state[i] = !newgame_config_state[i];
+                        newgame_config_state[i] = 1 - newgame_config_state[i];
                         InvalidateRect(handle_window, nullptr, FALSE);
                         return 0;
                     }
@@ -1090,6 +1092,7 @@ namespace hmgui {
                         switch (ret) {
                             case 0: {
                                 SendMessageW(main_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                break;
                             }
                             case 1: {
                                 break;
@@ -1103,11 +1106,16 @@ namespace hmgui {
                         SendMessageW(main_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), MAKELPARAM(NULL, NULL));
                     }
                     main_window.current_kifu.clear();
+                    wchar_t buffer[256];
+                    GetWindowTextW(players_name_edit.first, buffer, 256);
+                    std::string first_name = utf16_to_utf8(buffer);
+                    GetWindowTextW(players_name_edit.second, buffer, 256);
+                    std::string second_name = utf16_to_utf8(buffer);
                     if (newgame_config_state[0] == 1) {
-                        main_window.current_kifu.set_config_struct({ "", "", main_window.board });
+                        main_window.current_kifu.set_config_struct({ first_name, second_name, main_window.board });
                     }
                     else {
-                        main_window.current_kifu.set_config_struct({ "", "", hm::board_state() });
+                        main_window.current_kifu.set_config_struct({ first_name, second_name, hm::board_state() });
                     }
                     hm::kifuver1_to_board(main_window.current_kifu, main_window.board);
                     main_window.kifu_current_turn = 0;
@@ -1129,6 +1137,8 @@ namespace hmgui {
                     InvalidateRect(handle_window, nullptr, FALSE);
                     return 0;
                 }
+
+                return 0;
             }
             case WM_PAINT: {
                 PAINTSTRUCT ps;
@@ -1163,7 +1173,7 @@ namespace hmgui {
             }
             case WM_CLOSE: {
                 handle_exit();
-                main_window.d2d1_initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
+                main_window.d2d1_update_text_format();
                 main_window.update_rect();
                 return 0;
             }
@@ -1223,8 +1233,6 @@ namespace hmgui {
             }
             case WM_CLOSE: {
                 handle_exit();
-                main_window.d2d1_initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
-                main_window.update_rect();
                 return 0;
             }
             case WM_DPICHANGED: {
@@ -1375,7 +1383,7 @@ namespace hmgui {
     }
 }
 
-int WINAPI wWinMain(HINSTANCE handle_instance, HINSTANCE, LPWSTR, int) {
+int WINAPI wWinMain(_In_ HINSTANCE handle_instance, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int) {
     hmgui::load_config();
     HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &grobal_d2d1_factory);
     if (FAILED(hr)) return false;

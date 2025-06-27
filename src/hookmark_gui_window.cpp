@@ -20,6 +20,67 @@ namespace hmgui {
         return RegisterClassExW(&window_class);
     }
 
+    bool window_main::d2d1_update_text_format() {
+        if (text_format_kifu) text_format_kifu->Release();
+        if (text_format_label) text_format_label->Release();
+        if (text_format_config) text_format_config->Release();
+        if (text_format_button_label) text_format_button_label->Release();
+
+        HRESULT hr = d2d1_dwrite_factory->CreateTextFormat(
+            L"Yu Gothic UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_NORMAL,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            config_ref.kifu_spacing * 0.8f,
+            L"ja-JP",
+            &text_format_kifu
+        );
+        if (FAILED(hr)) return false;
+        text_format_kifu->SetWordWrapping(DWRITE_WORD_WRAPPING_NO_WRAP);
+
+        hr = d2d1_dwrite_factory->CreateTextFormat(
+            L"Yu Gothic UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_NORMAL,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            config_ref.label_size,
+            L"ja-JP",
+            &text_format_label
+        );
+        if (FAILED(hr)) return false;
+
+        hr = d2d1_dwrite_factory->CreateTextFormat(
+            L"Yu Gothic UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_NORMAL,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            18.0f,
+            L"ja-JP",
+            &text_format_config
+        );
+        if (FAILED(hr)) return false;
+
+        hr = d2d1_dwrite_factory->CreateTextFormat(
+            L"Yu Gothic UI",
+            nullptr,
+            DWRITE_FONT_WEIGHT_NORMAL,
+            DWRITE_FONT_STYLE_NORMAL,
+            DWRITE_FONT_STRETCH_NORMAL,
+            18.0f,
+            L"ja-JP",
+            &text_format_button_label
+        );
+        if (FAILED(hr)) return false;
+
+        text_format_button_label->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+        text_format_button_label->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+
+        return true;
+    }
+
     bool window_main::d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
         d2d1_factory = i_d2d1_factory;
         d2d1_factory->AddRef();
@@ -51,56 +112,7 @@ namespace hmgui {
         hr = d2d1_render_target->CreateSolidColorBrush(black_color, &d2d1_brush);
         if (FAILED(hr)) return false;
 
-        hr = d2d1_dwrite_factory->CreateTextFormat(
-            L"Segoe UI",
-            nullptr,
-            DWRITE_FONT_WEIGHT_NORMAL,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            config_ref.kifu_spacing * 0.8f,
-            L"ja-JP",
-            &text_format_kifu
-        );
-        if (FAILED(hr)) return false;
-
-        hr = d2d1_dwrite_factory->CreateTextFormat(
-            L"Segoe UI",
-            nullptr,
-            DWRITE_FONT_WEIGHT_NORMAL,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            config_ref.label_size,
-            L"ja-JP",
-            &text_format_label
-        );
-        if (FAILED(hr)) return false;
-
-        hr = d2d1_dwrite_factory->CreateTextFormat(
-            L"Segoe UI",
-            nullptr,
-            DWRITE_FONT_WEIGHT_NORMAL,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            18.0f,
-            L"ja-JP",
-            &text_format_config
-        );
-        if (FAILED(hr)) return false;
-
-        hr = d2d1_dwrite_factory->CreateTextFormat(
-            L"Segoe UI",
-            nullptr,
-            DWRITE_FONT_WEIGHT_NORMAL,
-            DWRITE_FONT_STYLE_NORMAL,
-            DWRITE_FONT_STRETCH_NORMAL,
-            20.0f,
-            L"ja-JP",
-            &text_format_button_label
-        );
-        if (FAILED(hr)) return false;
-
-        text_format_button_label->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
-        text_format_button_label->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+        if (!d2d1_update_text_format()) return false;
 
         for (int i = 1; i < 6; i++) {
             add_label_size(i);
@@ -171,13 +183,13 @@ namespace hmgui {
             config_ref.margin,
             config_ref.vertical_size + config_ref.margin,
             100.0f - config_ref.margin,
-            config_ref.vertical_size + 50.0f - config_ref.margin
+            config_ref.vertical_size + 40.0f - config_ref.margin
         );
         resign_button.button_area_rectf = D2D1::RectF(
             100.0f + config_ref.margin,
             config_ref.vertical_size + config_ref.margin,
             200.0f - config_ref.margin,
-            config_ref.vertical_size + 50.0f - config_ref.margin
+            config_ref.vertical_size + 40.0f - config_ref.margin
         );
         grid_area_rect = rectf_to_rect(grid_area_rectf);
         kifu_area_rect = rectf_to_rect(kifu_area_rectf);
@@ -217,7 +229,7 @@ namespace hmgui {
             0,
             L"Hook-Mark_GUI_Main",
             L"Hook-Mark GUI",
-            WS_OVERLAPPEDWINDOW,
+            WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
             static_cast<int>(config_ref.window_pos_x), static_cast<int>(config_ref.window_pos_y),
             static_cast<int>(config_ref.window_size_x), static_cast<int>(config_ref.window_size_y),
             nullptr, nullptr, GetModuleHandle(nullptr), this
@@ -418,7 +430,7 @@ namespace hmgui {
 
             D2D1_RECT_F layout = D2D1::RectF(
                 new_left,
-                grid_area_rectf.bottom - 17,
+                grid_area_rectf.bottom - config_ref.label_size - 5.0f,
                 new_left + grid_spacing,
                 grid_area_rectf.bottom
             );
@@ -438,8 +450,11 @@ namespace hmgui {
             float cy = grid_area_rectf.bottom - (y + 0.5f) * grid_spacing - grid_scroll_offset.y;
 
             std::wstring txt = std::to_wstring(y);
+
+            add_label_size(static_cast<int>(txt.size()));
+
             D2D1_RECT_F layout = D2D1::RectF(
-                grid_area_rectf.left + 7,
+                grid_area_rectf.left + config_ref.padding,
                 cy - label_height[txt.size()] / 2,
                 grid_area_rectf.left + grid_spacing * 10,
                 cy - label_height[txt.size()] / 2
@@ -547,7 +562,7 @@ namespace hmgui {
             d2d1_brush->SetColor(kifu_bg_color);
             d2d1_render_target->FillRectangle(single_kifu_rectf, d2d1_brush);
             d2d1_brush->SetColor(kifu_edge_color);
-            d2d1_render_target->DrawRectangle(single_kifu_rectf, d2d1_brush, 3.0f);
+            d2d1_render_target->DrawRectangle(single_kifu_rectf, d2d1_brush, 1.0f);
             d2d1_brush->SetColor(black_color);
         }
 
@@ -699,7 +714,12 @@ namespace hmgui {
             config_area_rectf.bottom - config_ref.padding - config_scroll_offset.y
         );
 
-        std::wstring conf_str = utf8_to_utf16(current_kifu.config());
+        hm::kifu_config kc = current_kifu.config_struct();
+        std::wstring str;
+        if (!(kc.first.empty() && kc.second.empty())) {
+            str = L"先手: " + utf8_to_utf16(kc.first) + L"\n後手: " + utf8_to_utf16(kc.second) + L"\n";
+        }
+        std::wstring conf_str = str + utf8_to_utf16(current_kifu.config());
 
         d2d1_render_target->DrawText(
             conf_str.c_str(),
@@ -830,7 +850,7 @@ namespace hmgui {
             0,
             L"Hook-Mark_GUI_NewGame",
             L"新規対局 - Hook-Mark GUI",
-            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
             CW_USEDEFAULT, CW_USEDEFAULT,
             600, 600,
             handle_parent_window, NULL, GetModuleHandle(nullptr), NULL
@@ -843,8 +863,41 @@ namespace hmgui {
     }
 
     void window_newgame::show_window(int show_command, float x, float y) {
-        ShowWindow(handle_window, show_command);
         SetWindowPos(handle_window, nullptr, static_cast<int>(x), static_cast<int>(y), 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+        ShowWindow(handle_window, show_command);
+
+        if (players_name_edit.first) DestroyWindow(players_name_edit.first);
+        if (players_name_edit.second) DestroyWindow(players_name_edit.second);
+
+        players_name_edit.first = CreateWindowExW(
+            0,
+            L"EDIT", L"",
+            WS_CHILD | WS_VISIBLE | WS_BORDER,
+            50, 10, client_area_rect.right / 2 - 65, 30,
+            handle_window, NULL, GetModuleHandle(nullptr), NULL
+        );
+        players_name_edit.second = CreateWindowExW(
+            0,
+            L"EDIT", L"",
+            WS_CHILD | WS_VISIBLE | WS_BORDER,
+            client_area_rect.right / 2 + 45, 10, client_area_rect.right / 2 - 60, 30,
+            handle_window, NULL, GetModuleHandle(nullptr), NULL
+        );
+        if (!handle_font) {
+            handle_font = CreateFontW(
+                18,
+                0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+                DEFAULT_PITCH | FF_DONTCARE, L"Yu Gothic UI"
+            );
+        }
+
+        SetWindowFont(players_name_edit.first, handle_font, FALSE);
+        SetWindowFont(players_name_edit.second, handle_font, FALSE);
+
+        ShowWindow(players_name_edit.first, SW_SHOW);
+        ShowWindow(players_name_edit.second, SW_SHOW);
+
         UpdateWindow(handle_window);
     }
 
@@ -890,7 +943,7 @@ namespace hmgui {
         if (FAILED(hr)) return false;
 
         hr = d2d1_dwrite_factory->CreateTextFormat(
-            L"Segoe UI",
+            L"Yu Gothic UI",
             nullptr,
             DWRITE_FONT_WEIGHT_NORMAL,
             DWRITE_FONT_STYLE_NORMAL,
@@ -902,12 +955,12 @@ namespace hmgui {
         if (FAILED(hr)) return false;
 
         hr = d2d1_dwrite_factory->CreateTextFormat(
-            L"Segoe UI",
+            L"Yu Gothic UI",
             nullptr,
             DWRITE_FONT_WEIGHT_NORMAL,
             DWRITE_FONT_STYLE_NORMAL,
             DWRITE_FONT_STRETCH_NORMAL,
-            18.0f,
+            15.0f,
             L"ja-JP",
             &text_format_button_label
         );
@@ -926,7 +979,7 @@ namespace hmgui {
         client_area_rectf = rect_to_rectf(client_area_rect);
         newgame_button.button_area_rectf = D2D1::RectF(
             client_area_rectf.right / 2 - 50.0f + config_ref.margin,
-            client_area_rectf.bottom - 50.0f + config_ref.margin,
+            client_area_rectf.bottom - 40.0f + config_ref.margin,
             client_area_rectf.right / 2 + 50.0f - config_ref.margin,
             client_area_rectf.bottom - config_ref.margin
         );
@@ -934,9 +987,9 @@ namespace hmgui {
         for (int i = 0; i < newgame_config_size; i++) {
             newgame_config_area_rectf[i] = D2D1::RectF(
                 8.0f,
-                8.0f + i * 25.0f,
+                68.0f + i * 25.0f,
                 22.0f,
-                22.0f + i * 25.0f
+                82.0f + i * 25.0f
             );
             newgame_config_area_rect[i] = rectf_to_rect(newgame_config_area_rectf[i]);
         }
@@ -945,16 +998,30 @@ namespace hmgui {
     void window_newgame::redraw() {
         d2d1_render_target->Clear(white_color);
 
+        d2d1_render_target->DrawText(
+            L"先手", 2u,
+            text_format_default,
+            D2D1::RectF(5.0f, 10.0f, 300.0f, 35.0f),
+            d2d1_brush
+        );
+
+        d2d1_render_target->DrawText(
+            L"後手", 2u,
+            text_format_default,
+            D2D1::RectF(290.0f, 10.0f, 595.0f, 35.0f),
+            d2d1_brush
+        );
+
         for (int i = 0; i < newgame_config_size; i++) {
             d2d1_render_target->DrawEllipse(
-                D2D1::Ellipse({ 15.0f, 15.0f + i * 25.0f }, 7.0f, 7.0f),
+                D2D1::Ellipse({ 15.0f, 75.0f + i * 25.0f }, 7.0f, 7.0f),
                 d2d1_brush,
                 2.0f
             );
 
             if (newgame_config_state[i]) {
                 d2d1_render_target->FillEllipse(
-                    D2D1::Ellipse({ 15.0f, 15.0f + i * 25.0f }, 4.0f, 4.0f),
+                    D2D1::Ellipse({ 15.0f, 75.0f + i * 25.0f }, 4.0f, 4.0f),
                     d2d1_brush
                 );
             }
@@ -965,17 +1032,15 @@ namespace hmgui {
                 text_format_default,
                 D2D1::RectF(
                     30.0f,
-                    8.0f + i * 25.0f,
+                    68.0f + i * 25.0f,
                     570.0f,
-                    22.0f + i * 25.0f
+                    82.0f + i * 25.0f
                 ),
                 d2d1_brush
             );
         }
 
         newgame_button.redraw();
-
-        return;
     }
 
     void window_newgame::handle_exit() {
@@ -1012,7 +1077,7 @@ namespace hmgui {
             0,
             L"Hook-Mark_GUI_Settings",
             L"設定 - Hook-Mark GUI",
-            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
             CW_USEDEFAULT, CW_USEDEFAULT,
             600, 600,
             handle_parent_window, NULL, GetModuleHandle(nullptr), NULL
@@ -1056,7 +1121,7 @@ namespace hmgui {
         if (FAILED(hr)) return false;
 
         hr = d2d1_dwrite_factory->CreateTextFormat(
-            L"Segoe UI",
+            L"Yu Gothic UI",
             nullptr,
             DWRITE_FONT_WEIGHT_NORMAL,
             DWRITE_FONT_STYLE_NORMAL,
@@ -1092,7 +1157,7 @@ namespace hmgui {
             static_cast<int>(settings_item_spacing * 0.7f),
             0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
             DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
-            DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI"
+            DEFAULT_PITCH | FF_DONTCARE, L"Yu Gothic UI"
         );
         for (int i = 0; i < settings_item_keys.size(); i++) {
             HWND edit_handle = CreateWindowExW(
@@ -1117,7 +1182,11 @@ namespace hmgui {
 
         for (int i = 0; i < settings_item_references.size(); i++) {
             GetWindowTextW(edit_controls[i], buffer, 256);
-            settings_item_references[i].get() = std::stof(buffer);
+            try {
+                settings_item_references[i].get() = std::stof(buffer);
+            } catch (...) {
+                settings_item_references[i].get() = settings_item_default[i];
+            }
         }
     }
 
@@ -1149,12 +1218,11 @@ namespace hmgui {
     }
 
     void window_settings::show_window(int show_command, float x, float y) {
+        SetWindowPos(handle_window, nullptr, static_cast<int>(x), static_cast<int>(y), 0, 0, SWP_NOZORDER | SWP_NOSIZE);
         ShowWindow(handle_window, show_command);
-        UpdateWindow(handle_window);
         if (show_command == SW_SHOW) {
             create_edit_controls();
         }
-        SetWindowPos(handle_window, nullptr, static_cast<int>(x), static_cast<int>(y), 0, 0, SWP_NOZORDER | SWP_NOSIZE);
         UpdateWindow(handle_window);
     }
 
@@ -1236,7 +1304,7 @@ namespace hmgui {
             0,
             L"Hook-Mark_GUI_Version",
             L"バージョン情報 - Hook-Mark GUI",
-            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
             CW_USEDEFAULT, CW_USEDEFAULT,
             600, 600,
             handle_parent_window, NULL, GetModuleHandle(nullptr), NULL
@@ -1285,7 +1353,7 @@ namespace hmgui {
         if (FAILED(hr)) return false;
 
         hr = d2d1_dwrite_factory->CreateTextFormat(
-            L"Segoe UI",
+            L"Yu Gothic UI",
             nullptr,
             DWRITE_FONT_WEIGHT_NORMAL,
             DWRITE_FONT_STYLE_NORMAL,
@@ -1299,8 +1367,8 @@ namespace hmgui {
     }
 
     void window_version::show_window(int show_command, float x, float y) {
-        ShowWindow(handle_window, show_command);
         SetWindowPos(handle_window, nullptr, static_cast<int>(x), static_cast<int>(y), 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+        ShowWindow(handle_window, show_command);
         UpdateWindow(handle_window);
     }
 
@@ -1429,7 +1497,7 @@ namespace hmgui {
         if (FAILED(hr)) return false;
 
         hr = d2d1_dwrite_factory->CreateTextFormat(
-            L"Segoe UI",
+            L"Yu Gothic UI",
             nullptr,
             DWRITE_FONT_WEIGHT_NORMAL,
             DWRITE_FONT_STYLE_NORMAL,
@@ -1447,7 +1515,7 @@ namespace hmgui {
             0,
             L"Hook-Mark_GUI_SepBoard",
             L"盤面 - Hook-Mark GUI",
-            WS_OVERLAPPEDWINDOW,
+            WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
             CW_USEDEFAULT, CW_USEDEFAULT,
             600, 600,
             NULL, NULL, GetModuleHandle(nullptr), NULL
@@ -1463,8 +1531,8 @@ namespace hmgui {
         board = i_board;
         current_kifu = i_kifu;
         kifu_current_turn = i_kifu_current_turn;
-        ShowWindow(handle_window, show_command);
         SetWindowPos(handle_window, nullptr, static_cast<int>(x), static_cast<int>(y), 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+        ShowWindow(handle_window, show_command);
         UpdateWindow(handle_window);
     }
 
@@ -1575,7 +1643,7 @@ namespace hmgui {
 
             D2D1_RECT_F layout = D2D1::RectF(
                 new_left,
-                grid_area_rectf.bottom - 17,
+                grid_area_rectf.bottom - config_ref.label_size - 5.0f,
                 new_left + grid_spacing,
                 grid_area_rectf.bottom
             );
@@ -1595,8 +1663,11 @@ namespace hmgui {
             float cy = grid_area_rectf.bottom - (y + 0.5f) * grid_spacing - grid_scroll_offset.y;
 
             std::wstring txt = std::to_wstring(y);
+
+            add_label_size(static_cast<int>(txt.size()));
+
             D2D1_RECT_F layout = D2D1::RectF(
-                grid_area_rectf.left + 7,
+                grid_area_rectf.left + config_ref.padding,
                 cy - label_height[txt.size()] / 2,
                 grid_area_rectf.left + grid_spacing * 10,
                 cy - label_height[txt.size()] / 2

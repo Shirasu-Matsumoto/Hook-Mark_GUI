@@ -16,12 +16,12 @@ namespace hm {
         private:
             std::string _config;
             kifu_config _config_struct;
-            bool _is_resigned;
+            bool _is_resigned = false;
 
         public:
             kifu_ver1() : kifu_base() {}
 
-            void kifu_save(const std::string &filename) const override {
+            void kifu_save(const std::filesystem::path &filename) const override {
                 std::ofstream ofs(filename);
                 if (ofs.fail()) {
                     throw std::runtime_error("Failed to open file for writing");
@@ -73,7 +73,7 @@ namespace hm {
                 ofs.close();
             }
 
-            void kifu_load(const std::string &filename) override {
+            void kifu_load(const std::filesystem::path &filename) override {
                 std::ifstream ifs(filename);
                 if (ifs.fail()) {
                     throw std::runtime_error("Failed to open file for reading");
@@ -262,6 +262,14 @@ namespace hm {
                 data().clear();
                 _is_resigned = false;
                 _config.clear();
+            }
+
+            std::string first() {
+                return _config_struct.first;
+            }
+
+            std::string second() {
+                return _config_struct.second;
             }
 
             std::string config() {
