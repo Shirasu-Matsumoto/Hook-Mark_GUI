@@ -19,7 +19,7 @@ namespace hmgui {
         float kifu_size_x;
         float kifu_turn_size_x;
         float vertical_size;
-        std::string open_file;
+        std::filesystem::path open_file;
         float label_size;
 
         std::string first_name;

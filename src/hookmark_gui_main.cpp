@@ -28,6 +28,7 @@ hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
                         main_menu_file_save_config(ID_MENU_FILE_SAVE_CONFIG),
                         main_menu_file_clear_config(ID_MENU_FILE_CLEAR_CONFIG),
                         main_menu_file_exit(ID_MENU_FILE_EXIT),
+                        main_menu_file_nosave_config_exit(ID_MENU_FILE_NOSAVE_CONFIG_EXIT),
                         main_menu_edit_move_forward(ID_MENU_EDIT_MOVE_FORWARD),
                         main_menu_edit_step_back(ID_MENU_EDIT_STEP_BACK),
                         main_menu_edit_jump_to_first_move(ID_MENU_EDIT_JUMP_TO_FIRST_MOVE),
@@ -193,6 +194,25 @@ namespace hmgui {
         else return 2;
     }
 
+    void init_open_file() {
+        hm::kifu_ver1 temp;
+        try {
+            temp.kifu_load(grobal_config.open_file);
+        }
+        catch (...) {
+            return;
+        }
+        main_window.current_kifu = temp;
+        main_window.current_kifu_path = grobal_config.open_file;
+        main_window.current_kifu.resign();
+        main_window.kifu_current_turn = main_window.current_kifu.size() - 1;
+        main_window.kifu_saved = true;
+        hm::kifuver1_to_board(main_window.current_kifu, main_window.board);
+        update_title();
+        main_window.initialize_scroll();
+        InvalidateRect(main_window, nullptr, FALSE);
+    }
+
     void menu_main::create_menu() {
         handle_menu = CreateMenu();
         if (handle_menu) {
@@ -213,6 +233,7 @@ namespace hmgui {
             AppendMenuW(main_menu_file, MF_STRING, main_menu_file_clear_config, L"設定をクリア");
             AppendMenuW(main_menu_file, MF_SEPARATOR, 0, NULL);
             AppendMenuW(main_menu_file, MF_STRING, main_menu_file_exit, L"終了");
+            AppendMenuW(main_menu_file, MF_STRING, main_menu_file_nosave_config_exit, L"設定を保存せずに終了");
 
             AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_move_forward, L"一手進む");
             AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_step_back, L"一手戻る");
@@ -309,6 +330,38 @@ namespace hmgui {
             case WM_COMMAND: {
                 switch (LOWORD(w_param)) {
                     case ID_MENU_FILE_CREATE_NEW: {
+                        if (!kifu_saved) {
+                            int ret = check_nosave();
+                            switch (ret) {
+                                case 0: {
+                                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                    break;
+                                }
+                                case 1: {
+                                    break;
+                                }
+                                case 2: {
+                                    return 0;
+                                }
+                            }
+                        }
+                        current_kifu_path.clear();
+                        current_kifu.clear();
+                        kifu_current_turn = 0;
+                        board.clear();
+                        is_gaming = false;
+                        if (is_editing) {
+                            SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), MAKELPARAM(NULL, NULL));
+                        }
+                        EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
+                        EnableMenuItem(main_menu, main_menu_game_resign, MF_BYCOMMAND | MF_GRAYED);
+                        DrawMenuBar(main_window);
+                        kifu_saved = true;
+                        config_ref.open_file.clear();
+                        update_title();
+                        initialize_scroll();
+                        InvalidateRect(handle_window, nullptr, FALSE);
+                        break;
                         break;
                     }
                     case ID_MENU_FILE_OPEN: {
@@ -470,6 +523,26 @@ namespace hmgui {
                         break;
                     }
                     case ID_MENU_FILE_EXIT: {
+                        if (!kifu_saved) {
+                            int ret = check_nosave();
+                            switch (ret) {
+                                case 0: {
+                                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                    break;
+                                }
+                                case 1: {
+                                    break;
+                                }
+                                case 2: {
+                                    return 0;
+                                }
+                            }
+                        }
+                        save_config();
+                        handle_exit();
+                        break;
+                    }
+                    case ID_MENU_FILE_NOSAVE_CONFIG_EXIT: {
                         if (!kifu_saved) {
                             int ret = check_nosave();
                             switch (ret) {
@@ -1384,6 +1457,7 @@ namespace hmgui {
 
 int WINAPI wWinMain(_In_ HINSTANCE handle_instance, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int) {
     hmgui::load_config();
+    hmgui::init_open_file();
     HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &grobal_d2d1_factory);
     if (FAILED(hr)) return false;
     hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&grobal_d2d1_dwrite_factory));
