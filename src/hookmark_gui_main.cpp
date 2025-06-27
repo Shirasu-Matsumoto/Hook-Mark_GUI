@@ -265,6 +265,7 @@ namespace hmgui {
                         }
                     }
                 }
+                save_config();
                 handle_exit();
                 return 0;
             }
@@ -1010,8 +1011,6 @@ namespace hmgui {
                 return 0;
             }
             case WM_MOVE: {
-                grobal_config.window_pos_x = static_cast<float>(LOWORD(l_param));
-                grobal_config.window_pos_y = static_cast<float>(HIWORD(l_param));
                 update_rect();
                 return 0;
             }
@@ -1019,8 +1018,6 @@ namespace hmgui {
                 update_rect();
                 UINT width = LOWORD(l_param);
                 UINT height = HIWORD(l_param);
-                grobal_config.window_size_x = static_cast<float>(width);
-                grobal_config.window_size_y = static_cast<float>(height);
                 if (d2d1_render_target) {
                     D2D1_SIZE_U size = D2D1::SizeU(width, height);
                     d2d1_render_target->Resize(size);

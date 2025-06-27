@@ -78,6 +78,7 @@ namespace hmgui {
             IDWriteTextFormat *text_format_config = nullptr;
             IDWriteTextFormat *text_format_button_label = nullptr;
             float scroll_speed = 10.0f;
+            BOOL is_dwm_enabled = FALSE;
             RECT client_area_rect = { 0, 0, 0, 0 };
             D2D1_RECT_F client_area_rectf = D2D1::RectF();
             RECT window_area_rect = { 0, 0, 0, 0 };

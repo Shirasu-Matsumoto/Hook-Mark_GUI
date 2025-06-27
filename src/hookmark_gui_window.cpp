@@ -154,13 +154,33 @@ namespace hmgui {
     void window_main::update_rect() {
         GetClientRect(handle_window, &client_area_rect);
         client_area_rectf = rect_to_rectf(client_area_rect);
-        BOOL is_dwm_enabled = FALSE;
+
+        RECT rect_dwm = {};
+        RECT rect_win = {};
+        window_area_rect = {};
         if (SUCCEEDED(DwmIsCompositionEnabled(&is_dwm_enabled)) && is_dwm_enabled) {
-            DwmGetWindowAttribute(handle_window, DWMWA_EXTENDED_FRAME_BOUNDS, &window_area_rect, sizeof(RECT));
+            if (SUCCEEDED(DwmGetWindowAttribute(handle_window, DWMWA_EXTENDED_FRAME_BOUNDS, &rect_dwm, sizeof(RECT)))) {
+                GetWindowRect(handle_window, &rect_win);
+                int left_offset = rect_dwm.left - rect_win.left;
+                int top_offset = rect_dwm.top - rect_win.top;
+                int right_offset = rect_win.right - rect_dwm.right;
+                int bottom_offset = rect_win.bottom - rect_dwm.bottom;
+                window_area_rect.left = rect_dwm.left - left_offset;
+                window_area_rect.top = rect_dwm.top - top_offset;
+                window_area_rect.right = rect_dwm.right + right_offset;
+                window_area_rect.bottom = rect_dwm.bottom + bottom_offset;
+            } else {
+                GetWindowRect(handle_window, &window_area_rect);
+            }
         } else {
             GetWindowRect(handle_window, &window_area_rect);
         }
         window_area_rectf = rect_to_rectf(window_area_rect);
+
+        config_ref.window_size_x = window_area_rectf.right - window_area_rectf.left;
+        config_ref.window_size_y = window_area_rectf.bottom - window_area_rectf.top;
+        config_ref.window_pos_x = window_area_rectf.left;
+        config_ref.window_pos_y = window_area_rectf.top;
         grid_area_rectf = D2D1::RectF(
             config_ref.margin,
             config_ref.margin,
