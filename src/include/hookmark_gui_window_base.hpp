@@ -155,9 +155,10 @@ namespace hmgui {
             ID2D1SolidColorBrush *d2d1_brush = nullptr;
             IDWriteTextFormat *text_format = nullptr;
             std::wstring label_text;
-            D2D1_RECT_F button_area_rectf = D2D1::RectF();
-            RECT button_area_rect = { 0, 0, 0, 0 };
+            D2D1_RECT_F rectf = D2D1::RectF();
+            RECT rect = { 0, 0, 0, 0 };
             int current_state = 0;
+            bool enabled = true;
 
             d2d1_button() {}
 
@@ -178,29 +179,34 @@ namespace hmgui {
 
             void redraw() {
                 D2D1_COLOR_F color;
-                switch (current_state) {
-                    case 0: {
-                        color = white_color;
-                        break;
-                    }
-                    case 1: {
-                        color = white_smoke_color;
-                        break;
-                    }
-                    case 2: {
-                        color = light_gray_color;
-                        break;
+                if (enabled) {
+                    switch (current_state) {
+                        case 0: {
+                            color = white_color;
+                            break;
+                        }
+                        case 1: {
+                            color = white_smoke_color;
+                            break;
+                        }
+                        case 2: {
+                            color = light_gray_color;
+                            break;
+                        }
                     }
                 }
+                else {
+                    color = light_gray_color;
+                }
                 d2d1_brush->SetColor(color);
-                d2d1_render_target->FillRectangle(button_area_rectf, d2d1_brush);
+                d2d1_render_target->FillRectangle(rectf, d2d1_brush);
                 d2d1_brush->SetColor(black_color);
-                d2d1_render_target->DrawRectangle(button_area_rectf, d2d1_brush, 2.0f);
+                d2d1_render_target->DrawRectangle(rectf, d2d1_brush, 2.0f);
                 d2d1_render_target->DrawText(
                     label_text.c_str(),
                     static_cast<UINT32>(label_text.size()),
                     text_format,
-                    button_area_rectf,
+                    rectf,
                     d2d1_brush
                 );
             }

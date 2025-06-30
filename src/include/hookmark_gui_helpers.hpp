@@ -20,6 +20,7 @@ namespace hmgui {
     inline D2D1_COLOR_F white_color = D2D1::ColorF(D2D1::ColorF::White);
     inline D2D1_COLOR_F white_smoke_color = D2D1::ColorF(D2D1::ColorF::WhiteSmoke);
     inline D2D1_COLOR_F light_gray_color = D2D1::ColorF(D2D1::ColorF::LightGray);
+    inline D2D1_COLOR_F dark_gray_color = D2D1::ColorF(D2D1::ColorF::DarkGray);
 
     inline std::string utf16_to_utf8(const std::wstring &utf16_str) {
         if (utf16_str.empty()) return std::string();

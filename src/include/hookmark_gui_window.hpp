@@ -37,8 +37,8 @@ namespace hmgui {
               padding(5.0f),
               window_size_x(2147483648.0f),
               window_size_y(2147483648.0f),
-              grid_spacing(50.0f),
-              kifu_spacing(30.0f),
+              grid_spacing(40.0f),
+              kifu_spacing(26.0f),
               grid_size_x(500.0f),
               kifu_size_x(400.0f),
               kifu_turn_size_x(100.0f),
@@ -97,7 +97,7 @@ namespace hmgui {
             D2D1_POINT_2F config_scroll_offset = D2D1::Point2F();
             std::vector<float> label_width;
             std::vector<float> label_height;
-            int kifu_current_turn = 0;
+            int kifu_current_turn = -1;
             bool kifu_saved = true;
             d2d1_button do_over_button;
             d2d1_button resign_button;

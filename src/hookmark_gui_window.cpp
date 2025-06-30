@@ -199,13 +199,13 @@ namespace hmgui {
             client_area_rectf.right - config_ref.margin,
             config_ref.vertical_size - config_ref.margin
         );
-        do_over_button.button_area_rectf = D2D1::RectF(
+        do_over_button.rectf = D2D1::RectF(
             config_ref.margin,
             config_ref.vertical_size + config_ref.margin,
             100.0f - config_ref.margin,
             config_ref.vertical_size + 40.0f - config_ref.margin
         );
-        resign_button.button_area_rectf = D2D1::RectF(
+        resign_button.rectf = D2D1::RectF(
             100.0f + config_ref.margin,
             config_ref.vertical_size + config_ref.margin,
             200.0f - config_ref.margin,
@@ -214,8 +214,8 @@ namespace hmgui {
         grid_area_rect = rectf_to_rect(grid_area_rectf);
         kifu_area_rect = rectf_to_rect(kifu_area_rectf);
         config_area_rect = rectf_to_rect(config_area_rectf);
-        do_over_button.button_area_rect = rectf_to_rect(do_over_button.button_area_rectf);
-        resign_button.button_area_rect = rectf_to_rect(resign_button.button_area_rectf);
+        do_over_button.rect = rectf_to_rect(do_over_button.rectf);
+        resign_button.rect = rectf_to_rect(resign_button.rectf);
         grid_area_clip_rectf = cliped_rectf(grid_area_rectf);
         kifu_area_clip_rectf = cliped_rectf(kifu_area_rectf);
         config_area_clip_rectf = cliped_rectf(config_area_rectf);
@@ -1063,13 +1063,13 @@ namespace hmgui {
     void window_newgame::update_rect() {
         GetClientRect(handle_window, &client_area_rect);
         client_area_rectf = rect_to_rectf(client_area_rect);
-        newgame_button.button_area_rectf = D2D1::RectF(
+        newgame_button.rectf = D2D1::RectF(
             client_area_rectf.right / 2 - 50.0f + config_ref.margin,
             client_area_rectf.bottom - 40.0f + config_ref.margin,
             client_area_rectf.right / 2 + 50.0f - config_ref.margin,
             client_area_rectf.bottom - config_ref.margin
         );
-        newgame_button.button_area_rect = rectf_to_rect(newgame_button.button_area_rectf);
+        newgame_button.rect = rectf_to_rect(newgame_button.rectf);
         for (int i = 0; i < newgame_config_size; i++) {
             newgame_config_area_rectf[i] = D2D1::RectF(
                 8.0f,
@@ -1820,18 +1820,21 @@ namespace hmgui {
         }
 
         if (!current_kifu.empty()) {
-            hm::pos p = current_kifu[kifu_current_turn];
-            d2d1_brush->SetColor(yellow_color);
-            d2d1_render_target->DrawRectangle(
-                D2D1::RectF(
-                    grid_area_rectf.left + (p.x + 1.0f) * grid_spacing - grid_scroll_offset.x,
-                    grid_area_rectf.bottom - (p.y + 1.0f) * grid_spacing - grid_scroll_offset.y,
-                    grid_area_rectf.left + (p.x) * grid_spacing - grid_scroll_offset.x,
-                    grid_area_rectf.bottom - (p.y) * grid_spacing - grid_scroll_offset.y
-                ),
-                d2d1_brush,
-                3.0f
-            );
+            if (-1 < kifu_current_turn) {
+                int draw_turn = kifu_current_turn;
+                hm::pos p = current_kifu[draw_turn];
+                d2d1_brush->SetColor(yellow_color);
+                d2d1_render_target->DrawRectangle(
+                    D2D1::RectF(
+                        grid_area_rectf.left + (p.x + 1.0f) * grid_spacing - grid_scroll_offset.x,
+                        grid_area_rectf.bottom - (p.y + 1.0f) * grid_spacing - grid_scroll_offset.y,
+                        grid_area_rectf.left + (p.x) * grid_spacing - grid_scroll_offset.x,
+                        grid_area_rectf.bottom - (p.y) * grid_spacing - grid_scroll_offset.y
+                    ),
+                    d2d1_brush,
+                    3.0f
+                );
+            }
         }
 
         d2d1_brush->SetColor(black_color);
