@@ -102,6 +102,13 @@ namespace hmgui {
             d2d1_button do_over_button;
             d2d1_button resign_button;
 
+            enum class focus {
+                none,
+                grid,
+                kifu,
+                config
+            };
+            focus current_focus = focus::none;
             enum class resize_region {
                 none,
                 grid_kifu,
@@ -140,6 +147,7 @@ namespace hmgui {
             void draw_grid();
             void draw_kifu_single(const hm::pos &move, unsigned int turn);
             void draw_kifu_single_last(unsigned int turn);
+            void draw_kifu_single_first();
             void draw_kifu();
             void draw_board();
             void draw_game_control();

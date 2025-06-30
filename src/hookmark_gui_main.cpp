@@ -260,12 +260,20 @@ namespace hmgui {
         switch (message) {
             case WM_TIMER: {
                 if (w_param == main_timer_id) {
-                    if (!ctrl_down) return 0;
                     if (GetForegroundWindow() != handle_window) return 0;
-                    if (key_held['H']) grid_scroll(-scroll_speed, 0);
-                    if (key_held['L']) grid_scroll(scroll_speed, 0);
-                    if (key_held['J']) grid_scroll(0, scroll_speed);
-                    if (key_held['K']) grid_scroll(0, -scroll_speed);
+
+                    if (key_held[VK_UP] && current_focus == focus::grid) grid_scroll(0, -scroll_speed);
+                    if (key_held[VK_DOWN] && current_focus == focus::grid) grid_scroll(0, scroll_speed);
+                    if (key_held[VK_LEFT] && current_focus == focus::grid) grid_scroll(-scroll_speed, 0);
+                    if (key_held[VK_RIGHT] && current_focus == focus::grid) grid_scroll(scroll_speed, 0);
+
+                    if (key_held[VK_UP] && current_focus == focus::config) config_scroll(0, -scroll_speed);
+                    if (key_held[VK_DOWN] && current_focus == focus::config) config_scroll(0, scroll_speed);
+
+                    if (ctrl_down && key_held['H']) grid_scroll(-scroll_speed, 0);
+                    if (ctrl_down && key_held['L']) grid_scroll(scroll_speed, 0);
+                    if (ctrl_down && key_held['J']) grid_scroll(0, scroll_speed);
+                    if (ctrl_down && key_held['K']) grid_scroll(0, -scroll_speed);
                     InvalidateRect(handle_window, nullptr, FALSE);
                 }
                 return 0;
@@ -297,15 +305,11 @@ namespace hmgui {
                 key_held[virtual_key] = true;
                 if (virtual_key == VK_CONTROL) ctrl_down = true;
 
-                if (ctrl_down && virtual_key == 'S') {
-                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
-                }
-                else if (ctrl_down && virtual_key == 'O') {
-                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OPEN, 0), 0);
-                }
-                else if (ctrl_down && virtual_key == 'N') {
-                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_CREATE_NEW, 0), 0);
-                }
+                if (ctrl_down && virtual_key == 'S') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                if (ctrl_down && virtual_key == 'O') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OPEN, 0), 0);
+                if (ctrl_down && virtual_key == 'N') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_CREATE_NEW, 0), 0);
+                if (current_focus == focus::kifu && virtual_key == VK_UP) SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_STEP_BACK, 0), 0);
+                if (current_focus == focus::kifu && virtual_key == VK_DOWN) SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_MOVE_FORWARD, 0), 0);
 
                 return 0;
             }
@@ -576,15 +580,15 @@ namespace hmgui {
                     case ID_MENU_EDIT_MOVE_FORWARD: {
                         if (current_kifu.size() && kifu_current_turn < static_cast<int>(current_kifu.size() - 1)) {
                             kifu_current_turn++;
-                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
+                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn + 1);
                             InvalidateRect(handle_window, nullptr, FALSE);
                         }
                         break;
                     }
                     case ID_MENU_EDIT_STEP_BACK: {
-                        if (current_kifu.size() && kifu_current_turn > 0) {
+                        if (current_kifu.size() && kifu_current_turn > -1) {
                             kifu_current_turn--;
-                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
+                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn + 1);
                             InvalidateRect(handle_window, nullptr, FALSE);
                         }
                         break;
@@ -592,7 +596,7 @@ namespace hmgui {
                     case ID_MENU_EDIT_JUMP_TO_FIRST_MOVE: {
                         if (current_kifu.size()) {
                             kifu_current_turn = 0;
-                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
+                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn + 1);
                             InvalidateRect(handle_window, nullptr, FALSE);
                         }
                         break;
@@ -807,6 +811,76 @@ namespace hmgui {
             case WM_LBUTTONDOWN: {
                 POINT pt = { GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param) };
 
+                if (PtInRect(&grid_area_rect, pt)) {
+                    current_focus = focus::grid;
+                    if (is_gaming) {
+                        float gx = static_cast<float>(pt.x);
+                        float gy = static_cast<float>(pt.y);
+                        float fx = (gx - grid_area_rectf.left + main_window.grid_scroll_offset.x) / config_ref.grid_spacing - 0.5f;
+                        float fy = (grid_area_rectf.bottom - main_window.grid_scroll_offset.y - gy) / config_ref.grid_spacing - 0.5f;
+                        int x = static_cast<int>(std::round(fx));
+                        int y = static_cast<int>(std::round(fy));
+                        if (board.has_piece(x, y)) {
+                            return 0;
+                        }
+                        try {
+                            if (!hm::kifuver1_to_board(current_kifu).has_piece(x, y)) {
+                                main_window.board.progress(x, y);
+                                kifu_current_turn = current_kifu.size();
+                                current_kifu.add(x, y);
+                                hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
+                                InvalidateRect(handle_window, nullptr, FALSE);
+                                unsigned int res = board.is_win();
+                                if (res) {
+                                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_GAME_RESIGN, 1), res);
+                                }
+                            }
+                        } catch (...) {
+                            return 0;
+                        }
+                        return 0;
+                    }
+                    if (is_editing) {
+                        float gx = static_cast<float>(pt.x);
+                        float gy = static_cast<float>(pt.y);
+                        float fx = (gx - grid_area_rectf.left + main_window.grid_scroll_offset.x) / config_ref.grid_spacing - 0.5f;
+                        float fy = (grid_area_rectf.bottom - main_window.grid_scroll_offset.y - gy) / config_ref.grid_spacing - 0.5f;
+                        int x = static_cast<int>(std::round(fx));
+                        int y = static_cast<int>(std::round(fy));
+                        try {
+                            if (ctrl_down) {
+                                main_window.board.set(x, y, 2);
+                                InvalidateRect(handle_window, nullptr, FALSE);
+                            }
+                            else {
+                                main_window.board.set(x, y, 1);
+                                InvalidateRect(handle_window, nullptr, FALSE);
+                            }
+                        } catch (...) {
+                            return 0;
+                        }
+                        return 0;
+                    }
+                    return 0;
+                }
+                if (PtInRect(&kifu_area_rect, pt)) {
+                    current_focus = focus::kifu;
+                    float relative_y = pt.y - kifu_area_rect.top + kifu_scroll_offset.y;
+                    int clicked_turn = static_cast<int>(relative_y / config_ref.kifu_spacing) - 1;
+                    if (clicked_turn < static_cast<int>(current_kifu.size())) {
+                        kifu_current_turn = clicked_turn;
+                        hm::kifuver1_to_board(current_kifu, board, clicked_turn + 1);
+                        InvalidateRect(handle_window, nullptr, FALSE);
+                        return 0;
+                    }
+                }
+                if (PtInRect(&config_area_rect, pt)) {
+                    current_focus = focus::config;
+                    return 0;
+                }
+
+                current_focus = focus::none;
+
                 if (std::abs(pt.x - boundary_grid) <= tol && pt.y > config_ref.margin && pt.y < config_ref.vertical_size - config_ref.margin) {
                     is_resizing = true;
                     cr_resize_region = resize_region::grid_kifu;
@@ -849,54 +923,6 @@ namespace hmgui {
                     cr_resize_region = resize_region::none;
                 }
 
-                if (PtInRect(&grid_area_rect, pt) && is_gaming) {
-                    float gx = static_cast<float>(pt.x);
-                    float gy = static_cast<float>(pt.y);
-                    float fx = (gx - grid_area_rectf.left + main_window.grid_scroll_offset.x) / config_ref.grid_spacing - 0.5f;
-                    float fy = (grid_area_rectf.bottom - main_window.grid_scroll_offset.y - gy) / config_ref.grid_spacing - 0.5f;
-                    int x = static_cast<int>(std::round(fx));
-                    int y = static_cast<int>(std::round(fy));
-                    if (board.has_piece(x, y)) {
-                        return 0;
-                    }
-                    try {
-                        if (!hm::kifuver1_to_board(current_kifu).has_piece(x, y)) {
-                            main_window.board.progress(x, y);
-                            kifu_current_turn = current_kifu.size();
-                            current_kifu.add(x, y);
-                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
-                            InvalidateRect(handle_window, nullptr, FALSE);
-                            unsigned int res = board.is_win();
-                            if (res) {
-                                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_GAME_RESIGN, 1), res);
-                            }
-                        }
-                    } catch (...) {
-                        return 0;
-                    }
-                    return 0;
-                }
-                if (PtInRect(&grid_area_rect, pt) && is_editing) {
-                    float gx = static_cast<float>(pt.x);
-                    float gy = static_cast<float>(pt.y);
-                    float fx = (gx - grid_area_rectf.left + main_window.grid_scroll_offset.x) / config_ref.grid_spacing - 0.5f;
-                    float fy = (grid_area_rectf.bottom - main_window.grid_scroll_offset.y - gy) / config_ref.grid_spacing - 0.5f;
-                    int x = static_cast<int>(std::round(fx));
-                    int y = static_cast<int>(std::round(fy));
-                    try {
-                        if (ctrl_down) {
-                            main_window.board.set(x, y, 2);
-                            InvalidateRect(handle_window, nullptr, FALSE);
-                        }
-                        else {
-                            main_window.board.set(x, y, 1);
-                            InvalidateRect(handle_window, nullptr, FALSE);
-                        }
-                    } catch (...) {
-                        return 0;
-                    }
-                    return 0;
-                }
                 if (PtInRect(&do_over_button.button_area_rect, pt)) {
                     do_over_button.current_state = 2;
                     InvalidateRect(handle_window, nullptr, FALSE);
@@ -906,16 +932,6 @@ namespace hmgui {
                     resign_button.current_state = 2;
                     InvalidateRect(handle_window, nullptr, FALSE);
                     return 0;
-                }
-                if (PtInRect(&kifu_area_rect, pt)) {
-                    float relative_y = pt.y - kifu_area_rect.top + kifu_scroll_offset.y;
-                    unsigned int clicked_turn = static_cast<unsigned int>(relative_y / config_ref.kifu_spacing);
-                    if (clicked_turn < current_kifu.size()) {
-                        kifu_current_turn = clicked_turn;
-                        hm::kifuver1_to_board(current_kifu, board, clicked_turn);
-                        InvalidateRect(handle_window, nullptr, FALSE);
-                        return 0;
-                    }
                 }
 
                 InvalidateRect(handle_window, nullptr, FALSE);

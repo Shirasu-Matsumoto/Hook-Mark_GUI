@@ -540,25 +540,28 @@ namespace hmgui {
         }
 
         if (!current_kifu.empty()) {
-            hm::pos p = current_kifu[kifu_current_turn];
-            d2d1_brush->SetColor(yellow_color);
-            d2d1_render_target->DrawRectangle(
-                D2D1::RectF(
-                    grid_area_rectf.left + (p.x + 1.0f) * grid_spacing - grid_scroll_offset.x,
-                    grid_area_rectf.bottom - (p.y + 1.0f) * grid_spacing - grid_scroll_offset.y,
-                    grid_area_rectf.left + (p.x) * grid_spacing - grid_scroll_offset.x,
-                    grid_area_rectf.bottom - (p.y) * grid_spacing - grid_scroll_offset.y
-                ),
-                d2d1_brush,
-                3.0f
-            );
+            if (-1 < kifu_current_turn) {
+                int draw_turn = kifu_current_turn;
+                hm::pos p = current_kifu[draw_turn];
+                d2d1_brush->SetColor(yellow_color);
+                d2d1_render_target->DrawRectangle(
+                    D2D1::RectF(
+                        grid_area_rectf.left + (p.x + 1.0f) * grid_spacing - grid_scroll_offset.x,
+                        grid_area_rectf.bottom - (p.y + 1.0f) * grid_spacing - grid_scroll_offset.y,
+                        grid_area_rectf.left + (p.x) * grid_spacing - grid_scroll_offset.x,
+                        grid_area_rectf.bottom - (p.y) * grid_spacing - grid_scroll_offset.y
+                    ),
+                    d2d1_brush,
+                    3.0f
+                );
+            }
         }
 
         d2d1_brush->SetColor(black_color);
     }
 
     void window_main::draw_kifu_single(const hm::pos &move, unsigned int turn) {
-        float y = kifu_area_rectf.top + turn * config_ref.kifu_spacing - kifu_scroll_offset.y;
+        float y = kifu_area_rectf.top + (turn + 1) * config_ref.kifu_spacing - kifu_scroll_offset.y;
 
         if (y + config_ref.kifu_spacing < kifu_area_rectf.top || y > kifu_area_rectf.bottom) return;
 
@@ -641,8 +644,66 @@ namespace hmgui {
         );
     }
 
+    void window_main::draw_kifu_single_first() {
+        float y = kifu_area_rectf.top - kifu_scroll_offset.y;
+
+        if (y + config_ref.kifu_spacing < kifu_area_rectf.top || y > kifu_area_rectf.bottom) return;
+
+        D2D1_RECT_F single_kifu_rectf = D2D1::RectF(
+            kifu_area_rectf.left,
+            y,
+            kifu_area_rectf.right,
+            y + config_ref.kifu_spacing
+        );
+
+        if (kifu_current_turn == -1) {
+            d2d1_brush->SetColor(kifu_bg_color);
+            d2d1_render_target->FillRectangle(single_kifu_rectf, d2d1_brush);
+            d2d1_brush->SetColor(kifu_edge_color);
+            d2d1_render_target->DrawRectangle(single_kifu_rectf, d2d1_brush, 1.0f);
+            d2d1_brush->SetColor(black_color);
+        }
+
+        d2d1_brush->SetColor(gray_color);
+        d2d1_render_target->DrawLine(
+            D2D1::Point2F(single_kifu_rectf.left + 5.0f, single_kifu_rectf.bottom + 1.0f),
+            D2D1::Point2F(single_kifu_rectf.right - 5.0f, single_kifu_rectf.bottom + 1.0f),
+            d2d1_brush,
+            1.0f
+        );
+
+        D2D1_RECT_F layout_rect = D2D1::RectF(
+            kifu_area_rectf.left + config_ref.padding,
+            y - config_ref.kifu_spacing * 0.05f,
+            kifu_area_rectf.right - config_ref.padding,
+            y + config_ref.kifu_spacing * 9.95f
+        );
+
+        if (kifu_current_turn == -1) {
+            d2d1_brush->SetColor(black_color);
+        }
+        d2d1_render_target->DrawText(
+            std::to_wstring(0).c_str(),
+            static_cast<UINT32>(std::to_wstring(0).size()),
+            text_format_kifu,
+            layout_rect,
+            d2d1_brush
+        );
+
+        d2d1_brush->SetColor(black_color);
+        layout_rect.left += config_ref.kifu_turn_size_x + config_ref.kifu_spacing;
+        std::wstring move_str = L"開始局面";
+        d2d1_render_target->DrawText(
+            move_str.c_str(),
+            static_cast<UINT32>(move_str.size()),
+            text_format_kifu,
+            layout_rect,
+            d2d1_brush
+        );
+    }
+
     void window_main::draw_kifu_single_last(unsigned int turn) {
-        float y = kifu_area_rectf.top + turn * config_ref.kifu_spacing - kifu_scroll_offset.y;
+        float y = kifu_area_rectf.top + (turn + 1) * config_ref.kifu_spacing - kifu_scroll_offset.y;
 
         if (y + config_ref.kifu_spacing < kifu_area_rectf.top || y > kifu_area_rectf.bottom) return;
 
@@ -696,8 +757,10 @@ namespace hmgui {
             D2D1_ANTIALIAS_MODE_PER_PRIMITIVE
         );
 
+        draw_kifu_single_first();
+
         const auto &moves = current_kifu.data();
-        for (unsigned int i = 0; i < moves.size(); i++) {
+        for (int i = 0; i < moves.size(); i++) {
             draw_kifu_single(moves[i], i);
         }
 
@@ -776,7 +839,7 @@ namespace hmgui {
         kifu_scroll_offset.y += dy;
 
         const auto &moves = current_kifu.data();
-        float total_height = static_cast<float>(moves.size() + static_cast<int>(!is_gaming)) * config_ref.kifu_spacing + config_ref.padding;
+        float total_height = static_cast<float>(moves.size() + 1 + static_cast<int>(!is_gaming)) * config_ref.kifu_spacing + config_ref.padding;
         float view_height = kifu_area_rectf.bottom - kifu_area_rectf.top;
 
         if (kifu_scroll_offset.y < 0.0f) {
