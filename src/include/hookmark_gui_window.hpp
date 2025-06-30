@@ -38,7 +38,7 @@ namespace hmgui {
               window_size_x(2147483648.0f),
               window_size_y(2147483648.0f),
               grid_spacing(50.0f),
-              kifu_spacing(40.0f),
+              kifu_spacing(30.0f),
               grid_size_x(500.0f),
               kifu_size_x(400.0f),
               kifu_turn_size_x(100.0f),
@@ -212,6 +212,7 @@ namespace hmgui {
             void handle_exit();
             void release();
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
+            static LRESULT CALLBACK handle_edit_name_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id, DWORD_PTR ref_data);
     };
 
     class wc_settings final : public wc_base {
@@ -275,6 +276,7 @@ namespace hmgui {
             void handle_exit();
             void release();
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
+            static LRESULT CALLBACK handle_config_edit_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id, DWORD_PTR ref_data);
     };
 
     class wc_version final : public wc_base {

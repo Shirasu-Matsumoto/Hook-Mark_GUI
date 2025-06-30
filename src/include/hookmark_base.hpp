@@ -92,6 +92,8 @@ namespace hm {
         public:
             board_state() {}
 
+            board_state(const board_state &other) : _has_piece(other._has_piece), _is_first(other._is_first) {}
+
             void operator=(const board_state &other) {
                 _has_piece = other._has_piece;
                 _is_first = other._is_first;

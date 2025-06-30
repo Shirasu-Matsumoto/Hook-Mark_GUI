@@ -1,4 +1,4 @@
-﻿#include <hookmark_gui_window.hpp>
+﻿#include <hookmark_gui.hpp>
 
 namespace hmgui {
     wc_main::wc_main() : wc_base() {}
@@ -915,6 +915,9 @@ namespace hmgui {
         SetWindowFont(players_name_edit.first, handle_font, FALSE);
         SetWindowFont(players_name_edit.second, handle_font, FALSE);
 
+        SetWindowSubclass(players_name_edit.first, handle_edit_name_message, 1, 0);
+        SetWindowSubclass(players_name_edit.second, handle_edit_name_message, 1, 0);
+
         ShowWindow(players_name_edit.first, SW_SHOW);
         ShowWindow(players_name_edit.second, SW_SHOW);
 
@@ -1189,6 +1192,7 @@ namespace hmgui {
             );
             ShowWindow(edit_handle, SW_SHOW);
             SetWindowFont(edit_handle, handle_font, TRUE);
+            SetWindowSubclass(edit_handle, handle_config_edit_message, 2, 0);
             edit_controls[i] = edit_handle;
         }
 

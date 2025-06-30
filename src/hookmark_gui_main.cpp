@@ -1,5 +1,4 @@
-﻿#include <hookmark.hpp>
-#include <hookmark_gui_window.hpp>
+﻿#include <hookmark_gui.hpp>
 
 hmgui::window_conf grobal_config;
 
@@ -287,7 +286,9 @@ namespace hmgui {
                         }
                     }
                 }
-                save_config();
+                if (!ctrl_down) {
+                    save_config();
+                }
                 handle_exit();
                 return 0;
             }
@@ -295,6 +296,17 @@ namespace hmgui {
                 int virtual_key = static_cast<int>(w_param);
                 key_held[virtual_key] = true;
                 if (virtual_key == VK_CONTROL) ctrl_down = true;
+
+                if (ctrl_down && virtual_key == 'S') {
+                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                }
+                else if (ctrl_down && virtual_key == 'O') {
+                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OPEN, 0), 0);
+                }
+                else if (ctrl_down && virtual_key == 'N') {
+                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_CREATE_NEW, 0), 0);
+                }
+
                 return 0;
             }
             case WM_KEYUP: {
@@ -1189,6 +1201,8 @@ namespace hmgui {
                     else {
                         main_window.current_kifu.set_config_struct({ first_name, second_name, hm::board_state() });
                     }
+                    config_ref.first_name = first_name;
+                    config_ref.second_name = second_name;
                     hm::kifuver1_to_board(main_window.current_kifu, main_window.board);
                     main_window.kifu_current_turn = 0;
                     main_window.is_gaming = true;
@@ -1452,6 +1466,70 @@ namespace hmgui {
             }
         }
         return DefWindowProcW(handle_window, message, w_param, l_param);
+    }
+
+    LRESULT CALLBACK window_newgame::handle_edit_name_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id, DWORD_PTR ref_data) {
+        switch (message) {
+            case WM_CHAR: {
+                if (std::wcschr(L"~#", static_cast<wchar_t>(w_param))) {
+                    return 0;
+                }
+                break;
+            }
+            case WM_KEYDOWN: {
+                if ((GetKeyState(VK_CONTROL) & 0x8000) && w_param == 'A') {
+                    SendMessage(handle_window, EM_SETSEL, 0, -1);
+                    return 0;
+                }
+                break;
+            }
+            case WM_NCDESTROY: {
+                RemoveWindowSubclass(handle_window, handle_edit_name_message, subclass_id);
+                DefSubclassProc(handle_window, message, w_param, l_param);
+                return 0;
+            }
+            default: {
+                return DefSubclassProc(handle_window, message, w_param, l_param);
+            }
+        }
+        return DefSubclassProc(handle_window, message, w_param, l_param);
+    }
+
+    LRESULT CALLBACK window_settings::handle_config_edit_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id, DWORD_PTR ref_data) {
+        switch (message) {
+            case WM_CHAR: {
+                wchar_t ch = static_cast<wchar_t>(w_param);
+                if ((ch >= L'0' && ch <= L'9') || ch == L'\b' || ch == L'\r' || ch == L'\t') {
+                    break;
+                }
+                if (ch == L'.') {
+                    int len = GetWindowTextLengthW(handle_window);
+                    wchar_t* buf = new wchar_t[len + 1];
+                    GetWindowTextW(handle_window, buf, len + 1);
+                    bool has_dot = wcschr(buf, L'.') != nullptr;
+                    delete[] buf;
+                    if (!has_dot) {
+                        break;
+                    }
+                }
+                return 0;
+            }
+            case WM_KEYDOWN: {
+                if ((GetKeyState(VK_CONTROL) & 0x8000) && w_param == 'A') {
+                    SendMessage(handle_window, EM_SETSEL, 0, -1);
+                    return 0;
+                }
+                break;
+            }
+            case WM_NCDESTROY: {
+                RemoveWindowSubclass(handle_window, handle_config_edit_message, subclass_id);
+                break;
+            }
+            default: {
+                return DefSubclassProc(handle_window, message, w_param, l_param);
+            }
+        }
+        return DefSubclassProc(handle_window, message, w_param, l_param);
     }
 }
 
