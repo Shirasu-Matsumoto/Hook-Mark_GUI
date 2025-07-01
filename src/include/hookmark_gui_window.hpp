@@ -109,6 +109,7 @@ namespace hmgui {
                 config
             };
             focus current_focus = focus::none;
+
             enum class resize_region {
                 none,
                 grid_kifu,
@@ -161,6 +162,9 @@ namespace hmgui {
             void set_config_scroll(float x, float y);
             D2D1_POINT_2F get_config_scroll() const;
             void handle_exit();
+            void update_title();
+            bool save_as_handler();
+            bool overwrite_save_handler();
             LRESULT CALLBACK handle_message(HWND handle_window, UINT message, WPARAM w_param, LPARAM l_param) override;
     };
 

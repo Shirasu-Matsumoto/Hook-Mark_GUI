@@ -50,13 +50,6 @@ UINT_PTR main_timer_id = 1;
 UINT_PTR sep_board_timer_id = 2;
 
 namespace hmgui {
-    void update_title() {
-        std::filesystem::path path(main_window.current_kifu_path);
-        std::wstring filename = path.filename().wstring();
-        std::wstring title = (main_window.current_kifu_path.empty() ? L"無題" : filename) + (main_window.kifu_saved ? L"" : L" *") + L" - Hook-Mark GUI" + L"\0";
-        SetWindowTextW(main_window, title.c_str());
-    }
-
     float to_float(const std::string &str) {
         try {
             return std::stof(str);
@@ -170,30 +163,6 @@ namespace hmgui {
         main_window.d2d1_update_text_format();
     }
 
-    int check_nosave() {
-        int ret = MessageBoxW(
-            main_window,
-            L"変更内容が保存されていません。保存しますか？",
-            L"確認",
-            MB_ICONWARNING | MB_YESNOCANCEL | MB_DEFBUTTON1
-        );
-        if (ret == IDYES) return 0;
-        else if (ret == IDNO) return 1;
-        else return 2;
-    }
-
-    int check_resign() {
-        int ret = MessageBoxW(
-            main_window,
-            L"自動で投了されます。よろしいですか？",
-            L"確認",
-            MB_ICONWARNING | MB_YESNOCANCEL | MB_DEFBUTTON1
-        );
-        if (ret == IDYES) return 0;
-        else if (ret == IDNO) return 1;
-        else return 2;
-    }
-
     void init_open_file() {
         hm::kifu_ver1 temp;
         try {
@@ -207,8 +176,8 @@ namespace hmgui {
         main_window.current_kifu.resign();
         main_window.kifu_current_turn = main_window.current_kifu.size() - 1;
         main_window.kifu_saved = true;
+        main_window.update_title();
         hm::kifuver1_to_board(main_window.current_kifu, main_window.board);
-        update_title();
         main_window.initialize_scroll();
         InvalidateRect(main_window, nullptr, FALSE);
     }
@@ -281,10 +250,12 @@ namespace hmgui {
             }
             case WM_CLOSE: {
                 if (!kifu_saved) {
-                    int ret = check_nosave();
+                    int ret = check_nosave(handle_window);
                     switch (ret) {
                         case 0: {
-                            SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                            if (overwrite_save_handler()) {
+                                return 0;
+                            }
                             break;
                         }
                         case 1: {
@@ -348,10 +319,12 @@ namespace hmgui {
                 switch (LOWORD(w_param)) {
                     case ID_MENU_FILE_CREATE_NEW: {
                         if (!kifu_saved) {
-                            int ret = check_nosave();
+                            int ret = check_nosave(handle_window);
                             switch (ret) {
                                 case 0: {
-                                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                    if (overwrite_save_handler()) {
+                                        return 0;
+                                    }
                                     break;
                                 }
                                 case 1: {
@@ -385,10 +358,12 @@ namespace hmgui {
                     }
                     case ID_MENU_FILE_OPEN: {
                         if (!kifu_saved) {
-                            int ret = check_nosave();
+                            int ret = check_nosave(handle_window);
                             switch (ret) {
                                 case 0: {
-                                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                    if (overwrite_save_handler()) {
+                                        return 0;
+                                    }
                                     break;
                                 }
                                 case 1: {
@@ -428,78 +403,21 @@ namespace hmgui {
                         break;
                     }
                     case ID_MENU_FILE_OVERWRITE_SAVE: {
-                        if (current_kifu_path.empty()) {
-                            SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_SAVE_AS, 0), 0);
-                        }
-                        else {
-                            if (!current_kifu.is_resigned()) {
-                                int ret = check_resign();
-                                switch (ret) {
-                                    case 0: {
-                                        current_kifu.resign();
-                                        break;
-                                    }
-                                    case 1: {
-                                        return 0;
-                                    }
-                                    case 2: {
-                                        return 0;
-                                    }
-                                }
-                            }
-                            try {
-                                current_kifu.kifu_save(current_kifu_path);
-                                kifu_saved = true;
-                            }
-                            catch (const std::exception &e) {
-                                MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(),
-                                            L"エラー", MB_OK | MB_ICONERROR);
-                            }
-                        }
+                        overwrite_save_handler();
                         break;
                     }
                     case ID_MENU_FILE_SAVE_AS: {
-                        std::wstring result;
-                        if (!current_kifu.is_resigned()) {
-                            int ret = check_resign();
-                            switch (ret) {
-                                case 0: {
-                                    current_kifu.resign();
-                                    break;
-                                }
-                                case 1: {
-                                    return 0;
-                                }
-                                case 2: {
-                                    return 0;
-                                }
-                            }
-                        }
-                        show_file_save_dialog(result);
-                        current_kifu_path = result;
-                        if (result.empty()) {
-                            break;
-                        }
-                        try {
-                            current_kifu.kifu_save(result);
-                            kifu_saved = true;
-                            if (is_editing) {
-                                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), MAKELPARAM(NULL, NULL));
-                            }
-                        }
-                        catch (const std::exception &e) {
-                            MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(),
-                                        L"エラー", MB_OK | MB_ICONERROR);
-                        }
-                        update_title();
+                        save_as_handler();
                         break;
                     }
                     case ID_MENU_FILE_CLOSE: {
                         if (!kifu_saved) {
-                            int ret = check_nosave();
+                            int ret = check_nosave(handle_window);
                             switch (ret) {
                                 case 0: {
-                                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                    if (overwrite_save_handler()) {
+                                        return 0;
+                                    }
                                     break;
                                 }
                                 case 1: {
@@ -545,10 +463,12 @@ namespace hmgui {
                     }
                     case ID_MENU_FILE_EXIT: {
                         if (!kifu_saved) {
-                            int ret = check_nosave();
+                            int ret = check_nosave(handle_window);
                             switch (ret) {
                                 case 0: {
-                                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                    if (overwrite_save_handler()) {
+                                        return 0;
+                                    }
                                     break;
                                 }
                                 case 1: {
@@ -565,10 +485,12 @@ namespace hmgui {
                     }
                     case ID_MENU_FILE_NOSAVE_CONFIG_EXIT: {
                         if (!kifu_saved) {
-                            int ret = check_nosave();
+                            int ret = check_nosave(handle_window);
                             switch (ret) {
                                 case 0: {
-                                    SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                    if (overwrite_save_handler()) {
+                                        return 0;
+                                    }
                                     break;
                                 }
                                 case 1: {
@@ -610,10 +532,12 @@ namespace hmgui {
                         is_editing = !is_editing;
                         if (is_editing) {
                             if (!kifu_saved) {
-                                int ret = check_nosave();
+                                int ret = check_nosave(handle_window);
                                 switch (ret) {
                                     case 0: {
-                                        SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                        if (overwrite_save_handler()) {
+                                            return 0;
+                                        }
                                         break;
                                     }
                                     case 1: {
@@ -678,7 +602,7 @@ namespace hmgui {
                             if (current_kifu.size() == 0) {
                                 board.clear();
                             } else {
-                                hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
+                                hm::kifuver1_to_board(current_kifu, board, kifu_current_turn + 1);
                             }
                             InvalidateRect(handle_window, nullptr, FALSE);
                         }
@@ -715,10 +639,12 @@ namespace hmgui {
                 wchar_t filepath[MAX_PATH];
                 if (DragQueryFileW(handle_drop, 0, filepath, MAX_PATH)) {
                     if (!kifu_saved) {
-                        int ret = check_nosave();
+                        int ret = check_nosave(handle_window);
                         switch (ret) {
                             case 0: {
-                                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                if (overwrite_save_handler()) {
+                                    return 0;
+                                }
                                 break;
                             }
                             case 1: {
@@ -972,7 +898,7 @@ namespace hmgui {
                         if (current_kifu.size() == 0) {
                             board.clear();
                         } else {
-                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn);
+                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn + 1);
                         }
                     }
                     do_over_button.current_state = 1;
@@ -1209,10 +1135,12 @@ namespace hmgui {
 
                 if (PtInRect(&newgame_button.rect, pt)) {
                     if (!main_window.kifu_saved) {
-                        int ret = check_nosave();
+                        int ret = check_nosave(handle_window);
                         switch (ret) {
                             case 0: {
-                                SendMessageW(main_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                                if (main_window.overwrite_save_handler()) {
+                                    return 0;
+                                }
                                 break;
                             }
                             case 1: {
@@ -1252,7 +1180,7 @@ namespace hmgui {
                     main_window.current_kifu_path.clear();
                     config_ref.open_file.clear();
                     main_window.initialize_scroll();
-                    update_title();
+                    main_window.update_title();
                     InvalidateRect(main_window, nullptr, FALSE);
                     handle_exit();
                     newgame_button.current_state = 1;
@@ -1518,7 +1446,7 @@ namespace hmgui {
             }
             case WM_KEYDOWN: {
                 if ((GetKeyState(VK_CONTROL) & 0x8000) && w_param == 'A') {
-                    SendMessage(handle_window, EM_SETSEL, 0, -1);
+                    SendMessageW(handle_window, EM_SETSEL, 0, -1);
                     return 0;
                 }
                 break;
@@ -1556,7 +1484,7 @@ namespace hmgui {
             }
             case WM_KEYDOWN: {
                 if ((GetKeyState(VK_CONTROL) & 0x8000) && w_param == 'A') {
-                    SendMessage(handle_window, EM_SETSEL, 0, -1);
+                    SendMessageW(handle_window, EM_SETSEL, 0, -1);
                     return 0;
                 }
                 break;

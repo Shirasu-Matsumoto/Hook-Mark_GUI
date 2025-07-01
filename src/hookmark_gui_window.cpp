@@ -909,6 +909,83 @@ namespace hmgui {
         return config_scroll_offset;
     }
 
+    void window_main::update_title() {
+        std::filesystem::path path(current_kifu_path);
+        std::wstring filename = path.filename().wstring();
+        std::wstring title = (current_kifu_path.empty() ? L"無題" : filename) + (kifu_saved ? L"" : L" *") + L" - Hook-Mark GUI" + L"\0";
+        SetWindowTextW(handle_window, title.c_str());
+    }
+
+    bool window_main::save_as_handler() {
+        std::wstring result;
+        if (!current_kifu.is_resigned()) {
+            int ret = check_resign(handle_window);
+            switch (ret) {
+                case 0: {
+                    current_kifu.resign();
+                    break;
+                }
+                case 1:
+                case 2: {
+                    return false;
+                }
+            }
+        }
+        show_file_save_dialog(result);
+        current_kifu_path = result;
+        if (result.empty()) {
+            return true;
+        }
+        try {
+            current_kifu.kifu_save(result);
+            kifu_saved = true;
+            if (is_editing) {
+                SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_BOARD, NULL), MAKELPARAM(NULL, NULL));
+            }
+        }
+        catch (const std::exception &e) {
+            MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(),
+                        L"エラー", MB_OK | MB_ICONERROR);
+            return true;
+        }
+        update_title();
+        return false;
+    }
+
+    bool window_main::overwrite_save_handler() {
+        if (current_kifu_path.empty()) {
+            if (save_as_handler()) {
+                return true;
+            }
+            return false;
+        }
+        else {
+            if (!current_kifu.is_resigned()) {
+                int ret = check_resign(handle_window);
+                switch (ret) {
+                    case 0: {
+                        current_kifu.resign();
+                        break;
+                    }
+                    case 1:
+                    case 2: {
+                        return false;
+                    }
+                }
+            }
+            try {
+                current_kifu.kifu_save(current_kifu_path);
+                kifu_saved = true;
+            }
+            catch (const std::exception &e) {
+                MessageBoxW(NULL, utf8_to_utf16(e.what()).c_str(),
+                            L"エラー", MB_OK | MB_ICONERROR);
+                return true;
+            }
+        }
+        return false;
+    }
+
     wc_newgame::wc_newgame() : wc_base() {}
 
     ATOM wc_newgame::register_class() {

@@ -1,4 +1,4 @@
-#ifndef __HOOKMARK_GUI_HELPERS_HPP__
+﻿#ifndef __HOOKMARK_GUI_HELPERS_HPP__
 #define __HOOKMARK_GUI_HELPERS_HPP__
 
 #include <string>
@@ -101,6 +101,30 @@ namespace hmgui {
             std::round(rectf.right),
             std::round(rectf.bottom)
         );
+    }
+
+    inline int check_nosave(HWND handle_window) {
+        int ret = MessageBoxW(
+            handle_window,
+            L"変更内容が保存されていません。保存しますか？",
+            L"確認",
+            MB_ICONWARNING | MB_YESNOCANCEL | MB_DEFBUTTON1
+        );
+        if (ret == IDYES) return 0;
+        else if (ret == IDNO) return 1;
+        else return 2;
+    }
+
+    inline int check_resign(HWND handle_window) {
+        int ret = MessageBoxW(
+            handle_window,
+            L"自動で投了されます。よろしいですか？",
+            L"確認",
+            MB_ICONWARNING | MB_YESNOCANCEL | MB_DEFBUTTON1
+        );
+        if (ret == IDYES) return 0;
+        else if (ret == IDNO) return 1;
+        else return 2;
     }
 }
 
