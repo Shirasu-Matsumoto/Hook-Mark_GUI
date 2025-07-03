@@ -43,6 +43,32 @@ namespace hm {
         int y;
     };
 
+    template <typename T>
+    struct two_d {
+        two_d(T x, T y) : x(x), y(y) {}
+        two_d() : x(0), y(0) {}
+        two_d(const two_d &p) : x(p.x), y(p.y) {}
+        two_d &operator=(const two_d &p) {
+            x = p.x;
+            y = p.y;
+            return *this;
+        }
+        two_d &operator=(const std::pair<T, T> &p) {
+            x = p.first;
+            y = p.second;
+            return *this;
+        }
+        bool operator==(const two_d &p) const {
+            return x == p.x && y == p.y;
+        }
+        bool operator!=(const two_d &p) const {
+            return !(*this == p);
+        }
+
+        T x;
+        T y;
+    };
+
     class board_state {
         private:
             signed_vector<signed_vector<bool>> _has_piece;
@@ -163,7 +189,7 @@ namespace hm {
                 _current_turn = 0;
             }
 
-            std::pair<range, range> board_range() const {
+            two_d<range> board_range() const {
                 bool found = false;
                 int min_x = 0, max_x = 0;
                 int min_y = 0, max_y = 0;
