@@ -59,6 +59,7 @@ namespace hmgui {
     class wc_base {
         public:
             WNDCLASSEXW window_class = {};
+            HINSTANCE handle_instance;
 
             wc_base() {}
             ~wc_base() {

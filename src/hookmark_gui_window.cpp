@@ -4,18 +4,20 @@ namespace hmgui {
     wc_main::wc_main() : wc_base() {}
 
     ATOM wc_main::register_class() {
+        handle_instance = GetModuleHandleW(nullptr);
+
         window_class = {
             sizeof(WNDCLASSEXW),
             CS_HREDRAW | CS_VREDRAW,
             window_proc,
             0, 0,
-            GetModuleHandle(nullptr),
-            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
+            handle_instance,
+            LoadIconW(handle_instance, MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
             LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
             (HBRUSH)(COLOR_WINDOW + 1),
             nullptr,
             L"Hook-Mark_GUI_Main",
-            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
+            LoadIconW(handle_instance, MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
         };
         return RegisterClassExW(&window_class);
     }
@@ -236,6 +238,7 @@ namespace hmgui {
 
     void window_main::initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
         initialize_scroll();
+        handle_instance = GetModuleHandleW(nullptr);
         window_class.register_class();
         create_window();
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
@@ -252,7 +255,7 @@ namespace hmgui {
             WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
             static_cast<int>(config_ref.window_pos_x), static_cast<int>(config_ref.window_pos_y),
             static_cast<int>(config_ref.window_size_x), static_cast<int>(config_ref.window_size_y),
-            nullptr, nullptr, GetModuleHandle(nullptr), this
+            nullptr, nullptr, handle_instance, this
         );
 
         DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;
@@ -989,18 +992,20 @@ namespace hmgui {
     wc_newgame::wc_newgame() : wc_base() {}
 
     ATOM wc_newgame::register_class() {
+        handle_instance = GetModuleHandleW(nullptr);
+
         window_class = {
             sizeof(WNDCLASSEXW),
             CS_HREDRAW | CS_VREDRAW,
             window_proc,
             0, 0,
-            GetModuleHandle(nullptr),
-            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
+            handle_instance,
+            LoadIconW(handle_instance, MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
             LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
             (HBRUSH)(COLOR_WINDOW + 1),
             nullptr,
             L"Hook-Mark_GUI_NewGame",
-            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
+            LoadIconW(handle_instance, MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
         };
         return RegisterClassExW(&window_class);
     }
@@ -1013,7 +1018,7 @@ namespace hmgui {
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
             CW_USEDEFAULT, CW_USEDEFAULT,
             600, 600,
-            handle_parent_window, NULL, GetModuleHandle(nullptr), NULL
+            handle_parent_window, NULL, handle_instance, NULL
         );
 
         DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;
@@ -1034,14 +1039,14 @@ namespace hmgui {
             L"EDIT", L"",
             WS_CHILD | WS_VISIBLE | WS_BORDER,
             50, 10, client_area_rect.right / 2 - 65, 30,
-            handle_window, NULL, GetModuleHandle(nullptr), NULL
+            handle_window, NULL, handle_instance, NULL
         );
         players_name_edit.second = CreateWindowExW(
             0,
             L"EDIT", L"",
             WS_CHILD | WS_VISIBLE | WS_BORDER,
             client_area_rect.right / 2 + 45, 10, client_area_rect.right / 2 - 60, 30,
-            handle_window, NULL, GetModuleHandle(nullptr), NULL
+            handle_window, NULL, handle_instance, NULL
         );
         if (!handle_font) {
             handle_font = CreateFontW(
@@ -1068,6 +1073,7 @@ namespace hmgui {
         newgame_config_area_rect.resize(newgame_config_size);
         newgame_config_area_rectf.resize(newgame_config_size);
         newgame_config_state.resize(newgame_config_size);
+        handle_instance = GetModuleHandleW(nullptr);
         window_class.register_class();
         create_window(handle_parent_window);
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
@@ -1218,18 +1224,20 @@ namespace hmgui {
     wc_settings::wc_settings() : wc_base() {}
 
     ATOM wc_settings::register_class() {
+        handle_instance = GetModuleHandleW(nullptr);
+
         window_class = {
             sizeof(WNDCLASSEXW),
             CS_HREDRAW | CS_VREDRAW,
             window_proc,
             0, 0,
-            GetModuleHandle(nullptr),
-            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
+            handle_instance,
+            LoadIconW(handle_instance, MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
             LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
             (HBRUSH)(COLOR_WINDOW + 1),
             nullptr,
             L"Hook-Mark_GUI_Settings",
-            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
+            LoadIconW(handle_instance, MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
         };
 
         return RegisterClassExW(&window_class);
@@ -1243,7 +1251,7 @@ namespace hmgui {
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
             CW_USEDEFAULT, CW_USEDEFAULT,
             600, 600,
-            handle_parent_window, NULL, GetModuleHandle(nullptr), NULL
+            handle_parent_window, NULL, handle_instance, NULL
         );
 
         DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;
@@ -1301,6 +1309,7 @@ namespace hmgui {
     }
 
     void window_settings::initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window) {
+        handle_instance = GetModuleHandleW(nullptr);
         window_class.register_class();
         edit_controls.resize(settings_item_keys.size());
         create_window(handle_parent_window);
@@ -1328,7 +1337,7 @@ namespace hmgui {
                 WS_CHILD | WS_VISIBLE,
                 static_cast<int>(center_x) + 1, static_cast<int>(config_ref.margin + settings_item_spacing * i) + 1,
                 static_cast<int>((settings_area_rectf.right - settings_area_rectf.left) / 2) - 2, static_cast<int>(settings_item_spacing) - 2,
-                handle_window, nullptr, GetModuleHandle(nullptr), nullptr
+                handle_window, nullptr, handle_instance, nullptr
             );
             ShowWindow(edit_handle, SW_SHOW);
             SetWindowFont(edit_handle, handle_font, TRUE);
@@ -1446,18 +1455,20 @@ namespace hmgui {
     wc_version::wc_version() : wc_base() {}
 
     ATOM wc_version::register_class() {
+        handle_instance = GetModuleHandleW(nullptr);
+
         window_class = {
             sizeof(WNDCLASSEXW),
             CS_HREDRAW | CS_VREDRAW,
             window_proc,
             0, 0,
-            GetModuleHandle(nullptr),
-            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
+            handle_instance,
+            LoadIconW(handle_instance, MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
             LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
             (HBRUSH)(COLOR_WINDOW + 1),
             nullptr,
             L"Hook-Mark_GUI_Version",
-            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
+            LoadIconW(handle_instance, MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
         };
 
         return RegisterClassExW(&window_class);
@@ -1471,7 +1482,7 @@ namespace hmgui {
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
             CW_USEDEFAULT, CW_USEDEFAULT,
             600, 600,
-            handle_parent_window, NULL, GetModuleHandle(nullptr), NULL
+            handle_parent_window, NULL, handle_instance, NULL
         );
 
         DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;
@@ -1481,6 +1492,7 @@ namespace hmgui {
     }
 
     void window_version::initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory, HWND handle_parent_window) {
+        handle_instance = GetModuleHandleW(nullptr);
         window_class.register_class();
         create_window(handle_parent_window);
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
@@ -1563,18 +1575,21 @@ namespace hmgui {
     wc_sep_board::wc_sep_board() : wc_base() {}
 
     ATOM wc_sep_board::register_class() {
+        handle_instance = GetModuleHandleW(nullptr);
+
+        handle_instance = GetModuleHandleW(nullptr);
         window_class = {
             sizeof(WNDCLASSEXW),
             CS_HREDRAW | CS_VREDRAW,
             window_proc,
             0, 0,
-            GetModuleHandle(nullptr),
-            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
+            handle_instance,
+            LoadIconW(handle_instance, MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON)),
             LoadCursorW(nullptr, MAKEINTRESOURCEW(32512)),
             (HBRUSH)(COLOR_WINDOW + 1),
             nullptr,
             L"Hook-Mark_GUI_SepBoard",
-            LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
+            LoadIconW(handle_instance, MAKEINTRESOURCEW(IDI_HOOKMARK_GUI_ICON))
         };
 
         return RegisterClassExW(&window_class);
@@ -1612,6 +1627,7 @@ namespace hmgui {
 
     void window_sep_board::initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory) {
         config_ref = config;
+        handle_instance = GetModuleHandleW(nullptr);
         window_class.register_class();
         create_window();
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
@@ -1682,7 +1698,7 @@ namespace hmgui {
             WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
             CW_USEDEFAULT, CW_USEDEFAULT,
             600, 600,
-            NULL, NULL, GetModuleHandle(nullptr), NULL
+            NULL, NULL, handle_instance, NULL
         );
 
         DWM_WINDOW_CORNER_PREFERENCE corner_pref = DWMWCP_DONOTROUND;

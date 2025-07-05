@@ -69,6 +69,7 @@ namespace hmgui {
             hm::board_state board;
             hm::kifu_ver1 current_kifu;
 
+            HINSTANCE handle_instance;
             ID2D1Factory *d2d1_factory = nullptr;
             ID2D1HwndRenderTarget *d2d1_render_target = nullptr;
             ID2D1SolidColorBrush *d2d1_brush = nullptr;
@@ -188,6 +189,7 @@ namespace hmgui {
             wc_newgame window_class;
             window_conf &config_ref;
 
+            HINSTANCE handle_instance;
             ID2D1Factory *d2d1_factory = nullptr;
             IDWriteFactory *d2d1_dwrite_factory = nullptr;
             ID2D1HwndRenderTarget *d2d1_render_target = nullptr;
@@ -238,6 +240,7 @@ namespace hmgui {
             wc_settings window_class;
             window_conf &config_ref;
 
+            HINSTANCE handle_instance;
             ID2D1Factory* d2d1_factory = nullptr;
             IDWriteFactory *d2d1_dwrite_factory = nullptr;
             ID2D1HwndRenderTarget *d2d1_render_target = nullptr;
@@ -301,6 +304,7 @@ namespace hmgui {
         public:
             wc_version window_class;
 
+            HINSTANCE handle_instance;
             ID2D1Factory *d2d1_factory = nullptr;
             IDWriteFactory *d2d1_dwrite_factory = nullptr;
             ID2D1HwndRenderTarget *d2d1_render_target = nullptr;
@@ -329,6 +333,7 @@ namespace hmgui {
             wc_sep_board window_class;
             window_conf &config_ref;
 
+            HINSTANCE handle_instance;
             ID2D1Factory *d2d1_factory = nullptr;
             IDWriteFactory *d2d1_dwrite_factory = nullptr;
             ID2D1HwndRenderTarget *d2d1_render_target = nullptr;
