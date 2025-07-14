@@ -243,7 +243,6 @@ namespace hmgui {
 
     void window_main::initialize_scroll() {
         grid_scroll_offset = D2D1::Point2F(-(config_ref.grid_size_x - config_ref.margin * 2) / 2 + config_ref.grid_spacing / 2, (config_ref.vertical_size - config_ref.margin * 2) / 2 - config_ref.grid_spacing / 2);
-        kifu_scroll_offset = D2D1::Point2F();
         config_scroll_offset = D2D1::Point2F();
     }
 

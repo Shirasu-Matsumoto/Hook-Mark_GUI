@@ -31,6 +31,7 @@ hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
                         main_menu_edit_move_forward(ID_MENU_EDIT_MOVE_FORWARD),
                         main_menu_edit_step_back(ID_MENU_EDIT_STEP_BACK),
                         main_menu_edit_jump_to_initial_phase(ID_MENU_EDIT_JUMP_TO_INITIAL_PHASE),
+                        main_menu_edit_jump_to_last_phase(ID_MENU_EDIT_JUMP_TO_LAST_PHASE),
                         main_menu_edit_board(ID_MENU_EDIT_BOARD),
                         main_menu_edit_comment(ID_MENU_EDIT_COMMENT),
                         main_menu_edit_kifu_info(ID_MENU_EDIT_KIFU_INFO),
@@ -179,6 +180,17 @@ namespace hmgui {
         main_window.kifu_saved = true;
         main_window.update_title();
         hm::kifuver1_to_board(main_window.current_kifu, main_window.board);
+        float visible_top = main_window.kifu_scroll_offset.y;
+        float visible_bottom = main_window.kifu_scroll_offset.y + (main_window.kifu_area_rect.bottom - main_window.kifu_area_rect.top);
+        float turn_pos = (main_window.kifu_current_turn + 1) * grobal_config.kifu_spacing;
+
+        if (turn_pos < visible_top) {
+            main_window.kifu_scroll_offset.y = turn_pos;
+        } else if (turn_pos > visible_bottom - grobal_config.kifu_spacing) {
+            main_window.kifu_scroll_offset.y = turn_pos - (main_window.kifu_area_rect.bottom - main_window.kifu_area_rect.top) + grobal_config.kifu_spacing;
+        }
+
+        if (main_window.kifu_scroll_offset.y < 0.0f) main_window.kifu_scroll_offset.y = 0.0f;
         main_window.initialize_scroll();
         InvalidateRect(main_window, nullptr, FALSE);
     }
@@ -205,9 +217,10 @@ namespace hmgui {
             AppendMenuW(main_menu_file, MF_STRING, main_menu_file_exit, L"終了");
             AppendMenuW(main_menu_file, MF_STRING, main_menu_file_nosave_config_exit, L"設定を保存せずに終了");
 
-            AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_move_forward, L"一手進む");
             AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_step_back, L"一手戻る");
+            AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_move_forward, L"一手進む");
             AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_jump_to_initial_phase, L"初期局面に戻る");
+            AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_jump_to_last_phase, L"最終局面に進む");
             AppendMenuW(main_menu_edit, MF_SEPARATOR, 0, NULL);
             AppendMenuW(main_menu_edit, MF_STRING, main_menu_edit_board, L"局面編集を開始");
             AppendMenuW(main_menu_edit, MF_SEPARATOR, 0, NULL);
@@ -278,11 +291,13 @@ namespace hmgui {
                 int virtual_key = static_cast<int>(w_param);
                 key_held[virtual_key] = true;
 
-                if (virtual_key == VK_CONTROL && virtual_key == 'S') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
-                if (virtual_key == VK_CONTROL && virtual_key == 'O') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OPEN, 0), 0);
-                if (virtual_key == VK_CONTROL && virtual_key == 'N') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_CREATE_NEW, 0), 0);
+                if (key_held[VK_CONTROL] && virtual_key == 'S') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                if (key_held[VK_CONTROL] && virtual_key == 'O') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OPEN, 0), 0);
+                if (key_held[VK_CONTROL] && virtual_key == 'N') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_CREATE_NEW, 0), 0);
                 if (current_focus == focus::kifu && virtual_key == VK_UP) SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_STEP_BACK, 0), 0);
                 if (current_focus == focus::kifu && virtual_key == VK_DOWN) SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_MOVE_FORWARD, 0), 0);
+                if (current_focus == focus::kifu && key_held[VK_CONTROL] && virtual_key == VK_UP) SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_JUMP_TO_INITIAL_PHASE, 0), 0);
+                if (current_focus == focus::kifu && key_held[VK_CONTROL] && virtual_key == VK_DOWN) SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_JUMP_TO_LAST_PHASE, 0), 0);
 
                 return 0;
             }
@@ -397,6 +412,17 @@ namespace hmgui {
                         kifu_saved = true;
                         config_ref.open_file = utf16_to_utf8(result);
                         hm::kifuver1_to_board(current_kifu, board);
+                        float visible_top = kifu_scroll_offset.y;
+                        float visible_bottom = kifu_scroll_offset.y + (kifu_area_rect.bottom - kifu_area_rect.top);
+                        float turn_pos = (kifu_current_turn + 1) * config_ref.kifu_spacing;
+
+                        if (turn_pos < visible_top) {
+                            kifu_scroll_offset.y = turn_pos;
+                        } else if (turn_pos > visible_bottom - config_ref.kifu_spacing) {
+                            kifu_scroll_offset.y = turn_pos - (kifu_area_rect.bottom - kifu_area_rect.top) + config_ref.kifu_spacing;
+                        }
+
+                        if (kifu_scroll_offset.y < 0.0f) kifu_scroll_offset.y = 0.0f;
                         update_title();
                         initialize_scroll();
                         InvalidateRect(handle_window, nullptr, FALSE);
@@ -504,18 +530,44 @@ namespace hmgui {
                         handle_exit();
                         break;
                     }
-                    case ID_MENU_EDIT_MOVE_FORWARD: {
-                        if (current_kifu.size() && kifu_current_turn < static_cast<int>(current_kifu.size() - 1)) {
-                            kifu_current_turn++;
-                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn + 1);
-                            InvalidateRect(handle_window, nullptr, FALSE);
-                        }
-                        break;
-                    }
                     case ID_MENU_EDIT_STEP_BACK: {
                         if (current_kifu.size() && kifu_current_turn > -1) {
                             kifu_current_turn--;
                             hm::kifuver1_to_board(current_kifu, board, kifu_current_turn + 1);
+
+                            float visible_top = kifu_scroll_offset.y;
+                            float visible_bottom = kifu_scroll_offset.y + (kifu_area_rect.bottom - kifu_area_rect.top);
+                            float turn_pos = (kifu_current_turn + 1) * config_ref.kifu_spacing;
+
+                            if (turn_pos < visible_top) {
+                                kifu_scroll_offset.y = turn_pos;
+                            } else if (turn_pos > visible_bottom - config_ref.kifu_spacing) {
+                                kifu_scroll_offset.y = turn_pos - (kifu_area_rect.bottom - kifu_area_rect.top) + config_ref.kifu_spacing;
+                            }
+
+                            if (kifu_scroll_offset.y < 0.0f) kifu_scroll_offset.y = 0.0f;
+
+                            InvalidateRect(handle_window, nullptr, FALSE);
+                        }
+                        break;
+                    }
+                    case ID_MENU_EDIT_MOVE_FORWARD: {
+                        if (current_kifu.size() && kifu_current_turn < static_cast<int>(current_kifu.size() - 1)) {
+                            kifu_current_turn++;
+                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn + 1);
+
+                            float visible_top = kifu_scroll_offset.y;
+                            float visible_bottom = kifu_scroll_offset.y + (kifu_area_rect.bottom - kifu_area_rect.top);
+                            float turn_pos = (kifu_current_turn + 1) * config_ref.kifu_spacing;
+
+                            if (turn_pos < visible_top) {
+                                kifu_scroll_offset.y = turn_pos;
+                            } else if (turn_pos > visible_bottom - config_ref.kifu_spacing) {
+                                kifu_scroll_offset.y = turn_pos - (kifu_area_rect.bottom - kifu_area_rect.top) + config_ref.kifu_spacing;
+                            }
+
+                            if (kifu_scroll_offset.y < 0.0f) kifu_scroll_offset.y = 0.0f;
+
                             InvalidateRect(handle_window, nullptr, FALSE);
                         }
                         break;
@@ -524,6 +576,40 @@ namespace hmgui {
                         if (current_kifu.size()) {
                             kifu_current_turn = -1;
                             hm::kifuver1_to_board(current_kifu, board, kifu_current_turn + 1);
+
+                            float visible_top = kifu_scroll_offset.y;
+                            float visible_bottom = kifu_scroll_offset.y + (kifu_area_rect.bottom - kifu_area_rect.top);
+                            float turn_pos = (kifu_current_turn + 1) * config_ref.kifu_spacing;
+
+                            if (turn_pos < visible_top) {
+                                kifu_scroll_offset.y = turn_pos;
+                            } else if (turn_pos > visible_bottom - config_ref.kifu_spacing) {
+                                kifu_scroll_offset.y = turn_pos - (kifu_area_rect.bottom - kifu_area_rect.top) + config_ref.kifu_spacing;
+                            }
+
+                            if (kifu_scroll_offset.y < 0.0f) kifu_scroll_offset.y = 0.0f;
+
+                            InvalidateRect(handle_window, nullptr, FALSE);
+                        }
+                        break;
+                    }
+                    case ID_MENU_EDIT_JUMP_TO_LAST_PHASE: {
+                        if (current_kifu.size()) {
+                            kifu_current_turn = current_kifu.size() - 1;
+                            hm::kifuver1_to_board(current_kifu, board, kifu_current_turn + 1);
+
+                            float visible_top = kifu_scroll_offset.y;
+                            float visible_bottom = kifu_scroll_offset.y + (kifu_area_rect.bottom - kifu_area_rect.top);
+                            float turn_pos = (kifu_current_turn + 1) * config_ref.kifu_spacing;
+
+                            if (turn_pos < visible_top) {
+                                kifu_scroll_offset.y = turn_pos;
+                            } else if (turn_pos > visible_bottom - config_ref.kifu_spacing) {
+                                kifu_scroll_offset.y = turn_pos - (kifu_area_rect.bottom - kifu_area_rect.top) + config_ref.kifu_spacing;
+                            }
+
+                            if (kifu_scroll_offset.y < 0.0f) kifu_scroll_offset.y = 0.0f;
+
                             InvalidateRect(handle_window, nullptr, FALSE);
                         }
                         break;
@@ -676,6 +762,17 @@ namespace hmgui {
                     kifu_saved = true;
                     config_ref.open_file = utf16_to_utf8(filepath);
                     hm::kifuver1_to_board(current_kifu, board);
+                    float visible_top = kifu_scroll_offset.y;
+                    float visible_bottom = kifu_scroll_offset.y + (kifu_area_rect.bottom - kifu_area_rect.top);
+                    float turn_pos = (kifu_current_turn + 1) * config_ref.kifu_spacing;
+
+                    if (turn_pos < visible_top) {
+                        kifu_scroll_offset.y = turn_pos;
+                    } else if (turn_pos > visible_bottom - config_ref.kifu_spacing) {
+                        kifu_scroll_offset.y = turn_pos - (kifu_area_rect.bottom - kifu_area_rect.top) + config_ref.kifu_spacing;
+                    }
+
+                    if (kifu_scroll_offset.y < 0.0f) kifu_scroll_offset.y = 0.0f;
                     update_title();
                     initialize_scroll();
                     InvalidateRect(handle_window, nullptr, FALSE);
@@ -1540,7 +1637,7 @@ namespace hmgui {
 
 int WINAPI wWinMain(_In_ HINSTANCE handle_instance, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int) {
     hmgui::load_config();
-    hmgui::init_open_file();
+
     HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &grobal_d2d1_factory);
     if (FAILED(hr)) return false;
     hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&grobal_d2d1_dwrite_factory));
@@ -1562,6 +1659,7 @@ int WINAPI wWinMain(_In_ HINSTANCE handle_instance, _In_opt_ HINSTANCE, _In_ LPW
     main_window.resign_button.enabled = false;
     DrawMenuBar(main_window);
     DragAcceptFiles(main_window, TRUE);
+    hmgui::init_open_file();
 
     main_timer_id = SetTimer(main_window, main_timer_id, 16, nullptr);
     sep_board_timer_id = SetTimer(sep_board_window, sep_board_timer_id, 16, nullptr);
