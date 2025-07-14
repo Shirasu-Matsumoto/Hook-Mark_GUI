@@ -1,0 +1,41 @@
+﻿PROJECT_NAME           = "Hook-Mark GUI"
+PROJECT_NUMBER         =
+
+INPUT                  = ./src
+RECURSIVE              = YES
+
+OUTPUT_DIRECTORY       = docs
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+VERBATIM_HEADERS       = YES
+
+GENERATE_TREEVIEW      = YES
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = NO
+EXTRACT_LOCAL_METHODS  = NO
+
+FILE_PATTERNS          = *.c *.cc *.cxx *.cpp *.c++ *.java *.ii *.ixx *.ipp *.i++ *.inl *.h *.hh *.hxx *.hpp *.h++ *.idl *.odl *.cs *.php *.php4 *.php5 *.phtml *.inc *.m *.mm *.py *.f90 *.f *.for *.vhd *.vhdl *.ucf *.qsf *.as *.js
+RECURSIVE              = YES
+QUIET                  = NO
+WARNINGS               = YES
+OPTIMIZE_OUTPUT_FOR_C  = NO
+OPTIMIZE_OUTPUT_JAVA   = NO
+OPTIMIZE_FOR_FORTRAN   = NO
+OPTIMIZE_OUTPUT_VHDL   = NO
+
+# GENERATE_MAN          = NO
+# GENERATE_RTF          = NO
+# GENERATE_XML          = NO
+# GENERATE_DOCBOOK      = NO
+# GENERATE_PERLMOD      = NO
+# GENERATE_TAGFILE      =
+# HTML_OUTPUT           = html
+# TAB_SIZE              = 4
+# STRIP_FROM_PATH       =

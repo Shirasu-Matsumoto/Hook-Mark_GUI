@@ -2,6 +2,7 @@
 .vscode
 .vs
 build
+docs
 
 # Binary files
 *.exe

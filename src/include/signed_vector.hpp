@@ -61,7 +61,7 @@ namespace hm {
                 return _negative;
             }
 
-            std::vector<T> get_negative() noexcept {
+            std::vector<T> get_positive() noexcept {
                 return _positive;
             }
 
@@ -794,7 +794,7 @@ namespace hm {
                 return _negative;
             }
 
-            std::vector<bool> get_negative() noexcept {
+            std::vector<bool> get_positive() noexcept {
                 return _positive;
             }
 
