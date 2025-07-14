@@ -30,6 +30,8 @@ namespace hm {
         public:
             class iterator;
             class const_iterator;
+            class reverse_iterator;
+            class const_reverse_iterator;
 
             signed_vector(unsigned int init_positive_size = 0, unsigned int init_negative_size = 0) noexcept {
                 _positive.resize(init_positive_size);
@@ -53,6 +55,30 @@ namespace hm {
                 } else {
                     _negative.resize(-new_size);
                 }
+            }
+
+            std::vector<T> get_negative() noexcept {
+                return _negative;
+            }
+
+            std::vector<T> get_negative() noexcept {
+                return _positive;
+            }
+
+            std::vector<T> &negative() noexcept {
+                return &_negative;
+            }
+
+            std::vector<T> &positive() noexcept {
+                return &_positive;
+            }
+
+            void set_negative(std::vector<T> vec) noexcept {
+                _negative = vec;
+            }
+
+            void set_positive(std::vector<T> vec) noexcept {
+                _positive = vec;
             }
 
             void set_negative(std::initializer_list<T> init_list) noexcept {
@@ -197,11 +223,35 @@ namespace hm {
                 return _positive.end();
             }
 
+            typename std::vector<T>::reverse_iterator negative_rbegin() noexcept {
+                return _negative.rbegin();
+            }
+
+            typename std::vector<T>::reverse_iterator negative_rend() noexcept {
+                return _negative.rend();
+            }
+
+            typename std::vector<T>::reverse_iterator positive_rbegin() noexcept {
+                return _positive.rbegin();
+            }
+
+            typename std::vector<T>::reverse_iterator positive_rend() noexcept {
+                return _positive.rend();
+            }
+
             iterator begin() noexcept {
                 return iterator(this, index_range_min());
             }
 
             iterator end() noexcept {
+                return iterator(this, index_range_max() + 1);
+            }
+
+            iterator rbegin() noexcept {
+                return iterator(this, index_range_min());
+            }
+
+            iterator rend() noexcept {
                 return iterator(this, index_range_max() + 1);
             }
 
@@ -221,12 +271,84 @@ namespace hm {
                 return _positive.end();
             }
 
+            typename std::vector<T>::const_reverse_iterator negative_rbegin() const noexcept {
+                return _negative.rbegin();
+            }
+
+            typename std::vector<T>::const_reverse_iterator negative_rend() const noexcept {
+                return _negative.rend();
+            }
+
+            typename std::vector<T>::const_reverse_iterator positive_rbegin() const noexcept {
+                return _positive.rbegin();
+            }
+
+            typename std::vector<T>::const_reverse_iterator positive_rend() const noexcept {
+                return _positive.rend();
+            }
+
+            typename std::vector<T>::const_iterator negative_cbegin() const noexcept {
+                return _negative.begin();
+            }
+
+            typename std::vector<T>::const_iterator negative_cend() const noexcept {
+                return _negative.end();
+            }
+
+            typename std::vector<T>::const_iterator positive_cbegin() const noexcept {
+                return _positive.begin();
+            }
+
+            typename std::vector<T>::const_iterator positive_cend() const noexcept {
+                return _positive.end();
+            }
+
+            typename std::vector<T>::const_reverse_iterator negative_crbegin() const noexcept {
+                return _negative.rbegin();
+            }
+
+            typename std::vector<T>::const_reverse_iterator negative_crend() const noexcept {
+                return _negative.rend();
+            }
+
+            typename std::vector<T>::const_reverse_iterator positive_crbegin() const noexcept {
+                return _positive.rbegin();
+            }
+
+            typename std::vector<T>::const_reverse_iterator positive_crend() const noexcept {
+                return _positive.rend();
+            }
+
             const_iterator begin() const noexcept {
                 return const_iterator(this, index_range_min());
             }
 
             const_iterator end() const noexcept {
                 return const_iterator(this, index_range_max() + 1);
+            }
+
+            const_iterator cbegin() const noexcept {
+                return const_iterator(this, index_range_min());
+            }
+
+            const_iterator cend() const noexcept {
+                return const_iterator(this, index_range_max() + 1);
+            }
+
+            const_reverse_iterator rbegin() const noexcept {
+                return const_reverse_iterator(this, index_range_min());
+            }
+
+            const_reverse_iterator rend() const noexcept {
+                return const_reverse_iterator(this, index_range_max() + 1);
+            }
+
+            const_reverse_iterator crbegin() const noexcept {
+                return const_reverse_iterator(this, index_range_min());
+            }
+
+            const_reverse_iterator crend() const noexcept {
+                return const_reverse_iterator(this, index_range_max() + 1);
             }
 
             int index_range_min() const noexcept {
@@ -343,7 +465,7 @@ namespace hm {
 
             class const_iterator {
                 private:
-                    const signed_vector<T> *_vec;
+                    const signed_vector<T> *_vector;
                     int _index;
 
                 public:
@@ -354,10 +476,10 @@ namespace hm {
                     using reference = const T&;
 
                     const_iterator(const signed_vector<T> *vec, int index)
-                        : _vec(vec), _index(index) {}
+                        : _vector(vec), _index(index) {}
 
                     reference operator*() const {
-                        return _vec->at(_index);
+                        return _vector->at(_index);
                     }
 
                     const_iterator &operator++() {
@@ -393,11 +515,11 @@ namespace hm {
                     }
 
                     const_iterator operator+(difference_type n) const {
-                        return const_iterator(_vec, _index + static_cast<int>(n));
+                        return const_iterator(_vector, _index + static_cast<int>(n));
                     }
 
                     const_iterator operator-(difference_type n) const {
-                        return const_iterator(_vec, _index - static_cast<int>(n));
+                        return const_iterator(_vector, _index - static_cast<int>(n));
                     }
 
                     difference_type operator-(const const_iterator &other) const {
@@ -405,11 +527,11 @@ namespace hm {
                     }
 
                     reference operator[](difference_type n) const {
-                        return _vec->at(_index + static_cast<int>(n));
+                        return _vector->at(_index + static_cast<int>(n));
                     }
 
                     bool operator==(const const_iterator &other) const {
-                        return _index == other._index && _vec == other._vec;
+                        return _index == other._index && _vector == other._vector;
                     }
 
                     bool operator!=(const const_iterator &other) const {
@@ -436,6 +558,198 @@ namespace hm {
                         return _index;
                     }
             };
+
+            class reverse_iterator {
+                private:
+                    signed_vector<T> *_vector;
+                    int _index;
+
+                public:
+                    using iterator_category = std::random_access_iterator_tag;
+                    using value_type = T;
+                    using difference_type = std::ptrdiff_t;
+                    using pointer = T*;
+                    using reference = T&;
+
+                    reverse_iterator(signed_vector<T> *vec, int index)
+                        : _vector(vec), _index(index) {}
+
+                    reference operator*() const {
+                        return _vector->at(_index);
+                    }
+
+                    pointer operator->() const {
+                        return &(_vector->at(_index));
+                    }
+
+                    reverse_iterator &operator++() {
+                        --_index;
+                        return *this;
+                    }
+
+                    reverse_iterator operator++(int) {
+                        reverse_iterator tmp = *this;
+                        --(*this);
+                        return tmp;
+                    }
+
+                    reverse_iterator &operator--() {
+                        ++_index;
+                        return *this;
+                    }
+
+                    reverse_iterator operator--(int) {
+                        reverse_iterator tmp = *this;
+                        ++(*this);
+                        return tmp;
+                    }
+
+                    reverse_iterator &operator+=(difference_type n) {
+                        _index -= static_cast<int>(n);
+                        return *this;
+                    }
+
+                    reverse_iterator &operator-=(difference_type n) {
+                        _index += static_cast<int>(n);
+                        return *this;
+                    }
+
+                    reverse_iterator operator+(difference_type n) const {
+                        return reverse_iterator(_vector, _index - static_cast<int>(n));
+                    }
+
+                    reverse_iterator operator-(difference_type n) const {
+                        return reverse_iterator(_vector, _index + static_cast<int>(n));
+                    }
+
+                    difference_type operator-(const reverse_iterator &other) const {
+                        return static_cast<difference_type>(other._index - _index);
+                    }
+
+                    reference operator[](difference_type n) const {
+                        return _vector->at(_index - static_cast<int>(n));
+                    }
+
+                    bool operator==(const reverse_iterator &other) const {
+                        return _index == other._index && _vector == other._vector;
+                    }
+
+                    bool operator!=(const reverse_iterator &other) const {
+                        return !(*this == other);
+                    }
+
+                    bool operator<(const reverse_iterator &other) const {
+                        return _index > other._index;
+                    }
+
+                    bool operator>(const reverse_iterator &other) const {
+                        return _index < other._index;
+                    }
+
+                    bool operator<=(const reverse_iterator &other) const {
+                        return _index >= other._index;
+                    }
+
+                    bool operator>=(const reverse_iterator &other) const {
+                        return _index <= other._index;
+                    }
+            };
+
+            class const_reverse_iterator {
+                private:
+                    const signed_vector<T> *_vector;
+                    int _index;
+
+                public:
+                    using iterator_category = std::random_access_iterator_tag;
+                    using value_type = T;
+                    using difference_type = std::ptrdiff_t;
+                    using pointer = const T*;
+                    using reference = const T&;
+
+                    const_reverse_iterator(const signed_vector<T> *vec, int index)
+                        : _vector(vec), _index(index) {}
+
+                    reference operator*() const {
+                        return _vector->at(_index);
+                    }
+
+                    const_reverse_iterator &operator++() {
+                        --_index;
+                        return *this;
+                    }
+
+                    const_reverse_iterator operator++(int) {
+                        const_reverse_iterator tmp = *this;
+                        --(*this);
+                        return tmp;
+                    }
+
+                    const_reverse_iterator &operator--() {
+                        ++_index;
+                        return *this;
+                    }
+
+                    const_reverse_iterator operator--(int) {
+                        const_reverse_iterator tmp = *this;
+                        ++(*this);
+                        return tmp;
+                    }
+
+                    const_reverse_iterator &operator+=(difference_type n) {
+                        _index -= static_cast<int>(n);
+                        return *this;
+                    }
+
+                    const_reverse_iterator &operator-=(difference_type n) {
+                        _index += static_cast<int>(n);
+                        return *this;
+                    }
+
+                    const_reverse_iterator operator+(difference_type n) const {
+                        return const_reverse_iterator(_vector, _index - static_cast<int>(n));
+                    }
+
+                    const_reverse_iterator operator-(difference_type n) const {
+                        return const_reverse_iterator(_vector, _index + static_cast<int>(n));
+                    }
+
+                    difference_type operator-(const const_reverse_iterator &other) const {
+                        return static_cast<difference_type>(other._index - _index);
+                    }
+
+                    reference operator[](difference_type n) const {
+                        return _vector->at(_index - static_cast<int>(n));
+                    }
+
+                    bool operator==(const const_reverse_iterator &other) const {
+                        return _index == other._index && _vector == other._vector;
+                    }
+
+                    bool operator!=(const const_reverse_iterator &other) const {
+                        return !(*this == other);
+                    }
+
+                    bool operator<(const const_reverse_iterator &other) const {
+                        return _index > other._index;
+                    }
+
+                    bool operator>(const const_reverse_iterator &other) const {
+                        return _index < other._index;
+                    }
+
+                    bool operator<=(const const_reverse_iterator &other) const {
+                        return _index >= other._index;
+                    }
+
+                    bool operator>=(const const_reverse_iterator &other) const {
+                        return _index <= other._index;
+                    }
+
+                    int index() const noexcept {
+                        return _index;
+                    }
+            };
     };
 
     template <>
@@ -449,6 +763,8 @@ namespace hm {
             using const_reference = bool;
             class iterator;
             class const_iterator;
+            class reverse_iterator;
+            class const_reverse_iterator;
 
             signed_vector(unsigned int init_positive_size = 0, unsigned int init_negative_size = 0) noexcept {
                 _positive.resize(init_positive_size);
@@ -472,6 +788,30 @@ namespace hm {
                 } else {
                     _negative.resize(-new_size);
                 }
+            }
+
+            std::vector<bool> get_negative() noexcept {
+                return _negative;
+            }
+
+            std::vector<bool> get_negative() noexcept {
+                return _positive;
+            }
+
+            std::vector<bool> &negative() noexcept {
+                return _negative;
+            }
+
+            std::vector<bool> &positive() noexcept {
+                return _positive;
+            }
+
+            void set_negative(std::vector<bool> vec) noexcept {
+                _negative = vec;
+            }
+
+            void set_positive(std::vector<bool> vec) noexcept {
+                _positive = vec;
             }
 
             reference at(int index) {
@@ -543,12 +883,36 @@ namespace hm {
                 return _positive.end();
             }
 
+            typename std::vector<bool>::reverse_iterator negatibe_rbegin() noexcept {
+                return _negative.rbegin();
+            }
+
+            typename std::vector<bool>::reverse_iterator negative_rend() noexcept {
+                return _negative.rend();
+            }
+
+            typename std::vector<bool>::reverse_iterator positive_rbegin() noexcept {
+                return _positive.rbegin();
+            }
+
+            typename std::vector<bool>::reverse_iterator positive_rend() noexcept {
+                return _positive.rend();
+            }
+
             iterator begin() noexcept {
                 return iterator(this, index_range_min());
             }
 
             iterator end() noexcept {
                 return iterator(this, index_range_max() + 1);
+            }
+
+            reverse_iterator rbegin() noexcept {
+                return reverse_iterator(this, index_range_min());
+            }
+
+            reverse_iterator rend() noexcept {
+                return reverse_iterator(this, index_range_max());
             }
 
             typename std::vector<bool>::const_iterator negative_begin() const noexcept {
@@ -567,12 +931,84 @@ namespace hm {
                 return _positive.end();
             }
 
+            typename std::vector<bool>::const_reverse_iterator negative_rbegin() const noexcept {
+                return _negative.rbegin();
+            }
+
+            typename std::vector<bool>::const_reverse_iterator negative_rend() const noexcept {
+                return _negative.rend();
+            }
+
+            typename std::vector<bool>::const_reverse_iterator positive_rbegin() const noexcept {
+                return _positive.rbegin();
+            }
+
+            typename std::vector<bool>::const_reverse_iterator positive_rend() const noexcept {
+                return _positive.rend();
+            }
+
+            typename std::vector<bool>::const_iterator negative_cbegin() const noexcept {
+                return _negative.begin();
+            }
+
+            typename std::vector<bool>::const_iterator negative_cend() const noexcept {
+                return _negative.end();
+            }
+
+            typename std::vector<bool>::const_iterator positive_cbegin() const noexcept {
+                return _positive.begin();
+            }
+
+            typename std::vector<bool>::const_iterator positive_cend() const noexcept {
+                return _positive.end();
+            }
+
+            typename std::vector<bool>::const_reverse_iterator negative_crbegin() const noexcept {
+                return _negative.rbegin();
+            }
+
+            typename std::vector<bool>::const_reverse_iterator negative_crend() const noexcept {
+                return _negative.rend();
+            }
+
+            typename std::vector<bool>::const_reverse_iterator positive_crbegin() const noexcept {
+                return _positive.rbegin();
+            }
+
+            typename std::vector<bool>::const_reverse_iterator positive_crend() const noexcept {
+                return _positive.rend();
+            }
+
             const_iterator begin() const noexcept {
                 return const_iterator(this, index_range_min());
             }
 
             const_iterator end() const noexcept {
                 return const_iterator(this, index_range_max() + 1);
+            }
+
+            const_iterator cbegin() const noexcept {
+                return const_iterator(this, index_range_min());
+            }
+
+            const_iterator cend() const noexcept {
+                return const_iterator(this, index_range_max() + 1);
+            }
+
+            const_reverse_iterator rbegin() const noexcept {
+                return const_reverse_iterator(this, index_range_min());
+            }
+
+            const_reverse_iterator rend() const noexcept {
+                return const_reverse_iterator(this, index_range_max() + 1);
+            }
+
+            const_reverse_iterator crbegin() const noexcept {
+                return const_reverse_iterator(this, index_range_min());
+            }
+
+            const_reverse_iterator crend() const noexcept {
+                return const_reverse_iterator(this, index_range_max() + 1);
             }
 
             int index_range_min() const noexcept {
@@ -700,7 +1136,7 @@ namespace hm {
 
             class const_iterator {
                 private:
-                    const signed_vector<bool> *_vec;
+                    const signed_vector<bool> *_vector;
                     int _index;
 
                 public:
@@ -711,10 +1147,10 @@ namespace hm {
                     using reference = const bool&;
 
                     const_iterator(const signed_vector<bool> *vec, int index)
-                        : _vec(vec), _index(index) {}
+                        : _vector(vec), _index(index) {}
 
                     bool operator*() const {
-                        return _vec->at(_index);
+                        return _vector->at(_index);
                     }
 
                     const_iterator &operator++() {
@@ -750,11 +1186,11 @@ namespace hm {
                     }
 
                     const_iterator operator+(difference_type n) const {
-                        return const_iterator(_vec, _index + static_cast<int>(n));
+                        return const_iterator(_vector, _index + static_cast<int>(n));
                     }
 
                     const_iterator operator-(difference_type n) const {
-                        return const_iterator(_vec, _index - static_cast<int>(n));
+                        return const_iterator(_vector, _index - static_cast<int>(n));
                     }
 
                     difference_type operator-(const const_iterator &other) const {
@@ -762,11 +1198,11 @@ namespace hm {
                     }
 
                     bool operator[](difference_type n) const {
-                        return _vec->at(_index + static_cast<int>(n));
+                        return _vector->at(_index + static_cast<int>(n));
                     }
 
                     bool operator==(const const_iterator &other) const {
-                        return _index == other._index && _vec == other._vec;
+                        return _index == other._index && _vector == other._vector;
                     }
 
                     bool operator!=(const const_iterator &other) const {
@@ -787,6 +1223,194 @@ namespace hm {
 
                     bool operator>=(const const_iterator &other) const {
                         return _index >= other._index;
+                    }
+
+                    int index() const noexcept {
+                        return _index;
+                    }
+            };
+
+            class reverse_iterator {
+                private:
+                    signed_vector<bool> *_vector;
+                    int _index;
+
+                public:
+                    using iterator_category = std::random_access_iterator_tag;
+                    using value_type = bool;
+                    using difference_type = std::ptrdiff_t;
+                    using pointer = void;
+                    using reference = std::vector<bool>::reference;
+
+                    reverse_iterator(signed_vector<bool> *vec, int index)
+                        : _vector(vec), _index(index) {}
+
+                    reference operator*() const {
+                        return _vector->at(_index);
+                    }
+
+                    reverse_iterator &operator++() {
+                        --_index;
+                        return *this;
+                    }
+
+                    reverse_iterator operator++(int) {
+                        reverse_iterator tmp = *this;
+                        --(*this);
+                        return tmp;
+                    }
+
+                    reverse_iterator &operator--() {
+                        ++_index;
+                        return *this;
+                    }
+
+                    reverse_iterator operator--(int) {
+                        reverse_iterator tmp = *this;
+                        ++(*this);
+                        return tmp;
+                    }
+
+                    reverse_iterator &operator+=(difference_type n) {
+                        _index -= static_cast<int>(n);
+                        return *this;
+                    }
+
+                    reverse_iterator &operator-=(difference_type n) {
+                        _index += static_cast<int>(n);
+                        return *this;
+                    }
+
+                    reverse_iterator operator+(difference_type n) const {
+                        return reverse_iterator(_vector, _index - static_cast<int>(n));
+                    }
+
+                    reverse_iterator operator-(difference_type n) const {
+                        return reverse_iterator(_vector, _index + static_cast<int>(n));
+                    }
+
+                    difference_type operator-(const reverse_iterator &other) const {
+                        return static_cast<difference_type>(other._index - _index);
+                    }
+
+                    reference operator[](difference_type n) const {
+                        return _vector->at(_index - static_cast<int>(n));
+                    }
+
+                    bool operator==(const reverse_iterator &other) const {
+                        return _index == other._index && _vector == other._vector;
+                    }
+
+                    bool operator!=(const reverse_iterator &other) const {
+                        return !(*this == other);
+                    }
+
+                    bool operator<(const reverse_iterator &other) const {
+                        return _index > other._index;
+                    }
+
+                    bool operator>(const reverse_iterator &other) const {
+                        return _index < other._index;
+                    }
+
+                    bool operator<=(const reverse_iterator &other) const {
+                        return _index >= other._index;
+                    }
+
+                    bool operator>=(const reverse_iterator &other) const {
+                        return _index <= other._index;
+                    }
+            };
+
+            class const_reverse_iterator {
+                private:
+                    const signed_vector<bool> *_vector;
+                    int _index;
+
+                public:
+                    using iterator_category = std::random_access_iterator_tag;
+                    using value_type = bool;
+                    using difference_type = std::ptrdiff_t;
+                    using pointer = const bool*;
+                    using reference = const bool;
+
+                    const_reverse_iterator(const signed_vector<bool> *vec, int index)
+                        : _vector(vec), _index(index) {}
+
+                    reference operator*() const {
+                        return _vector->at(_index);
+                    }
+
+                    const_reverse_iterator &operator++() {
+                        --_index;
+                        return *this;
+                    }
+
+                    const_reverse_iterator operator++(int) {
+                        const_reverse_iterator tmp = *this;
+                        --(*this);
+                        return tmp;
+                    }
+
+                    const_reverse_iterator &operator--() {
+                        ++_index;
+                        return *this;
+                    }
+
+                    const_reverse_iterator operator--(int) {
+                        const_reverse_iterator tmp = *this;
+                        ++(*this);
+                        return tmp;
+                    }
+
+                    const_reverse_iterator &operator+=(difference_type n) {
+                        _index -= static_cast<int>(n);
+                        return *this;
+                    }
+
+                    const_reverse_iterator &operator-=(difference_type n) {
+                        _index += static_cast<int>(n);
+                        return *this;
+                    }
+
+                    const_reverse_iterator operator+(difference_type n) const {
+                        return const_reverse_iterator(_vector, _index - static_cast<int>(n));
+                    }
+
+                    const_reverse_iterator operator-(difference_type n) const {
+                        return const_reverse_iterator(_vector, _index + static_cast<int>(n));
+                    }
+
+                    difference_type operator-(const const_reverse_iterator &other) const {
+                        return static_cast<difference_type>(other._index - _index);
+                    }
+
+                    reference operator[](difference_type n) const {
+                        return _vector->at(_index - static_cast<int>(n));
+                    }
+
+                    bool operator==(const const_reverse_iterator &other) const {
+                        return _index == other._index && _vector == other._vector;
+                    }
+
+                    bool operator!=(const const_reverse_iterator &other) const {
+                        return !(*this == other);
+                    }
+
+                    bool operator<(const const_reverse_iterator &other) const {
+                        return _index > other._index;
+                    }
+
+                    bool operator>(const const_reverse_iterator &other) const {
+                        return _index < other._index;
+                    }
+
+                    bool operator<=(const const_reverse_iterator &other) const {
+                        return _index >= other._index;
+                    }
+
+                    bool operator>=(const const_reverse_iterator &other) const {
+                        return _index <= other._index;
                     }
 
                     int index() const noexcept {
