@@ -243,6 +243,7 @@ namespace hmgui {
                     if (key_held[VK_CONTROL] && key_held['L']) grid_scroll(scroll_speed, 0);
                     if (key_held[VK_CONTROL] && key_held['J']) grid_scroll(0, scroll_speed);
                     if (key_held[VK_CONTROL] && key_held['K']) grid_scroll(0, -scroll_speed);
+
                     InvalidateRect(handle_window, nullptr, FALSE);
                 }
                 return 0;
@@ -584,7 +585,7 @@ namespace hmgui {
                         break;
                     }
                     case ID_MENU_VIEW_BOARD_SEPARATE_WINDOW: {
-                        sep_board_window.show_window(SW_SHOW, window_area_rectf.left + 30.0f, window_area_rectf.top + 30.0f, board, current_kifu, kifu_current_turn);
+                        sep_board_window.show_window(SW_SHOW, window_area_rectf.left + 30.0f, window_area_rectf.top + 30.0f, board, current_kifu, kifu_current_turn, grid_scroll_offset);
                         break;
                     }
                     case ID_MENU_GAME_NEW: {
@@ -777,7 +778,7 @@ namespace hmgui {
                         float fy = (grid_area_rectf.bottom - main_window.grid_scroll_offset.y - gy) / config_ref.grid_spacing - 0.5f;
                         int x = static_cast<int>(std::round(fx));
                         int y = static_cast<int>(std::round(fy));
-                        if (board.has_piece(x, y)) {
+                        if (current_kifu.size() == 0 && !(x == 0 && y == 0)) {
                             return 0;
                         }
                         try {
@@ -1000,8 +1001,8 @@ namespace hmgui {
                             if (new_vertical_size < 100.0f) {
                                 new_vertical_size = 100.0f;
                             }
-                            if (new_vertical_size > config_ref.window_size_y - 40.0f) {
-                                new_vertical_size = config_ref.window_size_y - 40.0f;
+                            if (new_vertical_size > config_ref.window_size_y - 100.0f) {
+                                new_vertical_size = config_ref.window_size_y - 100.0f;
                             }
                             config_ref.vertical_size = new_vertical_size;
                             break;
@@ -1354,7 +1355,6 @@ namespace hmgui {
             }
             case WM_CLOSE: {
                 handle_exit();
-                main_window.d2d1_initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
                 main_window.update_rect();
                 return 0;
             }
@@ -1398,6 +1398,23 @@ namespace hmgui {
                 if (PtInRect(&grid_area_rect, point)) {
                     short delta = GET_WHEEL_DELTA_WPARAM(w_param);
                     if (key_held[VK_CONTROL]) {
+                        float new_spacing = grid_spacing + delta * 0.05f * (grid_spacing / 50.0f);
+                        if (new_spacing < 10.0f) {
+                            new_spacing = 10.0f;
+                        }
+                        else if (new_spacing > 200.0f) {
+                            new_spacing = 200.0f;
+                        }
+                        float mouse_x = static_cast<float>(point.x);
+                        float mouse_y = static_cast<float>(point.y);
+                        float board_x = (mouse_x - grid_area_rectf.left + grid_scroll_offset.x) / grid_spacing;
+                        float board_y = (grid_area_rectf.bottom - grid_scroll_offset.y - mouse_y) / grid_spacing;
+                        float scale = new_spacing / grid_spacing;
+                        grid_scroll_offset.x = (board_x * new_spacing) - (mouse_x - grid_area_rectf.left);
+                        grid_scroll_offset.y = (grid_area_rectf.bottom - mouse_y) - (board_y * new_spacing);
+                        grid_spacing = new_spacing;
+                    }
+                    else if (key_held[VK_SHIFT]) {
                         grid_scroll((float)-delta / 8, 0);
                     }
                     else {
@@ -1422,23 +1439,27 @@ namespace hmgui {
             case WM_KEYDOWN: {
                 int virtual_key = static_cast<int>(w_param);
                 key_held[virtual_key] = true;
-                if (virtual_key == VK_CONTROL) key_held[VK_CONTROL] = true;
                 return 0;
             }
             case WM_KEYUP: {
                 int virtual_key = static_cast<int>(w_param);
                 key_held[virtual_key] = false;
-                if (virtual_key == VK_CONTROL) key_held[VK_CONTROL] = false;
                 return 0;
             }
             case WM_TIMER: {
                 if (w_param == sep_board_timer_id) {
-                    if (!key_held[VK_CONTROL]) return 0;
                     if (GetForegroundWindow() != handle_window) return 0;
-                    if (key_held['H']) grid_scroll(-scroll_speed, 0);
-                    if (key_held['L']) grid_scroll(scroll_speed, 0);
-                    if (key_held['J']) grid_scroll(0, scroll_speed);
-                    if (key_held['K']) grid_scroll(0, -scroll_speed);
+
+                    if (key_held[VK_UP]) grid_scroll(0, -scroll_speed);
+                    if (key_held[VK_DOWN]) grid_scroll(0, scroll_speed);
+                    if (key_held[VK_LEFT]) grid_scroll(-scroll_speed, 0);
+                    if (key_held[VK_RIGHT]) grid_scroll(scroll_speed, 0);
+
+                    if (key_held[VK_CONTROL] && key_held['H']) grid_scroll(-scroll_speed, 0);
+                    if (key_held[VK_CONTROL] && key_held['L']) grid_scroll(scroll_speed, 0);
+                    if (key_held[VK_CONTROL] && key_held['J']) grid_scroll(0, scroll_speed);
+                    if (key_held[VK_CONTROL] && key_held['K']) grid_scroll(0, -scroll_speed);
+
                     InvalidateRect(handle_window, nullptr, FALSE);
                 }
                 return 0;

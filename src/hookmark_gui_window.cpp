@@ -361,6 +361,35 @@ namespace hmgui {
 
         const float grid_spacing = config_ref.grid_spacing;
 
+        if (is_gaming && current_kifu.size() == 0) {
+            d2d1_render_target->PushAxisAlignedClip(
+                grid_area_rectf,
+                D2D1_ANTIALIAS_MODE_PER_PRIMITIVE
+            );
+
+            d2d1_brush->SetColor(light_gray_color);
+            d2d1_render_target->FillRectangle(
+                grid_area_rectf,
+                d2d1_brush
+            );
+
+            D2D1_RECT_F zero_area = D2D1::RectF(
+                grid_area_rectf.left - grid_scroll_offset.x,
+                grid_area_rectf.bottom - grid_scroll_offset.y,
+                grid_area_rectf.left + grid_spacing - grid_scroll_offset.x,
+                grid_area_rectf.bottom - grid_spacing - grid_scroll_offset.y
+            );
+            d2d1_brush->SetColor(white_color);
+            d2d1_render_target->FillRectangle(
+                zero_area,
+                d2d1_brush
+            );
+
+            d2d1_brush->SetColor(black_color);
+
+            d2d1_render_target->PopAxisAlignedClip();
+        }
+
         d2d1_render_target->DrawRectangle(
             grid_area_rectf,
             d2d1_brush,
@@ -391,7 +420,7 @@ namespace hmgui {
             );
         }
 
-        float axis_x = grid_area_rectf.left + (0) * grid_spacing - grid_scroll_offset.x;
+        float axis_x = grid_area_rectf.left - grid_scroll_offset.x;
         if (axis_x >= grid_area_rectf.left && axis_x <= grid_area_rectf.right) {
             d2d1_render_target->DrawLine(
                 D2D1::Point2F(axis_x, grid_area_rectf.top),
@@ -401,7 +430,7 @@ namespace hmgui {
             );
         }
 
-        float axis_y = grid_area_rectf.bottom - (0) * grid_spacing - grid_scroll_offset.y;
+        float axis_y = grid_area_rectf.bottom - grid_scroll_offset.y;
         if (axis_y >= grid_area_rectf.top && axis_y <= grid_area_rectf.bottom) {
             d2d1_render_target->DrawLine(
                 D2D1::Point2F(grid_area_rectf.left, axis_y),
@@ -411,7 +440,7 @@ namespace hmgui {
             );
         }
 
-        float axis_x1 = grid_area_rectf.left + (1) * grid_spacing - grid_scroll_offset.x;
+        float axis_x1 = grid_area_rectf.left + grid_spacing - grid_scroll_offset.x;
         if (axis_x1 >= grid_area_rectf.left && axis_x1 <= grid_area_rectf.right) {
             d2d1_render_target->DrawLine(
                 D2D1::Point2F(axis_x1, grid_area_rectf.top),
@@ -421,7 +450,7 @@ namespace hmgui {
             );
         }
 
-        float axis_y1 = grid_area_rectf.bottom - (1) * grid_spacing - grid_scroll_offset.y;
+        float axis_y1 = grid_area_rectf.bottom - grid_spacing - grid_scroll_offset.y;
         if (axis_y1 >= grid_area_rectf.top && axis_y1 <= grid_area_rectf.bottom) {
             d2d1_render_target->DrawLine(
                 D2D1::Point2F(grid_area_rectf.left, axis_y1),
@@ -1714,10 +1743,11 @@ namespace hmgui {
         SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     }
 
-    void window_sep_board::show_window(int show_command, float x, float y, hm::board_state i_board, hm::kifu_ver1 i_kifu, unsigned int i_kifu_current_turn) {
+    void window_sep_board::show_window(int show_command, float x, float y, hm::board_state i_board, hm::kifu_ver1 i_kifu, unsigned int i_kifu_current_turn, D2D1_POINT_2F i_grid_scroll_offset) {
         board = i_board;
         current_kifu = i_kifu;
         kifu_current_turn = i_kifu_current_turn;
+        grid_scroll_offset = i_grid_scroll_offset;
         SetWindowPos(handle_window, nullptr, static_cast<int>(x), static_cast<int>(y), 0, 0, SWP_NOZORDER | SWP_NOSIZE);
         ShowWindow(handle_window, show_command);
         UpdateWindow(handle_window);
@@ -1730,13 +1760,11 @@ namespace hmgui {
     }
 
     void window_sep_board::update_scroll_speed() {
-        scroll_speed = config_ref.grid_spacing / 0.3f;
+        scroll_speed = grid_spacing / 0.3f;
     }
 
     void window_sep_board::draw_grid() {
         if (!d2d1_render_target || !d2d1_brush) return;
-
-        const float grid_spacing = config_ref.grid_spacing;
 
         d2d1_render_target->DrawRectangle(
             grid_area_rectf,
@@ -1873,8 +1901,6 @@ namespace hmgui {
     }
 
     void window_sep_board::draw_board() {
-        const float grid_spacing = config_ref.grid_spacing;
-
         auto &has_piece = board.has_piece();
         auto &is_first = board.is_first();
         auto x_range = has_piece.index_range();

@@ -344,6 +344,7 @@ namespace hmgui {
             RECT grid_area_rect = { 0, 0, 0, 0 };
             D2D1_RECT_F grid_area_clip_rectf = D2D1::RectF();
             D2D1_POINT_2F grid_scroll_offset = D2D1::Point2F(0.0f, 0.0f);
+            float grid_spacing = 40.0f;
             std::vector<float> label_width;
             std::vector<float> label_height;
             IDWriteTextFormat *text_format_label = nullptr;
@@ -357,7 +358,7 @@ namespace hmgui {
             bool d2d1_initialize(ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void initialize(window_conf &config, ID2D1Factory *i_d2d1_factory, IDWriteFactory *i_d2d1_dwrite_factory);
             void create_window();
-            void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT, hm::board_state i_board = hm::board_state(), hm::kifu_ver1 i_kifu = hm::kifu_ver1(), unsigned int i_kifu_current_turn = 0);
+            void show_window(int show_command = SW_SHOW, float x = CW_USEDEFAULT, float y = CW_USEDEFAULT, hm::board_state i_board = hm::board_state(), hm::kifu_ver1 i_kifu = hm::kifu_ver1(), unsigned int i_kifu_current_turn = 0, D2D1_POINT_2F i_grid_scroll_offset = D2D1::Point2F());
             void update_rect();
             void redraw();
             void add_label_size(int i);
