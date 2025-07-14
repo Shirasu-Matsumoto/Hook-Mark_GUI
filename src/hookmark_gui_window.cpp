@@ -179,10 +179,21 @@ namespace hmgui {
         }
         window_area_rectf = rect_to_rectf(window_area_rect);
 
-        config_ref.window_size_x = window_area_rectf.right - window_area_rectf.left;
-        config_ref.window_size_y = window_area_rectf.bottom - window_area_rectf.top;
-        config_ref.window_pos_x = window_area_rectf.left;
-        config_ref.window_pos_y = window_area_rectf.top;
+        if (IsIconic(handle_window)) {
+            config_ref.window_state = -1.0f;
+        } else if (IsZoomed(handle_window)) {
+            config_ref.window_state = 1.0f;
+        } else {
+            config_ref.window_state = 0.0f;
+        }
+
+        if (config_ref.window_state == 0.0f) {
+            config_ref.window_size_x = window_area_rectf.right - window_area_rectf.left;
+            config_ref.window_size_y = window_area_rectf.bottom - window_area_rectf.top;
+            config_ref.window_pos_x = window_area_rectf.left;
+            config_ref.window_pos_y = window_area_rectf.top;
+        }
+
         grid_area_rectf = D2D1::RectF(
             config_ref.margin,
             config_ref.margin,
@@ -244,7 +255,6 @@ namespace hmgui {
         d2d1_initialize(i_d2d1_factory, i_d2d1_dwrite_factory);
         do_over_button.initialize(d2d1_factory, d2d1_dwrite_factory, d2d1_render_target, d2d1_brush, text_format_button_label, L"待った");
         resign_button.initialize(d2d1_factory, d2d1_dwrite_factory, d2d1_render_target, d2d1_brush, text_format_button_label, L"投了");
-        update_rect();
     }
 
     void window_main::create_window() {
@@ -262,6 +272,23 @@ namespace hmgui {
         DwmSetWindowAttribute(handle_window, DWMWA_WINDOW_CORNER_PREFERENCE, &corner_pref, sizeof(corner_pref));
 
         SetWindowLongPtr(handle_window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+    }
+
+    void window_main::show_window(int show_command) {
+        ShowWindow(handle_window, show_command);
+    }
+
+    void window_main::show_window() {
+        int show_command = SW_SHOW;
+
+        if (config_ref.window_state == -1.0f) {
+            show_command = SW_MINIMIZE;
+        }
+        else if (config_ref.window_state == 1.0f) {
+            show_command = SW_MAXIMIZE;
+        }
+
+        ShowWindow(handle_window, show_command);
     }
 
     void window_main::show_file_load_dialog(std::wstring &result) {

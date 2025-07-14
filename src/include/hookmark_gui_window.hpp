@@ -9,6 +9,7 @@ namespace hmgui {
     struct window_conf {
         float window_pos_x;
         float window_pos_y;
+        float window_state;
         float margin;
         float padding;
         float window_size_x;
@@ -33,6 +34,7 @@ namespace hmgui {
         window_conf()
             : window_pos_x(2147483648.0f),
               window_pos_y(2147483648.0f),
+              window_state(0.0f),
               margin(3.0f),
               padding(5.0f),
               window_size_x(2147483648.0f),
@@ -142,6 +144,8 @@ namespace hmgui {
             void initialize_scroll();
             void add_label_size(int i);
             void create_window();
+            void show_window(int show_command);
+            void show_window();
             void show_file_load_dialog(std::wstring &result);
             void show_file_save_dialog(std::wstring &result);
             void redraw();

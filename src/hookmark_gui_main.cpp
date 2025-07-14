@@ -84,6 +84,7 @@ namespace hmgui {
         }
         if (um_config.count("window_pos_x")) grobal_config.window_pos_x = to_float(um_config.at("window_pos_x"));
         if (um_config.count("window_pos_y")) grobal_config.window_pos_y = to_float(um_config.at("window_pos_y"));
+        if (um_config.count("window_state")) grobal_config.window_state = to_float(um_config.at("window_state"));
         if (um_config.count("margin")) grobal_config.margin = to_float(um_config.at("margin"));
         if (um_config.count("padding")) grobal_config.padding = to_float(um_config.at("padding"));
         if (um_config.count("window_size_x")) grobal_config.window_size_x = to_float(um_config.at("window_size_x"));
@@ -119,6 +120,7 @@ namespace hmgui {
         file << "[Hook-Mark GUI Window Initialize Config]\n\n# Main window\n";
         file << "window_pos_x = " << grobal_config.window_pos_x << "\n";
         file << "window_pos_y = " << grobal_config.window_pos_y << "\n";
+        file << "window_state = " << grobal_config.window_state << "\n";
         file << "margin = " << grobal_config.margin << "\n";
         file << "padding = " << grobal_config.padding << "\n";
         file << "window_size_x = " << grobal_config.window_size_x << "\n";
@@ -129,10 +131,10 @@ namespace hmgui {
         file << "kifu_size_x = " << grobal_config.kifu_size_x << "\n";
         file << "kifu_turn_size_x = " << grobal_config.kifu_turn_size_x << "\n";
         file << "vertical_size = " << grobal_config.vertical_size << "\n";
-        file << "open_file = " << grobal_config.open_file << "\n";
+        file << "open_file = \"" << grobal_config.open_file << "\"\n";
         file << "label_size = " << grobal_config.label_size << "\n\n# New game window\n";
-        file << "first_name = " << grobal_config.first_name << "\n";
-        file << "second_name = " << grobal_config.second_name << "\n";
+        file << "first_name = \"" << grobal_config.first_name << "\"\n";
+        file << "second_name = \"" << grobal_config.second_name << "\"\n";
         file << "first_time = " << grobal_config.first_time << "\n";
         file << "second_time = " << grobal_config.second_time << "\n";
         file << "first_countdown = " << grobal_config.first_countdown << "\n";
@@ -1551,6 +1553,7 @@ int WINAPI wWinMain(_In_ HINSTANCE handle_instance, _In_opt_ HINSTANCE, _In_ LPW
     version_window.initialize(grobal_d2d1_factory, grobal_d2d1_dwrite_factory, main_window);
     sep_board_window.initialize(grobal_config, grobal_d2d1_factory, grobal_d2d1_dwrite_factory);
     main_window.show_window();
+    main_window.update_rect();
 
     SetMenu(main_window, main_menu);
     EnableMenuItem(main_menu, main_menu_game_do_over, MF_BYCOMMAND | MF_GRAYED);
