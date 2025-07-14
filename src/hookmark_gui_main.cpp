@@ -44,7 +44,6 @@ hmgui::menu_item        main_menu_file_create_new(ID_MENU_FILE_CREATE_NEW),
 ID2D1Factory *grobal_d2d1_factory;
 IDWriteFactory *grobal_d2d1_dwrite_factory;
 
-bool ctrl_down = false;
 bool key_held[256] = {};
 UINT_PTR main_timer_id = 1;
 UINT_PTR sep_board_timer_id = 2;
@@ -240,10 +239,10 @@ namespace hmgui {
                     if (key_held[VK_UP] && current_focus == focus::config) config_scroll(0, -scroll_speed);
                     if (key_held[VK_DOWN] && current_focus == focus::config) config_scroll(0, scroll_speed);
 
-                    if (ctrl_down && key_held['H']) grid_scroll(-scroll_speed, 0);
-                    if (ctrl_down && key_held['L']) grid_scroll(scroll_speed, 0);
-                    if (ctrl_down && key_held['J']) grid_scroll(0, scroll_speed);
-                    if (ctrl_down && key_held['K']) grid_scroll(0, -scroll_speed);
+                    if (key_held[VK_CONTROL] && key_held['H']) grid_scroll(-scroll_speed, 0);
+                    if (key_held[VK_CONTROL] && key_held['L']) grid_scroll(scroll_speed, 0);
+                    if (key_held[VK_CONTROL] && key_held['J']) grid_scroll(0, scroll_speed);
+                    if (key_held[VK_CONTROL] && key_held['K']) grid_scroll(0, -scroll_speed);
                     InvalidateRect(handle_window, nullptr, FALSE);
                 }
                 return 0;
@@ -266,7 +265,7 @@ namespace hmgui {
                         }
                     }
                 }
-                if (!ctrl_down) {
+                if (!key_held[VK_CONTROL]) {
                     save_config();
                 }
                 handle_exit();
@@ -275,11 +274,10 @@ namespace hmgui {
             case WM_KEYDOWN: {
                 int virtual_key = static_cast<int>(w_param);
                 key_held[virtual_key] = true;
-                if (virtual_key == VK_CONTROL) ctrl_down = true;
 
-                if (ctrl_down && virtual_key == 'S') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
-                if (ctrl_down && virtual_key == 'O') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OPEN, 0), 0);
-                if (ctrl_down && virtual_key == 'N') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_CREATE_NEW, 0), 0);
+                if (virtual_key == VK_CONTROL && virtual_key == 'S') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OVERWRITE_SAVE, 0), 0);
+                if (virtual_key == VK_CONTROL && virtual_key == 'O') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_OPEN, 0), 0);
+                if (virtual_key == VK_CONTROL && virtual_key == 'N') SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_FILE_CREATE_NEW, 0), 0);
                 if (current_focus == focus::kifu && virtual_key == VK_UP) SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_STEP_BACK, 0), 0);
                 if (current_focus == focus::kifu && virtual_key == VK_DOWN) SendMessageW(handle_window, WM_COMMAND, MAKEWPARAM(ID_MENU_EDIT_MOVE_FORWARD, 0), 0);
 
@@ -288,7 +286,6 @@ namespace hmgui {
             case WM_KEYUP: {
                 int virtual_key = static_cast<int>(w_param);
                 key_held[virtual_key] = false;
-                if (virtual_key == VK_CONTROL) ctrl_down = false;
                 return 0;
             }
             case WM_SYSKEYDOWN: {
@@ -690,7 +687,24 @@ namespace hmgui {
 
                 if (PtInRect(&grid_area_rect, point)) {
                     short delta = GET_WHEEL_DELTA_WPARAM(w_param);
-                    if (ctrl_down) {
+                    if (key_held[VK_CONTROL]) {
+                        float new_spacing = config_ref.grid_spacing + delta * 0.05f * (config_ref.grid_spacing / 50.0f);
+                        if (new_spacing < 10.0f) {
+                            new_spacing = 10.0f;
+                        }
+                        else if (new_spacing > 200.0f) {
+                            new_spacing = 200.0f;
+                        }
+                        float mouse_x = static_cast<float>(point.x);
+                        float mouse_y = static_cast<float>(point.y);
+                        float board_x = (mouse_x - grid_area_rectf.left + grid_scroll_offset.x) / config_ref.grid_spacing;
+                        float board_y = (grid_area_rectf.bottom - grid_scroll_offset.y - mouse_y) / config_ref.grid_spacing;
+                        float scale = new_spacing / config_ref.grid_spacing;
+                        grid_scroll_offset.x = (board_x * new_spacing) - (mouse_x - grid_area_rectf.left);
+                        grid_scroll_offset.y = (grid_area_rectf.bottom - mouse_y) - (board_y * new_spacing);
+                        config_ref.grid_spacing = new_spacing;
+                    }
+                    else if (key_held[VK_SHIFT]) {
                         grid_scroll((float)-delta / 8, 0);
                     }
                     else {
@@ -791,7 +805,7 @@ namespace hmgui {
                         int x = static_cast<int>(std::round(fx));
                         int y = static_cast<int>(std::round(fy));
                         try {
-                            if (ctrl_down) {
+                            if (key_held[VK_CONTROL]) {
                                 main_window.board.set(x, y, 2);
                                 InvalidateRect(handle_window, nullptr, FALSE);
                             }
@@ -1383,7 +1397,7 @@ namespace hmgui {
 
                 if (PtInRect(&grid_area_rect, point)) {
                     short delta = GET_WHEEL_DELTA_WPARAM(w_param);
-                    if (ctrl_down) {
+                    if (key_held[VK_CONTROL]) {
                         grid_scroll((float)-delta / 8, 0);
                     }
                     else {
@@ -1408,18 +1422,18 @@ namespace hmgui {
             case WM_KEYDOWN: {
                 int virtual_key = static_cast<int>(w_param);
                 key_held[virtual_key] = true;
-                if (virtual_key == VK_CONTROL) ctrl_down = true;
+                if (virtual_key == VK_CONTROL) key_held[VK_CONTROL] = true;
                 return 0;
             }
             case WM_KEYUP: {
                 int virtual_key = static_cast<int>(w_param);
                 key_held[virtual_key] = false;
-                if (virtual_key == VK_CONTROL) ctrl_down = false;
+                if (virtual_key == VK_CONTROL) key_held[VK_CONTROL] = false;
                 return 0;
             }
             case WM_TIMER: {
                 if (w_param == sep_board_timer_id) {
-                    if (!ctrl_down) return 0;
+                    if (!key_held[VK_CONTROL]) return 0;
                     if (GetForegroundWindow() != handle_window) return 0;
                     if (key_held['H']) grid_scroll(-scroll_speed, 0);
                     if (key_held['L']) grid_scroll(scroll_speed, 0);

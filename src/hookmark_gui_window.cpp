@@ -578,8 +578,8 @@ namespace hmgui {
         d2d1_brush->SetColor(gray_color);
 
         d2d1_render_target->DrawLine(
-            D2D1::Point2F(single_kifu_rectf.left + 5.0f, single_kifu_rectf.bottom + 1.0f),
-            D2D1::Point2F(single_kifu_rectf.right - 5.0f, single_kifu_rectf.bottom + 1.0f),
+            D2D1::Point2F(single_kifu_rectf.left + 5.0f, single_kifu_rectf.bottom),
+            D2D1::Point2F(single_kifu_rectf.right - 5.0f, single_kifu_rectf.bottom),
             d2d1_brush,
             1.0f
         );
@@ -669,8 +669,8 @@ namespace hmgui {
 
         d2d1_brush->SetColor(gray_color);
         d2d1_render_target->DrawLine(
-            D2D1::Point2F(single_kifu_rectf.left + 5.0f, single_kifu_rectf.bottom + 1.0f),
-            D2D1::Point2F(single_kifu_rectf.right - 5.0f, single_kifu_rectf.bottom + 1.0f),
+            D2D1::Point2F(single_kifu_rectf.left + 5.0f, single_kifu_rectf.bottom),
+            D2D1::Point2F(single_kifu_rectf.right - 5.0f, single_kifu_rectf.bottom),
             d2d1_brush,
             1.0f
         );
@@ -718,6 +718,13 @@ namespace hmgui {
         );
 
         d2d1_brush->SetColor(gray_color);
+        d2d1_render_target->DrawLine(
+            D2D1::Point2F(single_kifu_rectf.left + 5.0f, single_kifu_rectf.bottom),
+            D2D1::Point2F(single_kifu_rectf.right - 5.0f, single_kifu_rectf.bottom),
+            d2d1_brush,
+            1.0f
+        );
+
         D2D1_RECT_F layout_rect = D2D1::RectF(
             kifu_area_rectf.left + config_ref.padding,
             y - config_ref.kifu_spacing * 0.05f,
