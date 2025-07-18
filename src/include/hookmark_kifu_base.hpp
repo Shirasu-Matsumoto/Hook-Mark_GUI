@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <stdexcept>
+#include <hookmark_base.hpp>
 
 namespace hm {
     class kifu_base {
@@ -34,6 +35,8 @@ namespace hm {
             virtual void kifu_save(const std::filesystem::path &filename) const {}
 
             virtual void kifu_load(const std::filesystem::path &filename) {}
+
+            virtual std::string to_string() const {}
 
             virtual pos &at(unsigned int index) {
                 if (index >= _kifu.size()) {

@@ -250,6 +250,54 @@ namespace hm {
                 ifs.close();
             }
 
+            std::string to_string() const override {
+                std::ostringstream oss;
+                oss << "Hook-Mark Kifu File Version 1.0\n#Config\n";
+                if (!_config.empty()) {
+                    oss << _config << "\n";
+                }
+                const auto &bs = _config_struct.initial_board;
+                if (!bs.empty()) {
+                    auto [x_range, y_range] = bs.board_range();
+                    int min_x = x_range.min, max_x = x_range.max;
+                    int min_y = y_range.min, max_y = y_range.max;
+                    if (min_x <= max_x && min_y <= max_y) {
+                        oss << "~Initial\n";
+                        oss << min_x << ", " << min_y << "\n";
+                        for (int y = max_y; y >= min_y; --y) {
+                            bool first = true;
+                            for (int x = min_x; x <= max_x; ++x) {
+                                int v = 0;
+                                if (!bs.need_resize(x, y) && bs.has_piece()[x][y]) {
+                                    v = bs.is_first()[x][y] ? 1 : 2;
+                                }
+                                if (!first) oss << ", ";
+                                oss << v;
+                                first = false;
+                            }
+                            oss << "\n";
+                        }
+                        oss << "~End\n";
+                    }
+                }
+
+                if (!_config_struct.first.empty() && !_config_struct.second.empty()) {
+                    oss << "~Players\n";
+                    oss << _config_struct.first << "\n";
+                    oss << _config_struct.second << "\n";
+                    oss << "~End\n";
+                }
+
+                oss << "#End\n#Begin\n";
+
+                for (const auto &move : data()) {
+                    oss << move.x << ", " << move.y << "\n";
+                }
+                oss << "#End\n";
+
+                return oss.str();
+            }
+
             void resign() {
                 _is_resigned = true;
             }

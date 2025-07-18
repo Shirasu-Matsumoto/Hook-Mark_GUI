@@ -287,6 +287,22 @@ namespace hm {
                 }
                 return result;
             }
+
+            std::string to_string() const {
+                std::string result;
+                auto range = _has_piece.index_range();
+                for (int i = range.min; i <= range.max; i++) {
+                    auto row_range = _has_piece[i].index_range();
+                    for (int j = row_range.min; j <= row_range.max; j++) {
+                        if (!_has_piece[i][j]) {
+                            result += " 0";
+                        } else {
+                            result += (_is_first[i][j] ? " 1" : " 2");
+                        }
+                    }
+                    result += "\n";
+                }
+            }
     };
 }
 
